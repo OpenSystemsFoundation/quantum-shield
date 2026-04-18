@@ -5,6 +5,7 @@
   import { renderReportPdf, buildCbomJson, buildFindingsCsv } from '@lib/pdf';
   import type { Category, Finding, Report, Severity } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
+  import FindingDrawer from './FindingDrawer.svelte';
 
   const { scanId } = $props<{ scanId: string }>();
 
@@ -23,6 +24,7 @@
     advisory: true,
   });
   let categoryFilter = $state<Record<string, boolean>>({});
+  let drawerHeight = $state(360);
 
   const SEV_CLASS: Record<Severity, string> = {
     critical: 'crit',
@@ -64,10 +66,13 @@
       const init: Record<string, boolean> = {};
       for (const c of cats) init[c] = true;
       categoryFilter = init;
-      selectedId = stored.report.findings[0]?.id ?? null;
     }
     loaded = true;
   });
+
+  function toggleSelect(id: string) {
+    selectedId = selectedId === id ? null : id;
+  }
 
   const filteredFindings = $derived.by<Finding[]>(() => {
     if (!report) return [];
@@ -101,11 +106,8 @@
   });
 
   const selected = $derived.by<Finding | null>(() => {
-    if (!report) return null;
-    const list = filteredFindings;
-    if (list.length === 0) return null;
-    const match = list.find((f) => f.id === selectedId);
-    return match ?? list[0];
+    if (!report || !selectedId) return null;
+    return report.findings.find((f) => f.id === selectedId) ?? null;
   });
 
   function sevCount(s: Severity): number {
@@ -292,7 +294,7 @@
                   {#each filteredFindings as f (f.id)}
                     <tr
                       class:selected={selected?.id === f.id}
-                      onclick={() => (selectedId = f.id)}
+                      onclick={() => toggleSelect(f.id)}
                       style="cursor:pointer;"
                     >
                       <td class="mono" style="color:var(--muted);font-size:11px;">{f.id.slice(0, 18)}</td>
@@ -319,52 +321,14 @@
               </table>
             </div>
 
-            {#if selected}
-              <div class="detail-drawer">
-                <div class="detail-head">
-                  <div class="title-row">
-                    <span class={`pill ${SEV_CLASS[selected.severity]}`}>{selected.severity}</span>
-                    <span class="pill adv">{POSTURE_LABELS[selected.migrationPosture]}</span>
-                    {#if selected.hndlExposure}<span class="pill hndl">HNDL</span>{/if}
-                    <span class="tag">{CATEGORY_LABELS[selected.category]}</span>
-                  </div>
-                  <h3 style="margin-top:10px;">{selected.title}</h3>
-                  <div class="meta">
-                    {selected.id} · {selected.asset.name} · {selected.asset.identifier}
-                  </div>
-                </div>
-
-                <div class="detail-grid">
-                  <div class="detail-cell">
-                    <h5>Current cryptography</h5>
-                    <div class="big">{selected.currentCrypto}</div>
-                  </div>
-                  <div class="detail-cell">
-                    <h5>Recommended replacement</h5>
-                    <div style="font-size:12.5px;color:var(--ink-2);line-height:1.5;">{selected.recommendedReplacement}</div>
-                  </div>
-                  <div class="detail-cell" style="grid-column:1 / -1;border-right:none;">
-                    <h5>Rationale</h5>
-                    <div style="font-size:12.5px;color:var(--ink-3);line-height:1.55;">{selected.rationale}</div>
-                  </div>
-                  <div class="detail-cell" style="grid-column:1 / -1;border-right:none;border-bottom:none;">
-                    <h5>Citations</h5>
-                    <div style="display:grid;gap:8px;margin-top:4px;">
-                      {#each selected.citations as c}
-                        <a class="cite" href={c.retrievalUrl} target="_blank" rel="noopener">
-                          <div style="flex:1;">
-                            <div class="doc">{c.sourceId}{c.section ? ` · ${c.section}` : ''} · {c.jurisdiction} · v{c.documentVersion}</div>
-                            <div class="quote">{c.title}</div>
-                          </div>
-                        </a>
-                      {/each}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {/if}
           </div>
         </div>
+
+        <FindingDrawer finding={selected} onClose={() => (selectedId = null)} bind:height={drawerHeight} />
+
+        {#if selected}
+          <div style={`height:${drawerHeight + 20}px;`}></div>
+        {/if}
       {/if}
     </main>
   </div>
