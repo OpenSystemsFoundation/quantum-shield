@@ -1,0 +1,84 @@
+---
+import Shell from '../layouts/Shell.astro';
+import BlochShield from '../components/BlochShield.svelte';
+---
+
+<Shell title="Security — QuantumShield">
+  <div style="border-bottom:1px solid var(--line);background:var(--surface);">
+    <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <a href="/" class="brand hstack" style="font-weight:600;color:var(--ink);">
+        <BlochShield size={24} />
+        <span>QuantumShield</span>
+      </a>
+      <a href="/connect" style="font-size:12.5px;color:var(--muted);">Connect →</a>
+    </div>
+  </div>
+
+  <main style="max-width:960px;margin:0 auto;padding:48px 32px 80px;">
+    <div class="tiny-caps" style="color:var(--navy-600);">Security & trust</div>
+    <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:6px 0 10px;">
+      How QuantumShield keeps your org's data yours.
+    </h1>
+    <p style="font-size:14.5px;color:var(--ink-3);max-width:680px;">
+      Browser-only architecture, read-only scopes, zero data leaves the tab. Every claim on this page is verifiable from the open-source repository.
+    </p>
+
+    <section style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px;">
+      <div class="qs-card qs-card-body">
+        <div class="tiny-caps" style="color:var(--navy-600);">Data transit</div>
+        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Browser ↔ your org</h3>
+        <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
+          Every Salesforce API call travels directly from your browser to your Salesforce instance. Our Cloudflare Pages serves static HTML/JS only — it never sees org data or access tokens.
+        </p>
+      </div>
+      <div class="qs-card qs-card-body">
+        <div class="tiny-caps" style="color:var(--navy-600);">Access token lifetime</div>
+        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Dies with the tab</h3>
+        <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
+          Stored in sessionStorage and nothing else. No refresh token kept. Closing the tab ends the session. Sign-in is one click when you come back.
+        </p>
+      </div>
+      <div class="qs-card qs-card-body">
+        <div class="tiny-caps" style="color:var(--navy-600);">Write access</div>
+        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">None, ever</h3>
+        <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
+          The OAuth scope list contains <span class="mono">api</span>, <span class="mono">refresh_token</span>, <span class="mono">id</span>. We do not request <span class="mono">full</span> or <span class="mono">web</span>.
+        </p>
+      </div>
+    </section>
+
+    <section class="qs-card" style="margin-top:24px;">
+      <div class="qs-card-head"><h3>OAuth scopes requested</h3></div>
+      <div class="qs-card-body">
+        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
+          <span class="mono" style="font-weight:600;">api</span>
+          <span style="color:var(--ink-3);">Access the REST, Tooling, and Metadata APIs to read configuration and metadata.</span>
+          <span class="pill ok">Required</span>
+        </div>
+        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
+          <span class="mono" style="font-weight:600;">refresh_token</span>
+          <span style="color:var(--ink-3);">Requested for forward compatibility only. We never persist the refresh token — sessions end with the tab.</span>
+          <span class="pill adv">Forward-compat</span>
+        </div>
+        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;align-items:start;font-size:12.5px;">
+          <span class="mono" style="font-weight:600;">id</span>
+          <span style="color:var(--ink-3);">Identify the user and org for display purposes. No profile or directory data queried.</span>
+          <span class="pill ok">Required</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="qs-card" style="margin-top:16px;">
+      <div class="qs-card-head"><h3>Content Security Policy</h3></div>
+      <div class="qs-card-body">
+        <p style="margin-top:0;color:var(--ink-3);font-size:12.5px;">
+          The app ships a strict <span class="mono">connect-src</span> directive that restricts outbound requests to your org's instance URL (added dynamically after OAuth) and the Salesforce OAuth endpoints.
+        </p>
+        <div class="mono-field" style="margin-top:8px;font-family:var(--mono);font-size:11px;white-space:pre;overflow:auto;">
+          <code>default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+font-src fonts.gstatic.com; connect-src 'self' https://login.salesforce.com https://test.salesforce.com {'<'}instance-url{'>'}</code>
+        </div>
+      </div>
+    </section>
+  </main>
+</Shell>

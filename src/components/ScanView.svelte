@@ -5,6 +5,7 @@
   import type { ScanEvent } from '@lib/scan/types';
   import { saveScanSummary, saveReport } from '@lib/persistence/db';
   import type { Category, Finding, Report } from '@lib/pdf';
+  import AppChrome from './AppChrome.svelte';
 
   const { scanId } = $props<{ scanId: string }>();
 
@@ -25,6 +26,19 @@
   let categories = $state<CatRow[]>([]);
   let assetCount = $state(0);
   let findings = $state<Finding[]>([]);
+  let log = $state<Array<{ t: string; kind: 'ok' | 'warn' | 'err' | 'info'; msg: string }>>([]);
+
+  function pushLog(kind: 'ok' | 'warn' | 'err' | 'info', msg: string) {
+    const t = new Date();
+    log = [
+      ...log,
+      {
+        t: `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`,
+        kind,
+        msg,
+      },
+    ];
+  }
 
   onMount(async () => {
     const s = loadSession();
@@ -34,6 +48,7 @@
     }
     session = s;
     startedAt = new Date().toISOString();
+    pushLog('info', `scan ${scanId} starting · org ${s.org.orgId}${s.mock ? ' · mock mode' : ''}`);
 
     await saveScanSummary({
       scanId,
@@ -47,12 +62,7 @@
     status = 'running';
     try {
       const report = await startScan(
-        {
-          scanId,
-          session: s,
-          overlays: ['gdpr', 'nis2', 'dora'],
-          mock: s.mock === true,
-        },
+        { scanId, session: s, overlays: ['gdpr', 'nis2', 'dora'], mock: s.mock === true },
         handleEvent,
       );
       await finalise(report);
@@ -71,6 +81,7 @@
       }
       status = 'failed';
       errorMessage = err instanceof Error ? err.message : String(err);
+      pushLog('err', errorMessage);
       await saveScanSummary({
         scanId,
         orgId: s.org.orgId,
@@ -83,13 +94,11 @@
     }
   });
 
-  onDestroy(() => {
-    disposeWorker();
-  });
+  onDestroy(() => disposeWorker());
 
   function handleEvent(event: ScanEvent) {
     switch (event.type) {
-      case 'started': {
+      case 'started':
         categories = event.categories.map((c) => ({
           category: c,
           label: labelForCategory(c),
@@ -98,7 +107,6 @@
           findingsCount: 0,
         }));
         break;
-      }
       case 'scanner-progress': {
         const p = event.progress;
         categories = categories.map((row) =>
@@ -120,12 +128,14 @@
               }
             : row,
         );
+        if (p.status === 'running') pushLog('info', `scanning ${p.label}…`);
+        if (p.status === 'completed') pushLog('ok', `${p.label} · ${p.assetCount ?? 0} assets`);
+        if (p.status === 'failed') pushLog('warn', `${p.label} · ${p.error ?? 'failed'}`);
         break;
       }
-      case 'asset': {
+      case 'asset':
         assetCount += 1;
         break;
-      }
       case 'finding': {
         findings = [...findings, event.finding];
         categories = categories.map((row) =>
@@ -135,15 +145,15 @@
         );
         break;
       }
-      case 'failed': {
+      case 'failed':
         if (event.kind === 'cors') status = 'cors';
         else if (event.kind === 'auth') status = 'auth';
         else status = 'failed';
         errorMessage = event.error;
+        pushLog('err', event.error);
         break;
-      }
       case 'log':
-      case 'completed':
+        pushLog(event.level === 'info' ? 'info' : event.level === 'warn' ? 'warn' : 'err', event.message);
         break;
     }
   }
@@ -151,6 +161,7 @@
   async function finalise(report: Report) {
     if (!session) return;
     status = 'complete';
+    pushLog('ok', `scan complete · ${report.summary.totalFindings} findings`);
     await saveReport({
       scanId,
       orgId: session.org.orgId,
@@ -168,139 +179,133 @@
       severityCounts: report.summary.bySeverity,
       status: 'completed',
     });
-    setTimeout(() => {
-      window.location.assign(`/app/report/${scanId}`);
-    }, 600);
+    setTimeout(() => window.location.assign(`/app/report/${scanId}`), 800);
   }
 
   function labelForCategory(c: Category): string {
     switch (c) {
-      case 'certificates':
-        return 'Certificates & keys';
-      case 'connected-apps':
-        return 'Connected Apps';
-      case 'named-credentials':
-        return 'Named & External Credentials';
-      case 'remote-sites':
-        return 'Remote Sites & External Data';
-      case 'sso':
-        return 'Single Sign-On';
-      case 'shield-encryption':
-        return 'Shield Platform Encryption';
-      case 'apex-crypto':
-        return 'Apex cryptographic calls';
-      case 'session-login':
-        return 'Session & login settings';
-      case 'packages':
-        return 'Managed packages';
+      case 'certificates': return 'Certificates & keys';
+      case 'connected-apps': return 'Connected Apps';
+      case 'named-credentials': return 'Named & External Credentials';
+      case 'remote-sites': return 'Remote Sites & External Data';
+      case 'sso': return 'Single Sign-On';
+      case 'shield-encryption': return 'Shield Platform Encryption';
+      case 'apex-crypto': return 'Apex cryptographic calls';
+      case 'session-login': return 'Session & login settings';
+      case 'packages': return 'Managed packages';
     }
   }
 
-  function stateIcon(state: CatRow['state']): string {
-    switch (state) {
-      case 'pending':
-        return '○';
-      case 'running':
-        return '●';
-      case 'completed':
-        return '✓';
-      case 'failed':
-        return '✗';
-      case 'skipped':
-        return '—';
-    }
-  }
+  const completedCount = $derived(categories.filter((c) => c.state === 'completed').length);
+  const overallPct = $derived(categories.length === 0 ? 0 : Math.round((completedCount / categories.length) * 100));
 </script>
 
-<div class="min-h-screen bg-surface">
-  <header class="border-b border-gray-200 bg-white">
-    <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-      <a href="/app" class="font-bold text-ink">QuantumShield</a>
-      <span class="text-xs uppercase tracking-wider text-ink-soft">Scan {scanId}</span>
-    </div>
-  </header>
+{#if session}
+  <div class="app-frame">
+    <AppChrome session={session} active="scan" crumb={`Scan ${scanId.slice(0, 14)}…`} />
 
-  <main class="mx-auto max-w-5xl px-6 py-10">
-    {#if status === 'cors'}
-      <section class="rounded-xl border border-severity-high bg-white p-6 shadow-sm" data-testid="cors-panel">
-        <p class="text-xs font-semibold uppercase tracking-widest text-severity-high">One-time setup required</p>
-        <h2 class="mt-1 text-2xl font-bold">Your Salesforce org needs to whitelist our domain</h2>
-        <p class="mt-3 text-sm text-ink-soft">
-          The browser could not reach your org's API. This happens when QuantumShield's domain has not yet been added to your Salesforce CORS allowlist.
-        </p>
-        <p class="mt-2 text-sm text-ink-soft">
-          Open <span class="font-mono text-ink">Setup → CORS</span> in your org and add this origin:
-        </p>
-        <code class="mt-3 inline-block rounded bg-surface-muted px-3 py-1.5 font-mono text-sm">{window.location.origin}</code>
-        <div class="mt-4 flex gap-3">
-          <button type="button" class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white" onclick={() => window.location.reload()}>
-            Test again
-          </button>
-          <a href="/install" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold">Full setup guide</a>
+    <main style="padding:24px 28px 48px;min-width:0;">
+      {#if status === 'cors'}
+        <div class="cors-panel" data-testid="cors-panel">
+          <div class="head">
+            <div class="ico">!</div>
+            <div>
+              <h4>One-time setup required</h4>
+              <p class="sub">Your Salesforce org has not yet whitelisted QuantumShield's origin.</p>
+            </div>
+          </div>
+          <p style="margin:12px 0 0;font-size:12.5px;color:var(--ink-2);">
+            Open <span class="mono" style="color:var(--ink)">Setup → CORS Allowlist</span> and add:
+          </p>
+          <div class="mono-field" style="margin-top:10px;">
+            <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>
+            <button type="button" onclick={() => navigator.clipboard.writeText(window.location.origin)}>Copy</button>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button type="button" class="qs-btn qs-btn-primary" onclick={() => window.location.reload()}>Test again</button>
+            <a href="/install#cors" class="qs-btn">Full guide</a>
+          </div>
         </div>
-      </section>
-    {:else if status === 'auth'}
-      <section class="rounded-xl border border-severity-critical bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-bold">Session expired</h2>
-        <p class="mt-2 text-sm text-ink-soft">{errorMessage ?? 'Your Salesforce session is no longer valid.'}</p>
-        <a href="/connect" class="mt-4 inline-flex rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white">
-          Reconnect
-        </a>
-      </section>
-    {:else if status === 'failed'}
-      <section class="rounded-xl border border-severity-critical bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-bold">Scan failed</h2>
-        <p class="mt-2 text-sm text-ink-soft">{errorMessage ?? 'Unknown error.'}</p>
-        <a href="/app" class="mt-4 inline-flex rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white">
-          Back to app
-        </a>
-      </section>
-    {:else}
-      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div class="flex items-start justify-between">
+      {:else if status === 'auth'}
+        <div class="qs-card">
+          <div class="qs-card-body">
+            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Session expired</h2>
+            <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">{errorMessage ?? 'Your Salesforce session is no longer valid.'}</p>
+            <a href="/connect" class="qs-btn qs-btn-primary" style="margin-top:14px;">Reconnect</a>
+          </div>
+        </div>
+      {:else if status === 'failed'}
+        <div class="qs-card">
+          <div class="qs-card-body">
+            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Scan failed</h2>
+            <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">{errorMessage ?? 'Unknown error.'}</p>
+            <a href="/app" class="qs-btn qs-btn-primary" style="margin-top:14px;">Back to app</a>
+          </div>
+        </div>
+      {:else}
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-widest text-accent">
-              {#if status === 'complete'}Complete{:else}Scanning{/if}
-            </p>
-            <h1 class="mt-1 text-2xl font-bold">
-              {session?.org.orgName ?? 'Scanning org'}
+            <div class="tiny-caps" style="color:var(--navy-600);">{status === 'complete' ? 'Complete' : 'Running scan'}</div>
+            <h1 class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;">
+              {session.org.orgName ?? 'Scanning org'}
             </h1>
-            <p class="mt-1 text-xs text-ink-soft">Started {startedAt.slice(11, 19)}</p>
+            <p style="margin:4px 0 0;color:var(--muted);font-size:12px;font-family:var(--mono);">
+              started {startedAt.slice(11, 19)} · {overallPct}% complete
+            </p>
           </div>
-          <div class="text-right">
-            <p class="text-2xl font-bold" data-testid="scan-asset-count">{assetCount}</p>
-            <p class="text-xs text-ink-soft">assets discovered</p>
-            <p class="mt-2 text-2xl font-bold" data-testid="scan-finding-count">{findings.length}</p>
-            <p class="text-xs text-ink-soft">findings so far</p>
+          <div style="display:flex;gap:14px;align-items:baseline;">
+            <div>
+              <div class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;" data-testid="scan-asset-count">{assetCount}</div>
+              <div class="tiny-caps" style="margin-top:4px;">Assets</div>
+            </div>
+            <div>
+              <div class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;color:var(--navy-600);" data-testid="scan-finding-count">{findings.length}</div>
+              <div class="tiny-caps" style="margin-top:4px;">Findings</div>
+            </div>
           </div>
         </div>
 
-        <ul class="mt-6 divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200">
-          {#each categories as row (row.category)}
-            <li class="flex items-center justify-between px-5 py-3 text-sm" data-testid={`scanner-row-${row.category}`}>
-              <div class="flex items-center gap-3">
-                <span
-                  class="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-                  class:bg-accent={row.state === 'running'}
-                  class:text-white={row.state === 'running' || row.state === 'completed'}
-                  class:bg-severity-low={row.state === 'completed'}
-                  class:bg-severity-critical={row.state === 'failed'}
-                  class:bg-gray-200={row.state === 'pending' || row.state === 'skipped'}
-                  class:text-ink-soft={row.state === 'pending' || row.state === 'skipped'}
-                >{stateIcon(row.state)}</span>
-                <span class="font-semibold">{row.label}</span>
+        <section style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:22px;">
+          <div style="display:grid;gap:8px;">
+            {#each categories as row (row.category)}
+              {@const pct = row.state === 'completed' || row.state === 'skipped' ? 100 : row.state === 'running' ? 45 : row.state === 'failed' ? 100 : 0}
+              <div
+                class="scan-row"
+                class:running={row.state === 'running'}
+                class:done={row.state === 'completed'}
+                class:failed={row.state === 'failed'}
+                data-testid={`scanner-row-${row.category}`}
+              >
+                <div class="cat">{row.label}</div>
+                <div class="bar"><i style="width:{pct}%;"></i></div>
+                <div class="pct">{row.assetCount} assets</div>
+                <div class="state">
+                  {#if row.state === 'running'}<span class="pulse-dot" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>{/if}
+                  {row.state}
+                </div>
               </div>
-              <div class="text-xs text-ink-soft">
-                {#if row.state === 'failed'}
-                  <span class="text-severity-critical">{row.error}</span>
-                {:else}
-                  {row.assetCount} assets · {row.findingsCount} findings
-                {/if}
-              </div>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
-  </main>
-</div>
+            {/each}
+          </div>
+
+          <div class="qs-card" style="overflow:hidden;">
+            <div class="qs-card-head">
+              <h3>Log</h3>
+              <span class="tiny-caps" style="margin-left:auto;">{log.length} events</span>
+            </div>
+            <div class="stream">
+              {#each log as entry, i (i)}
+                <div>
+                  <span class="t">{entry.t}</span>
+                  <span class={entry.kind}>{entry.msg}</span>
+                </div>
+              {/each}
+              {#if status === 'running'}
+                <div><span class="t">·</span><span class="blink">…</span></div>
+              {/if}
+            </div>
+          </div>
+        </section>
+      {/if}
+    </main>
+  </div>
+{/if}

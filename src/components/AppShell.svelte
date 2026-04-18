@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { clearSession, loadSession, type Session } from '@lib/auth';
+  import { loadSession, type Session } from '@lib/auth';
   import { getScansForOrg, clearAll, type ScanSummary } from '@lib/persistence/db';
+  import AppChrome from './AppChrome.svelte';
 
   let session = $state<Session | null>(null);
   let scans = $state<ScanSummary[]>([]);
@@ -18,11 +19,6 @@
     scans = await getScansForOrg(s.org.orgId);
   });
 
-  function signOut() {
-    clearSession();
-    window.location.replace('/');
-  }
-
   async function wipeData() {
     if (!confirm('Delete all local scan history from this browser?')) return;
     await clearAll();
@@ -38,97 +34,128 @@
     const target = s.status === 'completed' ? `/app/report/${s.scanId}` : `/app/scan/${s.scanId}`;
     window.location.assign(target);
   }
+
+  function fmtDate(s: string): string {
+    return s.slice(0, 10);
+  }
+  function fmtTime(s: string): string {
+    return s.slice(11, 19);
+  }
 </script>
 
 {#if ready && session}
-  <div class="min-h-screen bg-surface">
-    <header class="border-b border-gray-200 bg-white">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-        <div class="flex items-center gap-6">
-          <a href="/" class="font-bold text-ink">QuantumShield</a>
-          <span class="text-xs uppercase tracking-wider text-ink-soft">Connected</span>
+  <div class="app-frame">
+    <AppChrome session={session} active="overview" scanCount={scans.length} findingsCount={scans.reduce((acc, s) => acc + (s.totalFindings ?? 0), 0)} />
+
+    <main style="padding:24px 28px 48px;min-width:0;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div class="tiny-caps" style="color:var(--navy-600);">Overview</div>
+          <h1 class="serif" style="font-size:30px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;" data-testid="session-org-name">
+            {session.org.orgName ?? session.org.orgId}
+          </h1>
+          <p style="margin:6px 0 0;color:var(--ink-3);font-size:13px;">
+            Instance <span class="mono" style="color:var(--ink-2);">{session.instanceUrl.replace(/^https?:\/\//, '')}</span>
+            · API <span class="mono">v{session.apiVersion}</span>
+          </p>
         </div>
-        <div class="flex items-center gap-4 text-sm">
-          <div class="text-right">
-            <p class="font-semibold" data-testid="session-org-name">{session.org.orgName ?? session.org.orgId}</p>
-            <p class="text-xs text-ink-soft">{session.org.username ?? session.org.userId}</p>
-          </div>
-          <button
-            type="button"
-            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50"
-            onclick={signOut}
-            data-testid="sign-out-button"
-          >Sign out</button>
-        </div>
+        <button
+          type="button"
+          class="qs-btn qs-btn-primary qs-btn-lg"
+          onclick={startScan}
+          data-testid="start-scan-button"
+        >
+          Start scan
+        </button>
       </div>
-    </header>
 
-    <main class="mx-auto max-w-5xl px-6 py-10">
-      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-widest text-accent">New scan</p>
-            <h1 class="mt-1 text-2xl font-bold">Scan this org for post-quantum risks</h1>
-            <p class="mt-2 max-w-2xl text-sm text-ink-soft">
-              Read-only metadata and configuration scan of {session.org.orgName ?? 'this org'}. Typical run time for a mid-size org: under 2 minutes.
-            </p>
-            {#if session.mock}
-              <p class="mt-2 text-xs text-ink-soft">Connected in dev-mock mode — no real Salesforce traffic.</p>
-            {/if}
+      <section style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:28px;">
+        <div class="qs-card">
+          <div class="qs-card-head">
+            <h3>Scan history</h3>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              {#if scans.length > 0}
+                <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={wipeData}>Clear local data</button>
+              {/if}
+            </div>
           </div>
-          <button
-            type="button"
-            class="rounded-md bg-accent px-5 py-2.5 font-semibold text-white hover:opacity-90"
-            onclick={startScan}
-            data-testid="start-scan-button"
-          >Start scan</button>
-        </div>
-      </section>
-
-      <section class="mt-8">
-        <div class="mb-3 flex items-baseline justify-between">
-          <h2 class="text-lg font-bold">Scan history</h2>
-          {#if scans.length > 0}
-            <button type="button" class="text-xs text-ink-soft hover:underline" onclick={wipeData}>
-              Clear local data
-            </button>
+          {#if scans.length === 0}
+            <div style="padding:32px;text-align:center;color:var(--muted);font-size:12.5px;">
+              No scans yet. Start your first scan to see findings here.
+            </div>
+          {:else}
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Scan ID</th>
+                  <th style="width:120px;">Findings</th>
+                  <th style="width:120px;">Status</th>
+                  <th style="width:80px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each scans as s (s.scanId)}
+                  <tr onclick={() => openScan(s)} style="cursor:pointer;">
+                    <td>
+                      <div style="font-weight:600;">{fmtDate(s.startedAt)}</div>
+                      <div class="mono" style="font-size:11px;color:var(--muted);">{fmtTime(s.startedAt)}</div>
+                    </td>
+                    <td class="mono" style="font-size:11.5px;color:var(--ink-3);">{s.scanId}</td>
+                    <td class="mono">{s.totalFindings ?? '—'}</td>
+                    <td>
+                      {#if s.status === 'completed'}
+                        <span class="pill ok">Complete</span>
+                      {:else if s.status === 'failed'}
+                        <span class="pill crit">Failed</span>
+                      {:else}
+                        <span class="pill adv">Running</span>
+                      {/if}
+                    </td>
+                    <td class="mono" style="color:var(--navy-600);font-size:11.5px;">Open →</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
           {/if}
         </div>
-        {#if scans.length === 0}
-          <p class="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-ink-soft">
-            No scans yet. Start your first scan above.
-          </p>
-        {:else}
-          <ul class="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white">
-            {#each scans as s (s.scanId)}
-              <li>
-                <button
-                  type="button"
-                  class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-surface-muted"
-                  onclick={() => openScan(s)}
-                >
-                  <div>
-                    <p class="font-semibold">{s.startedAt.slice(0, 19).replace('T', ' ')}</p>
-                    <p class="text-xs text-ink-soft">{s.scanId}</p>
-                  </div>
-                  <div class="text-right text-xs">
-                    {#if s.status === 'completed'}
-                      <p class="font-semibold text-ink">{s.totalFindings ?? 0} findings</p>
-                      <p class="text-ink-soft">Completed</p>
-                    {:else if s.status === 'failed'}
-                      <p class="font-semibold text-severity-critical">Failed</p>
-                      {#if s.error}
-                        <p class="text-ink-soft">{s.error}</p>
-                      {/if}
-                    {:else}
-                      <p class="font-semibold text-accent">Running…</p>
-                    {/if}
-                  </div>
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
+
+        <div class="vstack">
+          <div class="qs-card">
+            <div class="qs-card-head"><h3>This org</h3></div>
+            <div class="qs-card-body">
+              <dl style="display:grid;grid-template-columns:1fr;gap:10px;font-size:12.5px;margin:0;">
+                <div>
+                  <dt class="tiny-caps">Environment</dt>
+                  <dd class="mono" style="margin:4px 0 0;">{session.environmentId}</dd>
+                </div>
+                <div>
+                  <dt class="tiny-caps">User</dt>
+                  <dd class="mono" style="margin:4px 0 0;font-size:11.5px;">{session.org.username ?? session.org.userId}</dd>
+                </div>
+                <div>
+                  <dt class="tiny-caps">Session expires</dt>
+                  <dd class="mono" style="margin:4px 0 0;">on tab close</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <div class="qs-card">
+            <div class="qs-card-head"><h3>Frameworks</h3></div>
+            <div class="qs-card-body">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span class="tag">BSI TR-02102</span>
+                <span class="tag">NCSC-NL</span>
+                <span class="tag">ENISA PQC</span>
+                <span class="tag">GDPR Art. 32</span>
+                <span class="tag">NIS 2</span>
+                <span class="tag">DORA</span>
+                <span class="tag">NIST FIPS 203/204/205</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>

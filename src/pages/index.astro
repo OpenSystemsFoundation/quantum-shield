@@ -1,51 +1,161 @@
 ---
 import Shell from '../layouts/Shell.astro';
+import BlochShield from '../components/BlochShield.svelte';
 ---
 
 <Shell title="QuantumShield — post-quantum readiness for Salesforce">
-  <main class="mx-auto max-w-4xl px-6 pt-24 pb-32">
-    <p class="text-sm font-semibold uppercase tracking-widest text-accent">QuantumShield</p>
-    <h1 class="mt-4 text-5xl font-bold leading-tight">
-      Know which of your Salesforce cryptography breaks in 2030.
-    </h1>
-    <p class="mt-6 max-w-2xl text-lg text-ink-soft">
-      Browser-only scanner. Nothing leaves your tab. Maps every certificate, Connected App, SSO config
-      and Apex call site against BSI, NCSC-NL, ENISA and NIST PQC standards — and tells you what to
-      replace, by when.
-    </p>
-
-    <div class="mt-10 flex flex-wrap gap-4">
-      <a
-        href="/connect"
-        class="inline-flex items-center rounded-md bg-ink px-6 py-3 font-semibold text-white transition hover:bg-ink-soft"
-      >
-        Connect your Salesforce org
+  <div class="landing">
+    <div class="landing-nav">
+      <a href="/" class="brand">
+        <BlochShield size={30} />
+        <span>QuantumShield</span>
       </a>
-      <a
-        href="/dev/pdf-preview"
-        class="inline-flex items-center rounded-md border border-ink px-6 py-3 font-semibold text-ink transition hover:bg-ink hover:text-white"
-      >
-        See a sample report
-      </a>
+      <nav>
+        <a href="/install">Methodology</a>
+        <a href="/install">Frameworks</a>
+        <a href="/security">Security</a>
+        <a href="/install">Install</a>
+      </nav>
+      <div class="right">
+        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/andelas/quantum-shield">View source</a>
+        <a class="qs-btn qs-btn-primary" href="/connect">Connect org</a>
+      </div>
     </div>
 
-    <ul class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
-        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Zero data transit</p>
-        <p class="mt-2 text-sm text-ink-soft">All API traffic is browser ↔ your org. We never see your data.</p>
-      </li>
-      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
-        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Read-only</p>
-        <p class="mt-2 text-sm text-ink-soft">Metadata and configuration only. We never modify your org.</p>
-      </li>
-      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
-        <p class="text-xs font-semibold uppercase tracking-wider text-accent">EU-first sources</p>
-        <p class="mt-2 text-sm text-ink-soft">BSI, NCSC-NL, ENISA, ANSSI — not just NIST.</p>
-      </li>
-      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
-        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Open source</p>
-        <p class="mt-2 text-sm text-ink-soft">Every rule, every severity calc — inspectable.</p>
-      </li>
-    </ul>
-  </main>
+    <div class="hero">
+      <div>
+        <div class="hero-badge">
+          <span class="swatch">Q</span>
+          <span>v0.1 · rules-engine 2026-Q2 · EU-first sources</span>
+        </div>
+        <h1>
+          Post-quantum readiness for your <em>Salesforce</em> org. In a browser tab.
+        </h1>
+        <p class="lede">
+          Sign in with your own credentials. QuantumShield scans your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards — and produces an auditor-ready report. Every byte stays in your browser.
+        </p>
+        <div class="cta-row">
+          <a class="qs-btn qs-btn-primary qs-btn-lg" href="/connect">
+            Connect your Salesforce org
+          </a>
+          <a class="qs-btn qs-btn-lg" href="/dev/pdf-preview">See a sample report</a>
+        </div>
+        <div class="fineprint">
+          No account · No install · Read-only OAuth · Source on GitHub
+        </div>
+
+        <div class="trust-strip">
+          <div>
+            <div class="label">Data transit</div>
+            <div class="value">Browser → your org</div>
+          </div>
+          <div>
+            <div class="label">Our storage</div>
+            <div class="value">Zero</div>
+          </div>
+          <div>
+            <div class="label">Scopes</div>
+            <div class="value">api · id</div>
+          </div>
+          <div>
+            <div class="label">Write access</div>
+            <div class="value">None, ever</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-preview">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="t">report · QS-0424 · nl-acme.my.salesforce.com</span>
+        </div>
+        <div style="padding: 20px 22px">
+          <div class="tiny-caps" style="color: var(--navy-600)">Executive summary</div>
+          <div class="serif" style="font-size:22px;font-weight:500;letter-spacing:-0.01em;margin-top:4px;margin-bottom:12px;">
+            47 findings across 9 categories
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
+              <div class="serif" style="font-size:20px;font-weight:500;color:var(--crit);line-height:1;">4</div>
+              <div class="tiny-caps" style="margin-top:4px">Critical</div>
+            </div>
+            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
+              <div class="serif" style="font-size:20px;font-weight:500;color:var(--high);line-height:1;">9</div>
+              <div class="tiny-caps" style="margin-top:4px">High</div>
+            </div>
+            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
+              <div class="serif" style="font-size:20px;font-weight:500;color:var(--warn);line-height:1;">18</div>
+              <div class="tiny-caps" style="margin-top:4px">Medium</div>
+            </div>
+            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
+              <div class="serif" style="font-size:20px;font-weight:500;color:var(--adv);line-height:1;">16</div>
+              <div class="tiny-caps" style="margin-top:4px">Advisory</div>
+            </div>
+          </div>
+          <div style="border-top:1px dashed var(--line);padding-top:12px;">
+            <div class="tiny-caps">Earliest deadline</div>
+            <div class="mono" style="font-size:12px;margin-top:4px;">
+              2023-12-31 · SHA-1 disallowed · 3 findings already past due
+            </div>
+          </div>
+          <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11.5px;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
+              <span style="color:var(--muted)">Certificates</span><span class="mono">14</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
+              <span style="color:var(--muted)">Connected Apps</span><span class="mono">22</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
+              <span style="color:var(--muted)">Named Credentials</span><span class="mono">31</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
+              <span style="color:var(--muted)">Apex classes</span><span class="mono">612</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1200px;margin:0 auto;padding:0 32px 72px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
+          <div class="mono tiny-caps" style="color:var(--navy-600)">01</div>
+          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Direct-to-source rules</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
+            Every finding cites a primary document — BSI TR-02102, ENISA PQC, NCSC-NL factsheet, NIST FIPS 203/204/205 — not a third-party maturity framework. Quarterly revision tracked in the rules engine.
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
+          <div class="mono tiny-caps" style="color:var(--navy-600)">02</div>
+          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Zero-infrastructure architecture</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
+            OAuth 2.0 with PKCE. Your browser talks to your org. The access token lives in sessionStorage and dies on tab close. No backend to breach.
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
+          <div class="mono tiny-caps" style="color:var(--navy-600)">03</div>
+          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Read-only, always</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
+            QuantumShield never modifies configuration. We request api and id scopes. Write scopes are not just unused — they're not even requested.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="border-top:1px solid var(--line);background:var(--surface);">
+      <div style="max-width:1200px;margin:0 auto;padding:24px 32px;display:flex;align-items:center;gap:20px;font-size:12px;color:var(--muted);">
+        <div class="hstack">
+          <BlochShield size={20} />
+          <span style="font-weight:600;color:var(--ink-2)">QuantumShield</span>
+        </div>
+        <span>·  Andelas B.V.</span>
+        <span>·  Amsterdam, NL</span>
+        <span class="mono">·  EU-first</span>
+        <div style="flex:1"></div>
+        <a href="/security">Security</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </footer>
+  </div>
 </Shell>

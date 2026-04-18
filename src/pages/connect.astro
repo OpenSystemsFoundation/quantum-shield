@@ -1,14 +1,18 @@
 ---
 import Shell from '../layouts/Shell.astro';
 import ConnectWizardIsland from '../components/ConnectWizard.svelte';
+import BlochShield from '../components/BlochShield.svelte';
 ---
 
 <Shell title="Connect your Salesforce org — QuantumShield">
-  <div class="border-b border-gray-200 bg-white">
-    <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3 text-sm">
-      <a href="/" class="font-bold text-ink">QuantumShield</a>
-      <a href="/install" class="text-ink-soft hover:text-ink">Setup guide</a>
-    </nav>
+  <div style="border-bottom:1px solid var(--line);background:var(--surface);">
+    <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <a href="/" class="brand hstack" style="font-weight:600;color:var(--ink);">
+        <BlochShield size={24} />
+        <span>QuantumShield</span>
+      </a>
+      <a href="/install" style="font-size:12.5px;color:var(--muted);">Setup guide</a>
+    </div>
   </div>
   <ConnectWizardIsland client:load />
 </Shell>

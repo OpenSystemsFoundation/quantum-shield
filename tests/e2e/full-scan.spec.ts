@@ -22,11 +22,11 @@ test.describe('Full mock scan flow', () => {
     await page.waitForURL(/\/app\/report\/.+/, { timeout: 30_000 });
 
     await expect(page.getByTestId('findings-list')).toBeVisible();
-    const count = await page.getByTestId('findings-list').locator('> li').count();
+    const count = await page.getByTestId('findings-list').locator('tbody tr').count();
     expect(count).toBeGreaterThan(5);
 
     const filteredText = await page.getByTestId('filtered-count').textContent();
-    expect(filteredText).toMatch(/\d+ of \d+ findings/);
+    expect(filteredText).toMatch(/of \d+ total/);
 
     // PDF download from the report view still works
     const downloadPromise = page.waitForEvent('download');

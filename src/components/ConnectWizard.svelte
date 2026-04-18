@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import {
     DEFAULT_API_VERSION,
-    ENVIRONMENTS,
     isDevMock,
     launchAuth,
     loadAuthConfig,
@@ -46,7 +45,7 @@
         const cached = loadClientId(url);
         if (cached && !clientId) clientId = cached;
       } catch {
-        /* ignore until custom domain is valid */
+        /* ignore */
       }
     }
   });
@@ -113,231 +112,250 @@
   }
 </script>
 
-<div class="mx-auto max-w-3xl px-6 py-16">
-  <div class="mb-8 flex items-center justify-between">
+<div class="narrow">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
     <div>
-      <p class="text-xs font-semibold uppercase tracking-widest text-accent">Connect your org</p>
-      <h1 class="mt-1 text-3xl font-bold">Set up QuantumShield for your Salesforce org</h1>
+      <div class="tiny-caps" style="color:var(--navy-600);margin-bottom:4px;">Connect your org</div>
+      <h2>Set up QuantumShield</h2>
     </div>
-    <ol class="flex gap-3 text-xs font-semibold uppercase tracking-wider text-ink-soft">
+    <ol style="display:flex;gap:6px;list-style:none;padding:0;margin:0;">
       {#each [1, 2, 3, 4] as n}
         <li
-          class="flex h-7 w-7 items-center justify-center rounded-full border"
-          class:border-accent={step >= n}
-          class:bg-accent={step >= n}
-          class:text-white={step >= n}
-          class:border-gray-300={step < n}
+          style="
+            display:flex;align-items:center;justify-content:center;
+            width:26px;height:26px;border-radius:50%;
+            font-size:11px;font-weight:600;font-family:var(--mono);
+            border:1px solid {step >= n ? 'var(--navy-600)' : 'var(--line)'};
+            background:{step >= n ? 'var(--navy-600)' : 'var(--surface)'};
+            color:{step >= n ? 'white' : 'var(--muted)'};"
         >{n}</li>
       {/each}
     </ol>
   </div>
 
   {#if step === 1}
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-bold">Step 1 · Pick your environment</h2>
-      <p class="mt-1 text-sm text-ink-soft">Choose which Salesforce endpoint hosts your org.</p>
-
-      <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <button
-          type="button"
-          class="rounded-lg border p-4 text-left transition"
-          class:border-accent={envId === 'production'}
-          class:bg-accent-soft={envId === 'production'}
-          class:border-gray-300={envId !== 'production'}
-          onclick={() => chooseEnv('production')}
-        >
-          <p class="font-semibold">Production</p>
-          <p class="text-xs text-ink-soft">login.salesforce.com</p>
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border p-4 text-left transition"
-          class:border-accent={envId === 'sandbox'}
-          class:bg-accent-soft={envId === 'sandbox'}
-          class:border-gray-300={envId !== 'sandbox'}
-          onclick={() => chooseEnv('sandbox')}
-        >
-          <p class="font-semibold">Sandbox</p>
-          <p class="text-xs text-ink-soft">test.salesforce.com</p>
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border p-4 text-left transition"
-          class:border-accent={envId === 'custom'}
-          class:bg-accent-soft={envId === 'custom'}
-          class:border-gray-300={envId !== 'custom'}
-          onclick={() => chooseEnv('custom')}
-        >
-          <p class="font-semibold">My Domain</p>
-          <p class="text-xs text-ink-soft">your-org.my.salesforce.com</p>
-        </button>
-      </div>
-
-      {#if envId === 'custom'}
-        <label class="mt-4 block">
-          <span class="text-xs font-semibold uppercase tracking-wider text-ink-soft">My Domain URL</span>
-          <input
-            type="text"
-            placeholder="acme.my.salesforce.com"
-            class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-            bind:value={customDomain}
-          />
-        </label>
-      {/if}
-
-      <label class="mt-4 block">
-        <span class="text-xs font-semibold uppercase tracking-wider text-ink-soft">API version</span>
-        <input
-          type="text"
-          class="mt-1 w-32 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-          bind:value={apiVersion}
-        />
-      </label>
-
-      {#if errorMessage}
-        <p class="mt-4 rounded-md bg-severity-critical/10 px-3 py-2 text-sm text-severity-critical">{errorMessage}</p>
-      {/if}
-
-      <div class="mt-6 flex items-center justify-between">
-        {#if mockEnabled}
+    <div class="qs-card">
+      <div class="qs-card-head"><h3>Step 1 · Pick your environment</h3></div>
+      <div class="qs-card-body">
+        <p class="sub" style="margin-top:0;">Choose which Salesforce endpoint hosts your org.</p>
+        <div class="env-picker">
           <button
             type="button"
-            class="text-xs text-ink-soft underline"
-            onclick={devMockConnect}
-            data-testid="dev-mock-connect"
-          >Dev mock: skip OAuth</button>
-        {:else}
-          <span></span>
+            class="env-opt"
+            class:selected={envId === 'production'}
+            onclick={() => chooseEnv('production')}
+          >
+            <span class="radio"></span>
+            <span>
+              <div class="title">Production / Developer Edition</div>
+              <div class="desc">login.salesforce.com</div>
+            </span>
+            <span class="tag">https</span>
+          </button>
+          <button
+            type="button"
+            class="env-opt"
+            class:selected={envId === 'sandbox'}
+            onclick={() => chooseEnv('sandbox')}
+          >
+            <span class="radio"></span>
+            <span>
+              <div class="title">Sandbox</div>
+              <div class="desc">test.salesforce.com</div>
+            </span>
+            <span class="tag">sandbox</span>
+          </button>
+          <button
+            type="button"
+            class="env-opt"
+            class:selected={envId === 'custom'}
+            onclick={() => chooseEnv('custom')}
+          >
+            <span class="radio"></span>
+            <span>
+              <div class="title">My Domain</div>
+              <div class="desc">your-org.my.salesforce.com</div>
+            </span>
+            <span class="tag">custom</span>
+          </button>
+        </div>
+
+        {#if envId === 'custom'}
+          <label style="display:block;margin-top:16px;">
+            <span class="tiny-caps">My Domain URL</span>
+            <input
+              type="text"
+              placeholder="acme.my.salesforce.com"
+              class="mono"
+              style="margin-top:4px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12.5px;"
+              bind:value={customDomain}
+            />
+          </label>
         {/if}
-        <button
-          type="button"
-          class="rounded-md bg-ink px-5 py-2 font-semibold text-white hover:bg-ink-soft"
-          onclick={() => advanceToStep(2)}
-        >Continue</button>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-top:18px;">
+          <label>
+            <span class="tiny-caps">API version</span>
+            <input
+              type="text"
+              class="mono"
+              style="margin-top:4px;width:90px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12.5px;"
+              bind:value={apiVersion}
+            />
+          </label>
+        </div>
+
+        {#if errorMessage}
+          <p style="margin-top:14px;padding:8px 10px;border-radius:6px;background:var(--crit-bg);color:var(--crit);font-size:12.5px;">
+            {errorMessage}
+          </p>
+        {/if}
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
+          {#if mockEnabled}
+            <button
+              type="button"
+              class="qs-btn qs-btn-ghost qs-btn-sm"
+              onclick={devMockConnect}
+              data-testid="dev-mock-connect"
+            >Dev mock · skip OAuth</button>
+          {:else}
+            <span></span>
+          {/if}
+          <button type="button" class="qs-btn qs-btn-primary" onclick={() => advanceToStep(2)}>
+            Continue
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   {/if}
 
   {#if step === 2}
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-bold">Step 2 · Create an External Client App in your org</h2>
-      <p class="mt-1 text-sm text-ink-soft">
-        QuantumShield never lives in our Salesforce org — you create the OAuth app inside yours, keep ownership of the client ID, and can revoke access at any time.
-      </p>
+    <div class="qs-card">
+      <div class="qs-card-head"><h3>Step 2 · Create an External Client App in your org</h3></div>
+      <div class="qs-card-body">
+        <p class="sub" style="margin-top:0;">
+          QuantumShield never lives in our Salesforce org — you create the OAuth app inside yours, keep ownership of the client ID, and can revoke access at any time.
+        </p>
 
-      <ol class="mt-6 space-y-4 text-sm text-ink-soft">
-        <li>
-          <span class="font-semibold text-ink">1.</span> In your Salesforce org, open
-          <span class="font-mono text-ink">Setup → App Manager</span> and click
-          <span class="font-mono text-ink">New External Client App</span>
-          <span class="text-xs">(or <span class="font-mono text-ink">New Connected App</span> on older orgs).</span>
-        </li>
-        <li>
-          <span class="font-semibold text-ink">2.</span> Give the app a name —
-          <span class="font-mono text-ink">QuantumShield Scanner</span> is fine — and enter your own contact email.
-        </li>
-        <li>
-          <span class="font-semibold text-ink">3.</span> Under
-          <span class="font-mono text-ink">API (Enable OAuth Settings)</span>, turn on
-          <span class="font-mono text-ink">Enable OAuth</span> and
-          <span class="font-mono text-ink">Enable for Device Flow</span> = off. Turn on
-          <span class="font-mono text-ink">Require Proof Key for Code Exchange (PKCE)</span>.
-        </li>
-        <li>
-          <span class="font-semibold text-ink">4.</span> Select scopes
-          <span class="font-mono text-ink">api, refresh_token, id</span>. Do not select
-          <span class="font-mono text-ink">full</span> or
-          <span class="font-mono text-ink">web</span>.
-        </li>
-        <li>
-          <span class="font-semibold text-ink">5.</span> Save the app and open it again. Note the
-          <span class="font-mono text-ink">Consumer Key</span> — you'll paste it in step 4.
-        </li>
-      </ol>
+        <ol class="cors-steps" style="list-style:none;padding:0;">
+          <li class="cors-step">
+            <div class="num">1</div>
+            <div class="body">
+              Open <span class="mono" style="color:var(--ink)">Setup → App Manager</span> and click
+              <span class="mono" style="color:var(--ink)">New External Client App</span>.
+              On older orgs, use <span class="mono" style="color:var(--ink)">New Connected App</span>.
+            </div>
+          </li>
+          <li class="cors-step">
+            <div class="num">2</div>
+            <div class="body">
+              Name the app <span class="mono" style="color:var(--ink)">QuantumShield Scanner</span>. Enter your own contact email.
+            </div>
+          </li>
+          <li class="cors-step">
+            <div class="num">3</div>
+            <div class="body">
+              Under <span class="mono" style="color:var(--ink)">API (Enable OAuth Settings)</span>: enable OAuth; enable <span class="mono" style="color:var(--ink)">Require PKCE</span>; leave Device Flow and Client Credentials off.
+            </div>
+          </li>
+          <li class="cors-step">
+            <div class="num">4</div>
+            <div class="body">
+              Scopes: <span class="mono" style="color:var(--ink)">api</span>, <span class="mono" style="color:var(--ink)">refresh_token</span>, <span class="mono" style="color:var(--ink)">id</span>. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
+            </div>
+          </li>
+          <li class="cors-step">
+            <div class="num">5</div>
+            <div class="body">
+              Save. Reopen the app and note the <span class="mono" style="color:var(--ink)">Consumer Key</span> — you'll paste it in step 4.
+            </div>
+          </li>
+        </ol>
 
-      <div class="mt-6 flex items-center justify-between">
-        <button type="button" class="text-sm text-ink-soft underline" onclick={() => (step = 1)}>← back</button>
-        <button
-          type="button"
-          class="rounded-md bg-ink px-5 py-2 font-semibold text-white hover:bg-ink-soft"
-          onclick={() => (step = 3)}
-        >App created, next →</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
+          <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={() => (step = 1)}>← back</button>
+          <button type="button" class="qs-btn qs-btn-primary" onclick={() => (step = 3)}>App created, next →</button>
+        </div>
       </div>
-    </section>
+    </div>
   {/if}
 
   {#if step === 3}
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-bold">Step 3 · Whitelist our callback URL</h2>
-      <p class="mt-1 text-sm text-ink-soft">
-        Paste the URL below into your External Client App's
-        <span class="font-mono text-ink">Callback URL</span> field (multiple URLs are fine — just add this one to the list).
-      </p>
+    <div class="qs-card">
+      <div class="qs-card-head"><h3>Step 3 · Whitelist our callback URL</h3></div>
+      <div class="qs-card-body">
+        <p class="sub" style="margin-top:0;">
+          Paste the URL below into your External Client App's
+          <span class="mono" style="color:var(--ink)">Callback URL</span> field. Multiple URLs are fine — just add this one to the list.
+        </p>
 
-      <div class="mt-6 rounded-lg border border-gray-300 bg-surface-muted p-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-ink-soft">Callback URL</span>
-          <button
-            type="button"
-            class="text-xs font-semibold text-accent hover:underline"
-            onclick={() => copyToClipboard(redirectUri)}
-          >Copy</button>
+        <div class="cors-step" style="grid-template-columns: 1fr;">
+          <div class="body">
+            <div class="tiny-caps">Callback URL</div>
+            <div class="mono-field">
+              <code data-testid="redirect-uri">{redirectUri}</code>
+              <button type="button" onclick={() => copyToClipboard(redirectUri)}>Copy</button>
+            </div>
+          </div>
         </div>
-        <p class="mt-2 break-all font-mono text-sm" data-testid="redirect-uri">{redirectUri}</p>
-      </div>
 
-      <p class="mt-4 text-xs text-ink-soft">
-        After pasting, save your External Client App policies. The change takes effect immediately.
-      </p>
+        <p style="margin-top:14px;font-size:11.5px;color:var(--muted);font-family:var(--mono);">
+          After pasting, save your External Client App policies. The change takes effect immediately.
+        </p>
 
-      <div class="mt-6 flex items-center justify-between">
-        <button type="button" class="text-sm text-ink-soft underline" onclick={() => (step = 2)}>← back</button>
-        <button
-          type="button"
-          class="rounded-md bg-ink px-5 py-2 font-semibold text-white hover:bg-ink-soft"
-          onclick={() => (step = 4)}
-        >Callback saved, next →</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
+          <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={() => (step = 2)}>← back</button>
+          <button type="button" class="qs-btn qs-btn-primary" onclick={() => (step = 4)}>Callback saved, next →</button>
+        </div>
       </div>
-    </section>
+    </div>
   {/if}
 
   {#if step === 4}
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 class="text-xl font-bold">Step 4 · Paste your Consumer Key and connect</h2>
-      <p class="mt-1 text-sm text-ink-soft">
-        One-time paste — we remember it in your browser so you won't need to do this again for this org.
-      </p>
+    <div class="qs-card">
+      <div class="qs-card-head"><h3>Step 4 · Paste Consumer Key and connect</h3></div>
+      <div class="qs-card-body">
+        <p class="sub" style="margin-top:0;">
+          One-time paste — we remember it in your browser so you won't need to do this again for this org.
+        </p>
 
-      <label class="mt-6 block">
-        <span class="text-xs font-semibold uppercase tracking-wider text-ink-soft">Consumer Key (Client ID)</span>
-        <input
-          type="text"
-          class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
-          placeholder="3MVG9..."
-          bind:value={clientId}
-          data-testid="client-id-input"
-        />
-      </label>
+        <label style="display:block;">
+          <span class="tiny-caps">Consumer Key (Client ID)</span>
+          <input
+            type="text"
+            class="mono"
+            style="margin-top:4px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12.5px;"
+            placeholder="3MVG9..."
+            bind:value={clientId}
+            data-testid="client-id-input"
+          />
+        </label>
 
-      <label class="mt-3 flex items-center gap-2 text-sm text-ink-soft">
-        <input type="checkbox" bind:checked={rememberClientId} />
-        Remember this client ID on this device
-      </label>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;color:var(--ink-2);">
+          <input type="checkbox" style="accent-color:var(--navy-600);" bind:checked={rememberClientId} />
+          Remember this client ID on this device
+        </label>
 
-      {#if errorMessage}
-        <p class="mt-4 rounded-md bg-severity-critical/10 px-3 py-2 text-sm text-severity-critical">{errorMessage}</p>
-      {/if}
+        {#if errorMessage}
+          <p style="margin-top:14px;padding:8px 10px;border-radius:6px;background:var(--crit-bg);color:var(--crit);font-size:12.5px;">
+            {errorMessage}
+          </p>
+        {/if}
 
-      <div class="mt-6 flex items-center justify-between">
-        <button type="button" class="text-sm text-ink-soft underline" onclick={() => (step = 3)}>← back</button>
-        <button
-          type="button"
-          class="rounded-md bg-accent px-5 py-2 font-semibold text-white hover:bg-accent/80 disabled:opacity-50"
-          disabled={launching}
-          onclick={connect}
-          data-testid="connect-button"
-        >{launching ? 'Redirecting to Salesforce…' : 'Connect to Salesforce'}</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
+          <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={() => (step = 3)}>← back</button>
+          <button
+            type="button"
+            class="qs-btn qs-btn-primary qs-btn-lg"
+            disabled={launching}
+            onclick={connect}
+            data-testid="connect-button"
+          >
+            {launching ? 'Redirecting to Salesforce…' : 'Connect to Salesforce'}
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   {/if}
 </div>
