@@ -1,0 +1,14 @@
+---
+import Shell from '../layouts/Shell.astro';
+import ConnectWizardIsland from '../components/ConnectWizard.svelte';
+---
+
+<Shell title="Connect your Salesforce org — QuantumShield">
+  <div class="border-b border-gray-200 bg-white">
+    <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3 text-sm">
+      <a href="/" class="font-bold text-ink">QuantumShield</a>
+      <a href="/install" class="text-ink-soft hover:text-ink">Setup guide</a>
+    </nav>
+  </div>
+  <ConnectWizardIsland client:load />
+</Shell>

@@ -1,0 +1,13 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import PdfPreviewIsland from '../../components/PdfPreview.svelte';
+---
+
+<Shell title="PDF preview — QuantumShield dev">
+  <div class="bg-surface-muted">
+    <div class="border-b border-gray-200 bg-white px-6 py-2 text-xs text-ink-soft">
+      <a href="/" class="hover:text-ink">← back to landing</a>
+    </div>
+    <PdfPreviewIsland client:load />
+  </div>
+</Shell>

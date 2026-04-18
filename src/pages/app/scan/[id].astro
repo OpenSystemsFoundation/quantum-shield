@@ -1,0 +1,13 @@
+---
+import Shell from '../../../layouts/Shell.astro';
+import ScanViewIsland from '../../../components/ScanView.svelte';
+
+export const prerender = false;
+const { id } = Astro.params;
+const scanId = id ?? '';
+if (!scanId) return Astro.redirect('/app');
+---
+
+<Shell title={`Scan ${scanId} — QuantumShield`}>
+  <ScanViewIsland client:only="svelte" scanId={scanId} />
+</Shell>

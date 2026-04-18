@@ -1,0 +1,51 @@
+---
+import Shell from '../layouts/Shell.astro';
+---
+
+<Shell title="QuantumShield — post-quantum readiness for Salesforce">
+  <main class="mx-auto max-w-4xl px-6 pt-24 pb-32">
+    <p class="text-sm font-semibold uppercase tracking-widest text-accent">QuantumShield</p>
+    <h1 class="mt-4 text-5xl font-bold leading-tight">
+      Know which of your Salesforce cryptography breaks in 2030.
+    </h1>
+    <p class="mt-6 max-w-2xl text-lg text-ink-soft">
+      Browser-only scanner. Nothing leaves your tab. Maps every certificate, Connected App, SSO config
+      and Apex call site against BSI, NCSC-NL, ENISA and NIST PQC standards — and tells you what to
+      replace, by when.
+    </p>
+
+    <div class="mt-10 flex flex-wrap gap-4">
+      <a
+        href="/connect"
+        class="inline-flex items-center rounded-md bg-ink px-6 py-3 font-semibold text-white transition hover:bg-ink-soft"
+      >
+        Connect your Salesforce org
+      </a>
+      <a
+        href="/dev/pdf-preview"
+        class="inline-flex items-center rounded-md border border-ink px-6 py-3 font-semibold text-ink transition hover:bg-ink hover:text-white"
+      >
+        See a sample report
+      </a>
+    </div>
+
+    <ul class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Zero data transit</p>
+        <p class="mt-2 text-sm text-ink-soft">All API traffic is browser ↔ your org. We never see your data.</p>
+      </li>
+      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Read-only</p>
+        <p class="mt-2 text-sm text-ink-soft">Metadata and configuration only. We never modify your org.</p>
+      </li>
+      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent">EU-first sources</p>
+        <p class="mt-2 text-sm text-ink-soft">BSI, NCSC-NL, ENISA, ANSSI — not just NIST.</p>
+      </li>
+      <li class="rounded-lg border border-gray-200 bg-surface-raised p-5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-accent">Open source</p>
+        <p class="mt-2 text-sm text-ink-soft">Every rule, every severity calc — inspectable.</p>
+      </li>
+    </ul>
+  </main>
+</Shell>

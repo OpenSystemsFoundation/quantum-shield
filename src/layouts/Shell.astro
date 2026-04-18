@@ -1,0 +1,20 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = 'QuantumShield — browser-only post-quantum readiness scanner for Salesforce.' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="bg-surface text-ink antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen font-sans">
+    <slot />
+  </body>
+</html>

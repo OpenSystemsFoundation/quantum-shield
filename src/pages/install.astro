@@ -1,0 +1,77 @@
+---
+import Shell from '../layouts/Shell.astro';
+---
+
+<Shell title="Setup guide — QuantumShield">
+  <div class="border-b border-gray-200 bg-white">
+    <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3 text-sm">
+      <a href="/" class="font-bold text-ink">QuantumShield</a>
+      <a href="/connect" class="text-ink-soft hover:text-ink">Back to connect</a>
+    </nav>
+  </div>
+  <main class="mx-auto max-w-3xl px-6 py-16">
+    <p class="text-xs font-semibold uppercase tracking-widest text-accent">Setup guide</p>
+    <h1 class="mt-2 text-3xl font-bold">Prepare your Salesforce org for QuantumShield</h1>
+    <p class="mt-3 text-ink-soft">
+      QuantumShield never creates anything in a Salesforce org we own. You create a small External Client App in your org, we guide you through it, and you can revoke access at any time from
+      <span class="font-mono">Setup → App Manager</span>.
+    </p>
+
+    <section class="mt-10 space-y-8">
+      <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-bold">Part 1 · Create the External Client App</h2>
+        <ol class="mt-4 space-y-3 text-sm text-ink-soft">
+          <li><span class="font-semibold text-ink">1.</span> Open <span class="font-mono text-ink">Setup → App Manager</span> and click <span class="font-mono text-ink">New External Client App</span>. On orgs without External Client Apps yet, use <span class="font-mono text-ink">New Connected App</span>.</li>
+          <li><span class="font-semibold text-ink">2.</span> Name: <span class="font-mono text-ink">QuantumShield Scanner</span>. Contact email: your own.</li>
+          <li><span class="font-semibold text-ink">3.</span> Under API (Enable OAuth Settings): enable OAuth; enable <span class="font-mono text-ink">Require Proof Key for Code Exchange (PKCE)</span>; leave Device Flow and Client Credentials off.</li>
+          <li><span class="font-semibold text-ink">4.</span> Scopes to select: <span class="font-mono text-ink">api</span>, <span class="font-mono text-ink">refresh_token</span>, <span class="font-mono text-ink">id</span>. Do <em>not</em> select <span class="font-mono text-ink">full</span> or <span class="font-mono text-ink">web</span>.</li>
+          <li><span class="font-semibold text-ink">5.</span> Save. Wait 2–10 minutes for policy propagation.</li>
+        </ol>
+      </article>
+
+      <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-bold">Part 2 · Whitelist our callback URL</h2>
+        <p class="mt-3 text-sm text-ink-soft">In the External Client App you just created, add this URL to the <span class="font-mono text-ink">Callback URL</span> list:</p>
+        <code class="mt-3 inline-block rounded bg-surface-muted px-3 py-1.5 font-mono text-sm" id="redirect-uri">https://quantumshield.example/callback</code>
+        <p class="mt-3 text-xs text-ink-soft">
+          You can add multiple callback URLs — you don't need to remove any existing ones. After saving, the change is live immediately.
+        </p>
+      </article>
+
+      <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm" id="cors">
+        <h2 class="text-xl font-bold">Part 3 · Add QuantumShield to CORS</h2>
+        <p class="mt-3 text-sm text-ink-soft">
+          Salesforce blocks browser-originated API traffic from any domain not in your CORS allowlist. This is a one-time admin task.
+        </p>
+        <ol class="mt-4 space-y-3 text-sm text-ink-soft">
+          <li><span class="font-semibold text-ink">1.</span> Open <span class="font-mono text-ink">Setup → Quick Find → "CORS"</span>. Select <span class="font-mono text-ink">CORS Allowlist</span>.</li>
+          <li><span class="font-semibold text-ink">2.</span> Click <span class="font-mono text-ink">New</span> and paste this origin:
+            <code class="mt-2 block rounded bg-surface-muted px-3 py-1.5 font-mono text-sm" id="cors-origin">https://quantumshield.example</code>
+          </li>
+          <li><span class="font-semibold text-ink">3.</span> Save. Subsequent users of the scanner in this org do not need to repeat this step.</li>
+        </ol>
+      </article>
+
+      <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-bold">Part 4 · Paste your Consumer Key</h2>
+        <p class="mt-3 text-sm text-ink-soft">
+          In your new External Client App, open the <span class="font-mono text-ink">Manage Consumer Details</span> panel. Copy the <span class="font-mono text-ink">Consumer Key</span> and paste it into
+          <a href="/connect" class="font-semibold text-accent hover:underline">/connect</a>. We remember it in your browser's localStorage so you never need to paste it again on this device.
+        </p>
+      </article>
+    </section>
+
+    <p class="mt-12 text-xs text-ink-soft">
+      QuantumShield is read-only. We never modify your Salesforce configuration. Source:
+      <a href="https://github.com/andelas/quantum-shield" class="underline">github.com/andelas/quantum-shield</a>.
+    </p>
+  </main>
+
+  <script>
+    const origin = window.location.origin;
+    const callbackEl = document.getElementById('redirect-uri');
+    const corsEl = document.getElementById('cors-origin');
+    if (callbackEl) callbackEl.textContent = `${origin}/callback`;
+    if (corsEl) corsEl.textContent = origin;
+  </script>
+</Shell>
