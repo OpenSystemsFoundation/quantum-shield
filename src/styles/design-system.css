@@ -530,7 +530,7 @@ html, body {
   color: var(--ink);
   font-weight: 500;
 }
-.hero h1 em { font-style: italic; color: var(--navy-600); font-weight: 500; }
+.hero h1 em { font-style: normal; color: var(--navy-600); font-weight: 500; }
 .hero p.lede {
   font-size: 16px;
   line-height: 1.5;

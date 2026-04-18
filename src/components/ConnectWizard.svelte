@@ -32,6 +32,9 @@
     const cfg = loadAuthConfig();
     redirectUri = cfg.redirectUri;
     if (cfg.apiVersion) apiVersion = cfg.apiVersion;
+    if (cfg.clientId && !clientId) {
+      clientId = cfg.clientId;
+    }
     const prev = loadEnvPreference();
     if (prev === 'production' || prev === 'sandbox' || prev === 'custom') {
       envId = prev;

@@ -11,5 +11,8 @@ export default defineConfig({
     ssr: {
       noExternal: ['pdf-lib'],
     },
+    optimizeDeps: {
+      include: ['comlink', 'idb', 'pdf-lib'],
+    },
   },
 });

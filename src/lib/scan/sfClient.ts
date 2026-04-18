@@ -1,5 +1,14 @@
 import type { Session } from '@lib/auth';
 
+/**
+ * Thin Salesforce REST/Tooling client, built on fetch so it runs cleanly
+ * inside a Web Worker (jsforce's browser bundle assumes main-thread globals
+ * that Workers don't expose — XHR-based transports fail in that context).
+ *
+ * Normalises errors so the scan engine can react consistently to CORS
+ * blocks vs auth failures vs other API problems.
+ */
+
 export class CorsBlockedError extends Error {
   constructor(
     message: string,
