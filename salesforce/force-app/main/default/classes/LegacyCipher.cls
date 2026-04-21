@@ -1,7 +1,7 @@
 /**
  * Legacy AES cipher with a HARDCODED key baked into source.
  * Flagged by R-APEX-CRYPTO for hardcoded key material and
- * separately by R-APEX-CRYPTO for AES-128 encryption.
+ * separately by QuantumShield's Apex pattern matcher.
  */
 public with sharing class LegacyCipher {
 

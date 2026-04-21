@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Legacy internal billing reporter. Intentionally plaintext HTTP for QuantumShield to flag.</description>
+    <description>Internal reporting endpoint on plaintext HTTP. Second HTTP-only finding.</description>
     <disableProtocolSecurity>true</disableProtocolSecurity>
     <isActive>true</isActive>
-    <url>http://billing-legacy.internal.example</url>
+    <url>http://reporting.internal.example</url>
 </RemoteSiteSetting>

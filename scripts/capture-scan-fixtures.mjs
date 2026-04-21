@@ -10,7 +10,7 @@ const outputFile = path.join(rootDir, 'src', 'lib', 'scan', 'fixtures', 'liveOrg
 const QUERY_PLAN = [
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate, NamespacePrefix FROM Certificate',
+    soql: 'SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate FROM Certificate',
   },
   {
     kind: 'toolingQuery',
@@ -26,7 +26,7 @@ const QUERY_PLAN = [
   },
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, DeveloperName, EndpointUrl, IsActive FROM RemoteSiteSetting',
+    soql: 'SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting',
   },
   {
     kind: 'toolingQuery',

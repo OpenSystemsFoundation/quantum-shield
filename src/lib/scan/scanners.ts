@@ -14,7 +14,6 @@ interface ToolingCertificate {
   OptionsIsPrivateKeyExportable?: boolean;
   ExpirationDate?: string;
   MasterLabel?: string;
-  NamespacePrefix?: string | null;
 }
 
 interface ConnectedApp {
@@ -44,9 +43,30 @@ interface ExternalCredentialRecord {
 
 interface RemoteSiteSettingRecord {
   Id: string;
-  DeveloperName: string;
+  FullName: string;
   EndpointUrl: string;
   IsActive: boolean;
+}
+
+function sessionTimeoutToHours(value: string | number | undefined): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.round(value / 60);
+  }
+  if (typeof value !== 'string') return undefined;
+
+  const byEnum: Record<string, number> = {
+    FifteenMinutes: 0,
+    ThirtyMinutes: 1,
+    OneHour: 1,
+    TwoHours: 2,
+    FourHours: 4,
+    EightHours: 8,
+    TwelveHours: 12,
+    TwentyFourHours: 24,
+    TwoDays: 48,
+  };
+
+  return byEnum[value];
 }
 
 interface SamlSsoConfigRecord {
@@ -94,7 +114,7 @@ function certificateScanner(): Scanner {
     label: 'Certificates & keys',
     async scan(client, emit) {
       const soql =
-        'SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate, NamespacePrefix FROM Certificate';
+        'SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate FROM Certificate';
       const res = await client.toolingQuery<ToolingCertificate>(soql);
       for (const c of res.records) {
         emit({
@@ -186,13 +206,13 @@ function remoteSitesScanner(): Scanner {
     label: 'Remote Sites & External Data',
     async scan(client, emit) {
       const res = await client.toolingQuery<RemoteSiteSettingRecord>(
-        'SELECT Id, DeveloperName, EndpointUrl, IsActive FROM RemoteSiteSetting',
+        'SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting',
       );
       for (const r of res.records) {
         if (!r.IsActive) continue;
         emit({
           kind: 'remote-site',
-          name: r.DeveloperName,
+          name: r.FullName,
           identifier: r.Id,
           endpointUrl: r.EndpointUrl,
         });
@@ -323,11 +343,12 @@ function sessionLoginScanner(): Scanner {
     label: 'Session & login settings',
     async scan(client, emit) {
       try {
-        const res = await client.toolingQuery<{ Id: string; SessionTimeout: number }>(
+        const res = await client.toolingQuery<{ Id: string; SessionTimeout: string | number }>(
           'SELECT Id, SessionTimeout FROM SessionSettings',
         );
         for (const r of res.records) {
-          const hours = Math.round((r.SessionTimeout ?? 0) / 60);
+          const hours = sessionTimeoutToHours(r.SessionTimeout);
+          if (hours === undefined) continue;
           emit({
             kind: 'connected-app',
             name: 'SessionSettings',

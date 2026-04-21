@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
+        <members>LegacyCipher</members>
+        <members>LegacyHashUtil</members>
+        <members>ModernCrypto</members>
+        <members>PartnerWebhookSigner</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
         <members>http_localhost_4321</members>
         <name>CorsWhitelistOrigin</name>
+    </types>
+    <types>
+        <members>Legacy_Billing_API</members>
+        <members>Partner_OAuth_API</members>
+        <name>NamedCredential</name>
     </types>
     <types>
         <members>QuantumShield_Scanner</members>
@@ -15,6 +27,12 @@
     <types>
         <members>QuantumShield_Scanner_glbloauth</members>
         <name>ExtlClntAppGlobalOauthSettings</name>
+    </types>
+    <types>
+        <members>Internal_Reporting_HTTP</members>
+        <members>Legacy_Billing_HTTP</members>
+        <members>Partner_API_HTTPS</members>
+        <name>RemoteSiteSetting</name>
     </types>
     <types>
         <members>QuantumShield_Scanner_oauth</members>

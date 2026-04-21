@@ -19,6 +19,8 @@ Create and deploy a fresh scratch org:
 npm run scratch:bootstrap -- --devhub <your-devhub-alias> --alias qs-seed --duration-days 7
 ```
 
+Classic Connected App seed metadata is intentionally excluded from this deployable project. If a test scenario ever needs one again, create it manually after the scratch org is up or cover that scenario with mock fixtures.
+
 What the bootstrap script does:
 
 1. Creates the scratch org from `config/project-scratch-def.json`
