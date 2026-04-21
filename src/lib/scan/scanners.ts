@@ -293,13 +293,57 @@ function shieldEncryptionScanner(): Scanner {
 const APEX_CRYPTO_PATTERNS: Array<{ regex: RegExp; algo: string }> = [
   { regex: /Crypto\.generateDigest\s*\(\s*['"]MD5['"]/gi, algo: 'MD5' },
   { regex: /Crypto\.generateDigest\s*\(\s*['"]SHA-?1['"]/gi, algo: 'SHA-1' },
-  { regex: /Crypto\.sign\s*\(\s*['"]RSA[-_]?SHA256['"]/gi, algo: 'RSA-SHA256' },
-  { regex: /Crypto\.sign\s*\(\s*['"]RSA[-_]?SHA512['"]/gi, algo: 'RSA-SHA512' },
-  { regex: /Crypto\.sign\s*\(\s*['"]ECDSA[-_]?SHA256['"]/gi, algo: 'ECDSA-SHA256' },
-  { regex: /Crypto\.encryptWithManagedIV\s*\(\s*['"]AES128['"]/gi, algo: 'AES-128' },
-  { regex: /Crypto\.encryptWithManagedIV\s*\(\s*['"]AES192['"]/gi, algo: 'AES-192' },
-  { regex: /Blob\.valueOf\s*\(\s*['"][A-Za-z0-9+/=]{32,}['"]\s*\)[^;]*encryptWithManagedIV/gi, algo: 'HARDCODED-AES-KEY' },
+  {
+    regex: /Crypto\.(?:sign|signWithCertificate)\s*\(\s*['"]RSA[-_]?SHA256['"]/gi,
+    algo: 'RSA-SHA256',
+  },
+  {
+    regex: /Crypto\.(?:sign|signWithCertificate)\s*\(\s*['"]RSA[-_]?SHA512['"]/gi,
+    algo: 'RSA-SHA512',
+  },
+  {
+    regex: /Crypto\.(?:sign|signWithCertificate)\s*\(\s*['"]ECDSA[-_]?SHA256['"]/gi,
+    algo: 'ECDSA-SHA256',
+  },
 ];
+
+const APEX_AES_PATTERNS: Array<{ regex: RegExp; keySize: 128 | 192 }> = [
+  {
+    regex: /Crypto\.(?:encrypt|decrypt)WithManagedIV\s*\(\s*['"]AES128['"]/gi,
+    keySize: 128,
+  },
+  {
+    regex: /Crypto\.(?:encrypt|decrypt)WithManagedIV\s*\(\s*['"]AES192['"]/gi,
+    keySize: 192,
+  },
+];
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findHardcodedApexKeys(body: string): number[] {
+  const matches: number[] = [];
+  const keyAssignments =
+    /(?:private|public|protected)?\s*(?:static\s+)?(?:final\s+)?Blob\s+([A-Za-z_][A-Za-z0-9_]*KEY[A-Za-z0-9_]*)\s*=\s*Blob\.valueOf\s*\(\s*['"]([^'"]{16,32})['"]\s*\)/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = keyAssignments.exec(body)) !== null) {
+    const symbol = match[1];
+    const literal = match[2];
+    if (![16, 24, 32].includes(literal.length)) continue;
+
+    const usage = new RegExp(
+      `Crypto\\.(?:en|de)crypt(?:WithManagedIV)?\\s*\\([^;]*\\b${escapeRegExp(symbol)}\\b`,
+      'i',
+    );
+    if (!usage.test(body)) continue;
+
+    matches.push(match.index);
+  }
+
+  return matches;
+}
 
 function apexCryptoScanner(): Scanner {
   return {
@@ -312,14 +356,12 @@ function apexCryptoScanner(): Scanner {
         );
         for (const cls of res.records) {
           if (!cls.Body) continue;
-          const lines = cls.Body.split('\n');
           for (const { regex, algo } of APEX_CRYPTO_PATTERNS) {
             regex.lastIndex = 0;
             let match: RegExpExecArray | null;
             while ((match = regex.exec(cls.Body)) !== null) {
               const offset = match.index;
               const line = cls.Body.slice(0, offset).split('\n').length;
-              void lines;
               emit({
                 kind: 'apex-call',
                 name: `${cls.Name}.cls`,
@@ -328,6 +370,34 @@ function apexCryptoScanner(): Scanner {
                 algorithm: algo,
               });
             }
+          }
+
+          for (const { regex, keySize } of APEX_AES_PATTERNS) {
+            regex.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = regex.exec(cls.Body)) !== null) {
+              const offset = match.index;
+              const line = cls.Body.slice(0, offset).split('\n').length;
+              emit({
+                kind: 'apex-call',
+                name: `${cls.Name}.cls`,
+                identifier: `${cls.Id}:${line}`,
+                location: `${cls.Name}.cls:${line}`,
+                algorithm: 'AES',
+                keySize,
+              });
+            }
+          }
+
+          for (const offset of findHardcodedApexKeys(cls.Body)) {
+            const line = cls.Body.slice(0, offset).split('\n').length;
+            emit({
+              kind: 'apex-call',
+              name: `${cls.Name}.cls`,
+              identifier: `${cls.Id}:${line}`,
+              location: `${cls.Name}.cls:${line}`,
+              algorithm: 'HARDCODED-AES-KEY',
+            });
           }
         }
       } catch {

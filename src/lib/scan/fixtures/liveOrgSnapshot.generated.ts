@@ -2,7 +2,7 @@
 import type { ScanSnapshot } from './types.js';
 
 export const LIVE_ORG_SCAN_SNAPSHOT = {
-  "capturedAt": "2026-04-21T18:41:03.541Z",
+  "capturedAt": "2026-04-21T19:10:10.490Z",
   "source": {
     "targetOrg": "quantum-shield",
     "orgId": "00DRR00000PekkH2AR",
@@ -13,9 +13,16 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
   "responses": [
     {
       "kind": "toolingQuery",
-      "soql": "SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate, NamespacePrefix FROM Certificate",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"\\nMasterLabel, KeySize, ExpirationDate, NamespacePrefix FROM Certificate\\n                                      ^\\nERROR at Row:1:Column:65\\nNo such column 'NamespacePrefix' on entity 'Certificate'. If you are attempting to use a custom field, be sure to append the '__c' after the custom field name. Please reference your WSDL or the describe call for the appropriate names.\",\"errorCode"
+      "soql": "SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate FROM Certificate",
+      "outcome": "success",
+      "result": {
+        "size": 0,
+        "totalSize": 0,
+        "done": true,
+        "queryLocator": null,
+        "entityTypeName": null,
+        "records": []
+      }
     },
     {
       "kind": "toolingQuery",
@@ -35,9 +42,32 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, DeveloperName, MasterLabel, Endpoint, PrincipalType FROM NamedCredential",
       "outcome": "success",
       "result": {
-        "totalSize": 0,
+        "totalSize": 2,
         "done": true,
-        "records": []
+        "records": [
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v66.0/sobjects/NamedCredential/0XARR00000139sb4AA"
+            },
+            "Id": "0XARR00000139sb4AA",
+            "DeveloperName": "Legacy_Billing_API",
+            "MasterLabel": "Legacy Billing API",
+            "Endpoint": "http://billing-legacy.internal.example/api",
+            "PrincipalType": "Anonymous"
+          },
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v66.0/sobjects/NamedCredential/0XARR00000139sc4AA"
+            },
+            "Id": "0XARR00000139sc4AA",
+            "DeveloperName": "Partner_OAuth_API",
+            "MasterLabel": "Partner OAuth API",
+            "Endpoint": "https://api.partner.example/v1",
+            "PrincipalType": "Anonymous"
+          }
+        ]
       }
     },
     {
@@ -48,9 +78,57 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
     },
     {
       "kind": "toolingQuery",
-      "soql": "SELECT Id, DeveloperName, EndpointUrl, IsActive FROM RemoteSiteSetting",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"\\nSELECT Id, DeveloperName, EndpointUrl, IsActive\\n           ^\\nERROR at Row:1:Column:12\\nNo such column 'DeveloperName' on entity 'RemoteProxy'. If you are attempting to use a custom field, be sure to append the '__c' after the custom field name. Please reference your WSDL or the describe call for the appropriate names.\",\"errorCode\":\"INVALID_FIELD\"}]"
+      "soql": "SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting",
+      "outcome": "success",
+      "result": {
+        "size": 4,
+        "totalSize": 4,
+        "done": true,
+        "queryLocator": null,
+        "entityTypeName": "RemoteProxy",
+        "records": [
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpRR000002gSOXYA2"
+            },
+            "Id": "0rpRR000002gSOXYA2",
+            "FullName": "ApexDevNet",
+            "EndpointUrl": "http://www.apexdevnet.com",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpRR000002iCqjYAE"
+            },
+            "Id": "0rpRR000002iCqjYAE",
+            "FullName": "Internal_Reporting_HTTP",
+            "EndpointUrl": "http://reporting.internal.example",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpRR000002iCqkYAE"
+            },
+            "Id": "0rpRR000002iCqkYAE",
+            "FullName": "Legacy_Billing_HTTP",
+            "EndpointUrl": "http://billing-legacy.internal.example",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpRR000002iCqlYAE"
+            },
+            "Id": "0rpRR000002iCqlYAE",
+            "FullName": "Partner_API_HTTPS",
+            "EndpointUrl": "https://api.partner.example",
+            "IsActive": true
+          }
+        ]
+      }
     },
     {
       "kind": "toolingQuery",
@@ -75,12 +153,57 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexClass WHERE NamespacePrefix = null",
       "outcome": "success",
       "result": {
-        "size": 0,
-        "totalSize": 0,
+        "size": 4,
+        "totalSize": 4,
         "done": true,
         "queryLocator": null,
-        "entityTypeName": null,
-        "records": []
+        "entityTypeName": "ApexClass",
+        "records": [
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pRR00000P07uLYAR"
+            },
+            "Id": "01pRR00000P07uLYAR",
+            "Name": "LegacyCipher",
+            "Body": "/**\r\n * Legacy AES cipher with a HARDCODED key baked into source.\r\n * Flagged by R-APEX-CRYPTO for hardcoded key material and\r\n * separately by QuantumShield's Apex pattern matcher.\r\n */\r\npublic with sharing class LegacyCipher {\r\n\r\n    // HARDCODED 128-bit key — intentionally committed so QuantumShield detects it.\r\n    private static final Blob HARDCODED_KEY =\r\n        Blob.valueOf('ThisIsA16ByteKey');\r\n\r\n    public static String encrypt(String plaintext) {\r\n        Blob data = Blob.valueOf(plaintext);\r\n        Blob encrypted = Crypto.encryptWithManagedIV('AES128', HARDCODED_KEY, data);\r\n        return EncodingUtil.base64Encode(encrypted);\r\n    }\r\n\r\n    public static String decrypt(String ciphertextB64) {\r\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\r\n        Blob decrypted = Crypto.decryptWithManagedIV('AES128', HARDCODED_KEY, encrypted);\r\n        return decrypted.toString();\r\n    }\r\n}",
+            "ApiVersion": 66,
+            "NamespacePrefix": null
+          },
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pRR00000P07uMYAR"
+            },
+            "Id": "01pRR00000P07uMYAR",
+            "Name": "LegacyHashUtil",
+            "Body": "/**\r\n * Legacy hash utility. Deliberately uses MD5 and SHA-1 to\r\n * exercise the QuantumShield apex-crypto weak-hash rule.\r\n * DO NOT use these methods for anything security-relevant.\r\n */\r\npublic with sharing class LegacyHashUtil {\r\n\r\n    /** MD5 digest — flagged by R-APEX-CRYPTO (critical). */\r\n    public static String md5(String input) {\r\n        Blob raw = Blob.valueOf(input);\r\n        Blob digest = Crypto.generateDigest('MD5', raw);\r\n        return EncodingUtil.convertToHex(digest);\r\n    }\r\n\r\n    /** SHA-1 digest — flagged by R-APEX-CRYPTO (critical). */\r\n    public static String sha1(String input) {\r\n        Blob raw = Blob.valueOf(input);\r\n        Blob digest = Crypto.generateDigest('SHA-1', raw);\r\n        return EncodingUtil.convertToHex(digest);\r\n    }\r\n\r\n    /** SHA-256 digest — compliant, scanner should NOT flag. */\r\n    public static String sha256(String input) {\r\n        Blob raw = Blob.valueOf(input);\r\n        Blob digest = Crypto.generateDigest('SHA-256', raw);\r\n        return EncodingUtil.convertToHex(digest);\r\n    }\r\n}",
+            "ApiVersion": 66,
+            "NamespacePrefix": null
+          },
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pRR00000P07uNYAR"
+            },
+            "Id": "01pRR00000P07uNYAR",
+            "Name": "ModernCrypto",
+            "Body": "/**\r\n * Compliant crypto helpers. QuantumShield should NOT flag this class\r\n * — it's the negative control.\r\n */\r\npublic with sharing class ModernCrypto {\r\n\r\n    public static String sha256(String input) {\r\n        return EncodingUtil.convertToHex(\r\n            Crypto.generateDigest('SHA-256', Blob.valueOf(input))\r\n        );\r\n    }\r\n\r\n    public static String sha3(String input) {\r\n        return EncodingUtil.convertToHex(\r\n            Crypto.generateDigest('SHA3-256', Blob.valueOf(input))\r\n        );\r\n    }\r\n\r\n    public static Blob encryptAes256(Blob key, Blob data) {\r\n        return Crypto.encryptWithManagedIV('AES256', key, data);\r\n    }\r\n}",
+            "ApiVersion": 66,
+            "NamespacePrefix": null
+          },
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pRR00000P07uOYAR"
+            },
+            "Id": "01pRR00000P07uOYAR",
+            "Name": "PartnerWebhookSigner",
+            "Body": "/**\r\n * Signs outbound webhook payloads with RSA-SHA256.\r\n * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high, HNDL).\r\n */\r\npublic with sharing class PartnerWebhookSigner {\r\n\r\n    private static final String CERT_NAME = 'partner_signing_2026';\r\n\r\n    public static String signPayload(String payload) {\r\n        Blob payloadBlob = Blob.valueOf(payload);\r\n        Blob signature = Crypto.signWithCertificate('RSA-SHA256', payloadBlob, CERT_NAME);\r\n        return EncodingUtil.base64Encode(signature);\r\n    }\r\n\r\n    /** ECDSA signing — also flagged by R-APEX-CRYPTO (high). */\r\n    public static String signPayloadEcdsa(String payload) {\r\n        Blob payloadBlob = Blob.valueOf(payload);\r\n        Blob signature = Crypto.signWithCertificate('ECDSA-SHA256', payloadBlob, CERT_NAME);\r\n        return EncodingUtil.base64Encode(signature);\r\n    }\r\n}",
+            "ApiVersion": 66,
+            "NamespacePrefix": null
+          }
+        ]
       }
     },
     {

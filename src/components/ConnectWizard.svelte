@@ -23,12 +23,14 @@
   let rememberClientId = $state(true);
   let step = $state<1 | 2 | 3 | 4>(1);
   let launching = $state(false);
+  let mounted = $state(false);
   let errorMessage = $state<string | null>(null);
   let redirectUri = $state('');
 
   const mockEnabled = isDevMock();
 
   onMount(() => {
+    mounted = true;
     const cfg = loadAuthConfig();
     redirectUri = cfg.redirectUri;
     if (cfg.apiVersion) apiVersion = cfg.apiVersion;
@@ -220,12 +222,13 @@
               type="button"
               class="qs-btn qs-btn-ghost qs-btn-sm"
               onclick={devMockConnect}
+              disabled={!mounted}
               data-testid="dev-mock-connect"
             >Dev mock · skip OAuth</button>
           {:else}
             <span></span>
           {/if}
-          <button type="button" class="qs-btn qs-btn-primary" onclick={() => advanceToStep(2)}>
+          <button type="button" class="qs-btn qs-btn-primary" onclick={() => advanceToStep(2)} disabled={!mounted}>
             Continue
           </button>
         </div>

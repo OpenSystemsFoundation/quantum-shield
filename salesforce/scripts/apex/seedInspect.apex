@@ -3,7 +3,7 @@ System.debug('=== QuantumShield scan target — readiness check ===');
 List<NamedCredential> ncs = [
     SELECT Id, DeveloperName, MasterLabel, Endpoint
     FROM NamedCredential
-    WHERE DeveloperName IN ('Partner_OAuth_API', 'Legacy_Billing_API')
+    WHERE DeveloperName IN ('Partner_OAuth_API', 'Legacy_Billing_API', 'US_Medicare_Claims_API')
     ORDER BY DeveloperName
 ];
 System.debug('NamedCredentials found: ' + ncs.size());

@@ -28,7 +28,7 @@ cases:
       currentCrypto: '{{asset.algorithm ?? weak hash}}'
       recommendedReplacement: Replace with Crypto.generateDigest('SHA-256', ...) or SHA-3.
       rationale: >-
-        MD5 and SHA-1 are disallowed for security-relevant use under SP 800-131A and BSI TR-02102.
+        NIST SP 800-131A disallows MD5 and SHA-1 for security-relevant use, and BSI TR-02102 reaches the same conclusion.
       citations:
         - NIST_SP_800_131A
         - BSI_TR_02102_1
@@ -47,13 +47,12 @@ cases:
       hndlExposure: false
       currentCrypto: Hardcoded key material in source
       recommendedReplacement: >-
-        Move the key to a Named Credential or Protected Custom Setting. Rotate the key immediately — the current value must be treated as compromised.
+        Move the key to a Named Credential or Protected Custom Setting. Maintain an owner and rotation procedure for the secret, and rotate it immediately because the current value must be treated as compromised.
       rationale: >-
-        Hardcoded cryptographic keys violate GDPR Art. 32 state-of-the-art requirements. Apex source is accessible to any user with View All Data or developer access.
+        Hardcoded cryptographic keys bypass key-management controls and collapse the separation between code and keying material. Once source is exposed, the embedded key must be treated as compromised.
       citations:
-        - GDPR_ART_32
-        - NIS2
-      deadline: '2018-05-25'
+        - NIST_SP_800_53
+        - NIST_SP_800_57_PT1
   - when:
       - field: algorithm
         op: predicate
@@ -67,12 +66,13 @@ cases:
       hndlExposure: true
       currentCrypto: '{{asset.algorithm}}'
       recommendedReplacement: >-
-        Plan migration to ML-DSA once Salesforce exposes native PQC primitives. Track as a PQC-migration asset and shorten rotation cadence in the interim.
+        Plan migration to ML-DSA (FIPS 204). Where the relying party cannot yet accept PQ signatures, treat the asset as a tracked transition item and move to hybrid certificate or signature strategies as the surrounding platform permits.
       rationale: >-
-        Salesforce does not yet expose FIPS 204 primitives via Apex, so immediate replacement is not possible. Record the asset and migrate at platform-readiness.
+        NIST IR 8547 and NSA CNSA 2.0 both put digital-signature migration on the near-term transition path. Salesforce does not yet expose FIPS 204 primitives in Apex, so the immediate requirement is inventory, shortened rotation, and partner-readiness planning.
       citations:
-        - ENISA_PQC_2024
+        - NIST_IR_8547
         - NIST_FIPS_204
+        - NSA_CNSA_2_0
       deadline: '2030-12-31'
 ---
 This is the most important proof that the rule system can stay docs-backed without becoming trivial. The rule uses multiple ordered cases, but all of them are still data-defined and reviewable in one document.

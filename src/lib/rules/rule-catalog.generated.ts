@@ -79,12 +79,12 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": true,
           "currentCrypto": "RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
-          "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Deploy a hybrid (classical + PQC) certificate at next rotation if partner endpoints do not yet support ML-DSA — ENISA and NCSC-NL both endorse hybrid as the transition pattern.",
-          "rationale": "RSA remains compliant today but is on the deprecation path. BSI TR-02102 recommends migration planning now; ENISA flags asymmetric signing and key transport as migration priorities because signed and encrypted artefacts are long-lived and harvestable.",
+          "recommendedReplacement": "Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.",
+          "rationale": "RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.",
           "citations": [
-            "BSI_TR_02102_1",
-            "ENISA_PQC_2024",
-            "NCSC_NL_PQC",
+            "NIST_IR_8547",
+            "NSA_CNSA_2_0",
+            "NIST_FIPS_203",
             "NIST_FIPS_204"
           ],
           "deadline": "2030-12-31"
@@ -111,12 +111,12 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": true,
           "currentCrypto": "RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
-          "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Deploy a hybrid (classical + PQC) certificate at next rotation if partner endpoints do not yet support ML-DSA — ENISA and NCSC-NL both endorse hybrid as the transition pattern.",
-          "rationale": "RSA remains compliant today but is on the deprecation path. BSI TR-02102 recommends migration planning now; ENISA flags asymmetric signing and key transport as migration priorities because signed and encrypted artefacts are long-lived and harvestable.",
+          "recommendedReplacement": "Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.",
+          "rationale": "RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.",
           "citations": [
-            "BSI_TR_02102_1",
-            "ENISA_PQC_2024",
-            "NCSC_NL_PQC",
+            "NIST_IR_8547",
+            "NSA_CNSA_2_0",
+            "NIST_FIPS_203",
             "NIST_FIPS_204"
           ],
           "deadline": "2030-12-31"
@@ -154,11 +154,11 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": true,
           "currentCrypto": "{{asset.algorithm}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}",
-          "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Where stateless hash-based assurance is preferred, SLH-DSA (FIPS 205) is an alternative.",
-          "rationale": "ECDSA and other elliptic curve primitives are compliant today but are broken by a cryptographically relevant quantum computer. BSI, ENISA and NCSC-NL all direct organisations to schedule migration in advance of 2030.",
+          "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Where a hash-based signature profile is a better fit for long-lived verification, evaluate SLH-DSA (FIPS 205) and use hybrid certificate strategies while ecosystem support catches up.",
+          "rationale": "ECDSA and related ECC signatures remain compliant today, but NIST IR 8547 and NSA CNSA 2.0 place them on the quantum transition path. Signature inventories, certificate chains, and relying-party interoperability should be updated before the 2030 horizon.",
           "citations": [
-            "BSI_TR_02102_1",
-            "ENISA_PQC_2024",
+            "NIST_IR_8547",
+            "NSA_CNSA_2_0",
             "NIST_FIPS_204",
             "NIST_FIPS_205"
           ],
@@ -236,15 +236,13 @@ export const GENERATED_RULE_DEFS = [
           "migrationPosture": "replace-now",
           "effort": "low",
           "hndlExposure": false,
-          "currentCrypto": "Plaintext HTTP — no TLS",
-          "recommendedReplacement": "Move the endpoint to HTTPS with TLS 1.2+ (TLS 1.3 preferred per BSI TR-02102). If the target service lacks TLS, terminate at a proxy or sidecar before exposing the callout.",
-          "rationale": "GDPR Art. 32 and NIS 2 Art. 21 require state-of-the-art protection of personal and operational data in transit. Plaintext HTTP is an immediate compliance failure for any processing of regulated data.",
+          "currentCrypto": "Plaintext HTTP - no TLS",
+          "recommendedReplacement": "Move the endpoint to HTTPS with TLS 1.2 or later, and prefer TLS 1.3 when both sides support it. If the target service lacks TLS, terminate the connection behind a managed proxy before exposing the callout.",
+          "rationale": "NIST SP 800-52 Rev. 2 and SP 800-53 treat protected transport and cryptographic protection as baseline controls. Plaintext HTTP leaves data and credentials exposed in transit and is not an acceptable steady-state configuration.",
           "citations": [
-            "GDPR_ART_32",
-            "NIS2",
-            "BSI_TR_02102_1"
-          ],
-          "deadline": "2018-05-25"
+            "NIST_SP_800_52",
+            "NIST_SP_800_53"
+          ]
         }
       }
     ]
@@ -281,12 +279,11 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": true,
           "currentCrypto": "AES-{{asset.keySize}}",
-          "recommendedReplacement": "Where available, configure AES-256. AES-256 retains about 128-bit security margin against Grover's algorithm; AES-128 is reduced to about 64-bit margin.",
-          "rationale": "Grover's algorithm halves the effective security of symmetric ciphers. NIST, BSI and ENISA all recommend migrating symmetric encryption to 256-bit keys in advance of CRQC availability, especially for long-confidentiality data.",
+          "recommendedReplacement": "Where available, configure AES-256. Treat 128-bit symmetric keys as short on long-confidentiality data and align new designs, KMS defaults, and partner profiles to 256-bit strength.",
+          "rationale": "NIST SP 800-57 key-management guidance and NSA CNSA 2.0 both point high-assurance deployments toward 256-bit symmetric strength. AES-128 remains usable today, but it leaves less long-term margin once quantum search costs are considered.",
           "citations": [
-            "BSI_TR_02102_1",
-            "ENISA_PQC_2024",
-            "NCSC_NL_PQC"
+            "NIST_SP_800_57_PT1",
+            "NSA_CNSA_2_0"
           ],
           "deadline": "2030-12-31"
         }
@@ -321,10 +318,11 @@ export const GENERATED_RULE_DEFS = [
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}",
-          "recommendedReplacement": "Rotate before expiry. Consider issuing the replacement as a hybrid classical plus PQC certificate to validate PQC readiness in the partner chain.",
-          "rationale": "Operational hygiene. A forced rotation is an opportunity to trial PQC migration with minimal risk.",
+          "recommendedReplacement": "Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.",
+          "rationale": "Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.",
           "citations": [
-            "ENISA_PQC_2024"
+            "NIST_SP_800_57_PT1",
+            "NIST_IR_8547"
           ],
           "deadline": "{{computed.expiresAtDate}}"
         }
@@ -346,10 +344,11 @@ export const GENERATED_RULE_DEFS = [
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}",
-          "recommendedReplacement": "Rotate before expiry. Consider issuing the replacement as a hybrid classical plus PQC certificate to validate PQC readiness in the partner chain.",
-          "rationale": "Operational hygiene. A forced rotation is an opportunity to trial PQC migration with minimal risk.",
+          "recommendedReplacement": "Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.",
+          "rationale": "Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.",
           "citations": [
-            "ENISA_PQC_2024"
+            "NIST_SP_800_57_PT1",
+            "NIST_IR_8547"
           ],
           "deadline": "{{computed.expiresAtDate}}"
         }
@@ -387,7 +386,7 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm ?? weak hash}}",
           "recommendedReplacement": "Replace with Crypto.generateDigest('SHA-256', ...) or SHA-3.",
-          "rationale": "MD5 and SHA-1 are disallowed for security-relevant use under SP 800-131A and BSI TR-02102.",
+          "rationale": "NIST SP 800-131A disallows MD5 and SHA-1 for security-relevant use, and BSI TR-02102 reaches the same conclusion.",
           "citations": [
             "NIST_SP_800_131A",
             "BSI_TR_02102_1"
@@ -413,13 +412,12 @@ export const GENERATED_RULE_DEFS = [
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "Hardcoded key material in source",
-          "recommendedReplacement": "Move the key to a Named Credential or Protected Custom Setting. Rotate the key immediately — the current value must be treated as compromised.",
-          "rationale": "Hardcoded cryptographic keys violate GDPR Art. 32 state-of-the-art requirements. Apex source is accessible to any user with View All Data or developer access.",
+          "recommendedReplacement": "Move the key to a Named Credential or Protected Custom Setting. Maintain an owner and rotation procedure for the secret, and rotate it immediately because the current value must be treated as compromised.",
+          "rationale": "Hardcoded cryptographic keys bypass key-management controls and collapse the separation between code and keying material. Once source is exposed, the embedded key must be treated as compromised.",
           "citations": [
-            "GDPR_ART_32",
-            "NIS2"
-          ],
-          "deadline": "2018-05-25"
+            "NIST_SP_800_53",
+            "NIST_SP_800_57_PT1"
+          ]
         }
       },
       {
@@ -438,11 +436,12 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": true,
           "currentCrypto": "{{asset.algorithm}}",
-          "recommendedReplacement": "Plan migration to ML-DSA once Salesforce exposes native PQC primitives. Track as a PQC-migration asset and shorten rotation cadence in the interim.",
-          "rationale": "Salesforce does not yet expose FIPS 204 primitives via Apex, so immediate replacement is not possible. Record the asset and migrate at platform-readiness.",
+          "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Where the relying party cannot yet accept PQ signatures, treat the asset as a tracked transition item and move to hybrid certificate or signature strategies as the surrounding platform permits.",
+          "rationale": "NIST IR 8547 and NSA CNSA 2.0 both put digital-signature migration on the near-term transition path. Salesforce does not yet expose FIPS 204 primitives in Apex, so the immediate requirement is inventory, shortened rotation, and partner-readiness planning.",
           "citations": [
-            "ENISA_PQC_2024",
-            "NIST_FIPS_204"
+            "NIST_IR_8547",
+            "NIST_FIPS_204",
+            "NSA_CNSA_2_0"
           ],
           "deadline": "2030-12-31"
         }
@@ -480,18 +479,17 @@ export const GENERATED_RULE_DEFS = [
           }
         ],
         "result": {
-          "title": "Session timeout exceeds NCSC-NL guidance",
+          "title": "Session timeout exceeds NIST session-termination guidance",
           "severity": "medium",
           "regulatoryStatus": "advisory",
           "migrationPosture": "advisory",
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "Session lifetime: {{captures.hours}} hours",
-          "recommendedReplacement": "Reduce session lifetime to 2 hours with idle timeout at 30 minutes. Require MFA for all user profiles handling personal data, per NCSC-NL and NIS 2 guidance.",
-          "rationale": "Long sessions extend the window for token theft and reduce the practical effectiveness of cryptographic controls upstream.",
+          "recommendedReplacement": "Reduce session lifetime to 2 hours with idle timeout at 30 minutes or less. Reauthenticate for privileged or high-risk actions so token theft windows do not persist for most of a workday.",
+          "rationale": "NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.",
           "citations": [
-            "NCSC_NL_PQC",
-            "NIS2"
+            "NIST_SP_800_53"
           ]
         }
       }
@@ -524,11 +522,11 @@ export const GENERATED_RULE_DEFS = [
           "effort": "medium",
           "hndlExposure": false,
           "currentCrypto": "Third-party managed package; cryptographic internals not inspectable",
-          "recommendedReplacement": "Request the vendor's PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap aligned with FIPS 203 and 204.",
-          "rationale": "Managed packages are opaque to QuantumShield scanning. ENISA and NCSC-NL both emphasize supply-chain crypto-agility as a post-quantum migration priority.",
+          "recommendedReplacement": "Request the vendor's cryptographic inventory and PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap for any RSA, ECC, or proprietary crypto that aligns with FIPS 203 and FIPS 204.",
+          "rationale": "Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.",
           "citations": [
-            "ENISA_PQC_2024",
-            "NCSC_NL_PQC"
+            "NIST_SP_800_53",
+            "NIST_IR_8547"
           ]
         }
       }

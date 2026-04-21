@@ -131,6 +131,50 @@ export const GENERATED_CITATIONS = {
     "section": "§5.6.1, §6.2.1",
     "documentVersion": "Rev 3",
     "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/131/a/r3/final"
+  },
+  "NIST_SP_800_52": {
+    "sourceId": "NIST-SP-800-52-r2",
+    "title": "Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations",
+    "jurisdiction": "US",
+    "documentVersion": "Rev 2",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/52/r2/final"
+  },
+  "NIST_SP_800_53": {
+    "sourceId": "NIST-SP-800-53-r5",
+    "title": "Security and Privacy Controls for Information Systems and Organizations",
+    "jurisdiction": "US",
+    "section": "AC-12, SC-8, SC-12, SC-13, SA-15, SR-5",
+    "documentVersion": "Rev 5",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final"
+  },
+  "NIST_SP_800_57_PT1": {
+    "sourceId": "NIST-SP-800-57-pt1-r5",
+    "title": "Recommendation for Key Management: Part 1 - General",
+    "jurisdiction": "US",
+    "documentVersion": "Part 1 Rev 5",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final"
+  },
+  "NIST_IR_8547": {
+    "sourceId": "NIST-IR-8547",
+    "title": "Transition to Post-Quantum Cryptography Standards",
+    "jurisdiction": "US",
+    "documentVersion": "Initial Public Draft",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/ir/8547/ipd"
+  },
+  "NSA_CNSA_2_0": {
+    "sourceId": "NSA-CNSA-2.0",
+    "title": "Commercial National Security Algorithm Suite 2.0 FAQ",
+    "jurisdiction": "US",
+    "documentVersion": "2022-09",
+    "retrievalUrl": "https://media.defense.gov/2022/Sep/07/2003071836/-1/-1/1/CSI_CNSA_2.0_FAQ_.PDF"
+  },
+  "FTC_SAFEGUARDS": {
+    "sourceId": "FTC-Safeguards-Rule",
+    "title": "FTC Safeguards Rule - Standards for Safeguarding Customer Information",
+    "jurisdiction": "US",
+    "section": "16 CFR 314.3, 314.4(c), 314.4(f)",
+    "documentVersion": "16 CFR Part 314",
+    "retrievalUrl": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-314"
   }
 } as const satisfies Record<string, Citation>;
 
@@ -253,6 +297,36 @@ export const GENERATED_SOURCE_VERSIONS = [
   {
     "sourceId": "NIST-SP-800-131A-r3",
     "documentVersion": "Rev 3",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "NIST-SP-800-52-r2",
+    "documentVersion": "Rev 2",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "NIST-SP-800-53-r5",
+    "documentVersion": "Rev 5",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "NIST-SP-800-57-pt1-r5",
+    "documentVersion": "Part 1 Rev 5",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "NIST-IR-8547",
+    "documentVersion": "Initial Public Draft",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "NSA-CNSA-2.0",
+    "documentVersion": "2022-09",
+    "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "FTC-Safeguards-Rule",
+    "documentVersion": "16 CFR Part 314",
     "retrievedAt": "2026-04-21"
   }
 ] as const satisfies Report['sourceVersions'];

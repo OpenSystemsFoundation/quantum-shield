@@ -14,6 +14,7 @@
     <types>
         <members>Legacy_Billing_API</members>
         <members>Partner_OAuth_API</members>
+        <members>US_Medicare_Claims_API</members>
         <name>NamedCredential</name>
     </types>
     <types>
@@ -32,6 +33,7 @@
         <members>Internal_Reporting_HTTP</members>
         <members>Legacy_Billing_HTTP</members>
         <members>Partner_API_HTTPS</members>
+        <members>US_Federal_Reporting_HTTP</members>
         <name>RemoteSiteSetting</name>
     </types>
     <types>

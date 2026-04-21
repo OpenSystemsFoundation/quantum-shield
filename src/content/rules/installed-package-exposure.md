@@ -25,11 +25,11 @@ cases:
       hndlExposure: false
       currentCrypto: Third-party managed package; cryptographic internals not inspectable
       recommendedReplacement: >-
-        Request the vendor's PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap aligned with FIPS 203 and 204.
+        Request the vendor's cryptographic inventory and PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap for any RSA, ECC, or proprietary crypto that aligns with FIPS 203 and FIPS 204.
       rationale: >-
-        Managed packages are opaque to QuantumShield scanning. ENISA and NCSC-NL both emphasize supply-chain crypto-agility as a post-quantum migration priority.
+        Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.
       citations:
-        - ENISA_PQC_2024
-        - NCSC_NL_PQC
+        - NIST_SP_800_53
+        - NIST_IR_8547
 ---
 Opaque dependencies should be reviewed as policy, not hidden behind a hard-coded special case.

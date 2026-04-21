@@ -26,11 +26,12 @@ cases:
       hndlExposure: false
       currentCrypto: '{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}'
       recommendedReplacement: >-
-        Rotate before expiry. Consider issuing the replacement as a hybrid classical plus PQC certificate to validate PQC readiness in the partner chain.
+        Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.
       rationale: >-
-        Operational hygiene. A forced rotation is an opportunity to trial PQC migration with minimal risk.
+        Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.
       citations:
-        - ENISA_PQC_2024
+        - NIST_SP_800_57_PT1
+        - NIST_IR_8547
       deadline: '{{computed.expiresAtDate}}'
   - when:
       - field: expiresAt
@@ -46,11 +47,12 @@ cases:
       hndlExposure: false
       currentCrypto: '{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}'
       recommendedReplacement: >-
-        Rotate before expiry. Consider issuing the replacement as a hybrid classical plus PQC certificate to validate PQC readiness in the partner chain.
+        Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.
       rationale: >-
-        Operational hygiene. A forced rotation is an opportunity to trial PQC migration with minimal risk.
+        Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.
       citations:
-        - ENISA_PQC_2024
+        - NIST_SP_800_57_PT1
+        - NIST_IR_8547
       deadline: '{{computed.expiresAtDate}}'
 ---
 This rule keeps a time-sensitive operational policy in documentation instead of in a hard-coded function.

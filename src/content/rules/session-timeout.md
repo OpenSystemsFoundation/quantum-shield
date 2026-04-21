@@ -24,7 +24,7 @@ cases:
         op: gte
         value: 8
     result:
-      title: Session timeout exceeds NCSC-NL guidance
+      title: Session timeout exceeds NIST session-termination guidance
       severity: medium
       regulatoryStatus: advisory
       migrationPosture: advisory
@@ -32,11 +32,10 @@ cases:
       hndlExposure: false
       currentCrypto: 'Session lifetime: {{captures.hours}} hours'
       recommendedReplacement: >-
-        Reduce session lifetime to 2 hours with idle timeout at 30 minutes. Require MFA for all user profiles handling personal data, per NCSC-NL and NIS 2 guidance.
+        Reduce session lifetime to 2 hours with idle timeout at 30 minutes or less. Reauthenticate for privileged or high-risk actions so token theft windows do not persist for most of a workday.
       rationale: >-
-        Long sessions extend the window for token theft and reduce the practical effectiveness of cryptographic controls upstream.
+        NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.
       citations:
-        - NCSC_NL_PQC
-        - NIS2
+        - NIST_SP_800_53
 ---
 This rule shows how operational settings can still be encoded declaratively, including small captured values like the hour count parsed from the scanned location string.

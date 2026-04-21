@@ -29,13 +29,13 @@ cases:
       hndlExposure: true
       currentCrypto: RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}
       recommendedReplacement: >-
-        Plan migration to ML-DSA (FIPS 204). Deploy a hybrid (classical + PQC) certificate at next rotation if partner endpoints do not yet support ML-DSA — ENISA and NCSC-NL both endorse hybrid as the transition pattern.
+        Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.
       rationale: >-
-        RSA remains compliant today but is on the deprecation path. BSI TR-02102 recommends migration planning now; ENISA flags asymmetric signing and key transport as migration priorities because signed and encrypted artefacts are long-lived and harvestable.
+        RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.
       citations:
-        - BSI_TR_02102_1
-        - ENISA_PQC_2024
-        - NCSC_NL_PQC
+        - NIST_IR_8547
+        - NSA_CNSA_2_0
+        - NIST_FIPS_203
         - NIST_FIPS_204
       deadline: '2030-12-31'
   - when:
@@ -54,13 +54,13 @@ cases:
       hndlExposure: true
       currentCrypto: RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}
       recommendedReplacement: >-
-        Plan migration to ML-DSA (FIPS 204). Deploy a hybrid (classical + PQC) certificate at next rotation if partner endpoints do not yet support ML-DSA — ENISA and NCSC-NL both endorse hybrid as the transition pattern.
+        Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.
       rationale: >-
-        RSA remains compliant today but is on the deprecation path. BSI TR-02102 recommends migration planning now; ENISA flags asymmetric signing and key transport as migration priorities because signed and encrypted artefacts are long-lived and harvestable.
+        RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.
       citations:
-        - BSI_TR_02102_1
-        - ENISA_PQC_2024
-        - NCSC_NL_PQC
+        - NIST_IR_8547
+        - NSA_CNSA_2_0
+        - NIST_FIPS_203
         - NIST_FIPS_204
       deadline: '2030-12-31'
 ---

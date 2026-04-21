@@ -27,12 +27,12 @@ cases:
       hndlExposure: true
       currentCrypto: '{{asset.algorithm}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}'
       recommendedReplacement: >-
-        Plan migration to ML-DSA (FIPS 204). Where stateless hash-based assurance is preferred, SLH-DSA (FIPS 205) is an alternative.
+        Plan migration to ML-DSA (FIPS 204). Where a hash-based signature profile is a better fit for long-lived verification, evaluate SLH-DSA (FIPS 205) and use hybrid certificate strategies while ecosystem support catches up.
       rationale: >-
-        ECDSA and other elliptic curve primitives are compliant today but are broken by a cryptographically relevant quantum computer. BSI, ENISA and NCSC-NL all direct organisations to schedule migration in advance of 2030.
+        ECDSA and related ECC signatures remain compliant today, but NIST IR 8547 and NSA CNSA 2.0 place them on the quantum transition path. Signature inventories, certificate chains, and relying-party interoperability should be updated before the 2030 horizon.
       citations:
-        - BSI_TR_02102_1
-        - ENISA_PQC_2024
+        - NIST_IR_8547
+        - NSA_CNSA_2_0
         - NIST_FIPS_204
         - NIST_FIPS_205
       deadline: '2030-12-31'
