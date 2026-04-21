@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "Salesforce App",
   "scripts": {
+    "scratch:bootstrap": "node scripts/bootstrap-scratch-org.mjs",
+    "scratch:retrieve:setup": "node scripts/retrieve-app-setup.mjs",
+    "scratch:deploy": "sf project deploy start --wait 20",
     "lint": "eslint **/{aura,lwc}/**/*.js",
     "test": "npm run test:unit",
     "test:unit": "sfdx-lwc-jest",

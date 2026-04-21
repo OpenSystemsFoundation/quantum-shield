@@ -1,18 +1,59 @@
-# Salesforce DX Project: Next Steps
+# QuantumShield Salesforce Seed Project
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+This Salesforce DX project is the deployable seed for the scratch org that QuantumShield scans during end-to-end testing.
 
-## How Do You Plan to Deploy Your Changes?
+The goal is simple: a fresh scratch org created from this folder should already contain the app setup we need to test QuantumShield without rebuilding that setup manually in Salesforce Setup.
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+## What Lives Here
 
-## Configure Your Salesforce DX Project
+- Deployable External Client App metadata for `QuantumShield Scanner`
+- Deployable OAuth policy and global OAuth settings for that app
+- Deployable `CorsWhitelistOrigin` for `http://localhost:4321`
+- Any additional Apex, permissions, tabs, objects, layouts, or other metadata we decide to keep as part of the reproducible test seed
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+## Fresh Scratch Org Flow
 
-## Read All About It
+Create and deploy a fresh scratch org:
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+```bash
+npm run scratch:bootstrap -- --devhub <your-devhub-alias> --alias qs-seed --duration-days 7
+```
+
+What the bootstrap script does:
+
+1. Creates the scratch org from `config/project-scratch-def.json`
+2. Deploys this DX project into that org
+3. Generates a password for browser sign-in
+4. Prints the instance URL, username, password, and Consumer Key you need for the QuantumShield app
+
+After bootstrap, update the root app environment with the printed values if needed:
+
+```env
+PUBLIC_SF_CLIENT_ID=<consumer-key>
+PUBLIC_SF_API_VERSION=66.0
+PUBLIC_SF_SCRATCH_INSTANCE=<instance-url>
+PUBLIC_DEV_MOCK=0
+```
+
+## Retrieve Changes Back Into Source
+
+If you make app-setup changes directly in the scratch org, pull them back into this project with:
+
+```bash
+npm run scratch:retrieve:setup -- --target-org qs-seed
+```
+
+That command uses `sf project retrieve start` against `manifest/quantum-shield-app-setup.xml` and then strips org-bound linkage fields that do not redeploy cleanly across scratch orgs.
+
+## Why We Sanitize Retrieved Metadata
+
+Salesforce retrieval includes some org-specific fields for External Client Apps that are not portable across orgs:
+
+- `orgScopedExternalApp`
+- `oauthLink`
+
+Those values are valid in the org they came from, but they caused deployment failures in a fresh scratch org. The retrieve script removes them automatically so this folder stays deployable.
+
+## Source Of Truth Rule
+
+If we create additional Salesforce metadata in the scratch org that QuantumShield needs for testing, retrieve it into this folder and keep it deployable here. The scratch org is not the source of truth. This DX project is.

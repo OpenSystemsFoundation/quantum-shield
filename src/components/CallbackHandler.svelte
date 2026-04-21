@@ -6,8 +6,10 @@
     OAuthFlowError,
     parseCallbackParams,
     saveSession,
+    sessionFromToken,
     sessionFromTokenAndIdentity,
     takePendingAuth,
+    tokenFromCallbackParams,
   } from '@lib/auth';
   import BlochShield from './BlochShield.svelte';
 
@@ -16,7 +18,7 @@
   let errorDetail = $state<string | null>(null);
 
   onMount(async () => {
-    const params = parseCallbackParams(window.location.search);
+    const params = parseCallbackParams(window.location.search, window.location.hash);
 
     if (params.error) {
       status = 'error';
@@ -25,10 +27,10 @@
       return;
     }
 
-    if (!params.code || !params.state) {
+    if (!params.state || (!params.code && !params.accessToken)) {
       status = 'error';
-      errorTitle = 'Missing authorization code';
-      errorDetail = 'The callback URL did not include a code and state parameter.';
+      errorTitle = 'Missing OAuth response';
+      errorDetail = 'The callback URL did not include the expected authorization response.';
       return;
     }
 
@@ -40,22 +42,39 @@
       return;
     }
 
-    const clientId = loadClientId(pending.loginUrl);
-    if (!clientId) {
-      status = 'error';
-      errorTitle = 'Client ID not found';
-      errorDetail = 'We could not locate the External Client App ID for this login URL. Reconnect from /connect.';
-      return;
-    }
-
     try {
-      const { token, identity } = await exchangeCode({
-        code: params.code,
-        state: params.state,
-        pending,
-        clientId,
-      });
-      const session = sessionFromTokenAndIdentity(pending, token, identity);
+      let session;
+
+      if (params.accessToken) {
+        const token = tokenFromCallbackParams(params);
+        if (!token) {
+          throw new OAuthFlowError(
+            'invalid-callback',
+            'OAuth callback fragment was missing one or more required token fields.',
+          );
+        }
+        if (params.state !== pending.state) {
+          throw new OAuthFlowError('state-mismatch', 'OAuth state mismatch — aborting for safety.');
+        }
+        session = sessionFromToken(pending, token);
+      } else {
+        const clientId = loadClientId(pending.loginUrl);
+        if (!clientId || !params.code) {
+          status = 'error';
+          errorTitle = 'Client ID not found';
+          errorDetail = 'We could not locate the External Client App ID for this login URL. Reconnect from /connect.';
+          return;
+        }
+
+        const { token, identity } = await exchangeCode({
+          code: params.code,
+          state: params.state,
+          pending,
+          clientId,
+        });
+        session = sessionFromTokenAndIdentity(pending, token, identity);
+      }
+
       saveSession(session);
       status = 'success';
       window.location.replace('/app');
@@ -84,7 +103,7 @@
         Completing authentication…
       </h1>
       <p style="margin:0;color:var(--ink-3);font-size:12.5px;">
-        Exchanging code for access token.
+        Finalizing your Salesforce session.
       </p>
       <div style="margin:18px auto 0;width:180px;height:4px;background:var(--bg-2);border-radius:99px;overflow:hidden;">
         <div style="height:100%;width:45%;background:var(--navy-500);animation:qs-pulse 1.4s infinite;"></div>

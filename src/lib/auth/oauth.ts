@@ -1,9 +1,5 @@
 import { loadAuthConfig, SCOPES } from './config.js';
-import {
-  deriveCodeChallenge,
-  generateCodeVerifier,
-  generateState,
-} from './pkce.js';
+import { generateCodeVerifier, generateState } from './pkce.js';
 import { savePendingAuth } from './session.js';
 import type {
   EnvironmentId,
@@ -25,7 +21,6 @@ export async function buildAuthorizeUrl(opts: StartAuthOptions): Promise<{ url: 
   const cfg = loadAuthConfig();
   const apiVersion = opts.apiVersion ?? cfg.apiVersion;
   const codeVerifier = generateCodeVerifier();
-  const codeChallenge = await deriveCodeChallenge(codeVerifier);
   const state = generateState();
   const scopes = Array.from(new Set([...SCOPES, ...(opts.extraScopes ?? [])]));
 
@@ -39,11 +34,9 @@ export async function buildAuthorizeUrl(opts: StartAuthOptions): Promise<{ url: 
   };
 
   const authorize = new URL(`${opts.loginUrl.replace(/\/$/, '')}/services/oauth2/authorize`);
-  authorize.searchParams.set('response_type', 'code');
+  authorize.searchParams.set('response_type', 'token');
   authorize.searchParams.set('client_id', opts.clientId);
   authorize.searchParams.set('redirect_uri', cfg.redirectUri);
-  authorize.searchParams.set('code_challenge', codeChallenge);
-  authorize.searchParams.set('code_challenge_method', 'S256');
   authorize.searchParams.set('scope', scopes.join(' '));
   authorize.searchParams.set('state', state);
   authorize.searchParams.set('prompt', 'login consent');
@@ -62,18 +55,33 @@ export async function launchAuth(opts: StartAuthOptions): Promise<never> {
 
 export interface CallbackParams {
   code?: string | null;
+  accessToken?: string | null;
+  instanceUrl?: string | null;
+  identityUrl?: string | null;
+  tokenType?: string | null;
+  issuedAt?: string | null;
+  signature?: string | null;
+  scope?: string | null;
   state?: string | null;
   error?: string | null;
   errorDescription?: string | null;
 }
 
-export function parseCallbackParams(search: string): CallbackParams {
+export function parseCallbackParams(search: string, hash = ''): CallbackParams {
   const params = new URLSearchParams(search);
+  const fragment = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
   return {
     code: params.get('code'),
-    state: params.get('state'),
-    error: params.get('error'),
-    errorDescription: params.get('error_description'),
+    accessToken: fragment.get('access_token'),
+    instanceUrl: fragment.get('instance_url'),
+    identityUrl: fragment.get('id'),
+    tokenType: fragment.get('token_type'),
+    issuedAt: fragment.get('issued_at'),
+    signature: fragment.get('signature'),
+    scope: fragment.get('scope'),
+    state: params.get('state') ?? fragment.get('state'),
+    error: params.get('error') ?? fragment.get('error'),
+    errorDescription: params.get('error_description') ?? fragment.get('error_description'),
   };
 }
 
@@ -81,6 +89,7 @@ export class OAuthFlowError extends Error {
   constructor(
     public readonly kind:
       | 'state-mismatch'
+      | 'invalid-callback'
       | 'pending-missing'
       | 'provider-error'
       | 'token-exchange-failed'
@@ -156,11 +165,43 @@ export async function exchangeCode(params: {
   return { token, identity };
 }
 
-export function sessionFromTokenAndIdentity(
-  pending: PendingAuth,
-  token: TokenResponse,
-  identity: IdentityResponse,
-): Session {
+function parseIdentityIds(identityUrl: string): { orgId: string; userId: string } {
+  try {
+    const parts = new URL(identityUrl).pathname.split('/').filter(Boolean);
+    const idIndex = parts.indexOf('id');
+    if (idIndex === -1 || !parts[idIndex + 1] || !parts[idIndex + 2]) {
+      throw new Error('missing org or user id path segment');
+    }
+    return {
+      orgId: parts[idIndex + 1],
+      userId: parts[idIndex + 2],
+    };
+  } catch (err) {
+    throw new OAuthFlowError(
+      'invalid-callback',
+      'OAuth callback did not include a valid Salesforce identity URL.',
+      err,
+    );
+  }
+}
+
+export function tokenFromCallbackParams(params: CallbackParams): TokenResponse | null {
+  if (!params.accessToken || !params.instanceUrl || !params.identityUrl || !params.tokenType) {
+    return null;
+  }
+  return {
+    access_token: params.accessToken,
+    instance_url: params.instanceUrl,
+    id: params.identityUrl,
+    token_type: params.tokenType,
+    issued_at: params.issuedAt ?? `${Date.now()}`,
+    signature: params.signature ?? '',
+    scope: params.scope ?? SCOPES.join(' '),
+  };
+}
+
+export function sessionFromToken(pending: PendingAuth, token: TokenResponse): Session {
+  const identity = parseIdentityIds(token.id);
   return {
     accessToken: token.access_token,
     instanceUrl: token.instance_url,
@@ -169,14 +210,23 @@ export function sessionFromTokenAndIdentity(
     issuedAt: new Date(Number(token.issued_at) || Date.now()).toISOString(),
     scope: token.scope,
     org: {
-      orgId: identity.organization_id,
-      userId: identity.user_id,
-      username: identity.username,
-      displayName: identity.display_name,
+      orgId: identity.orgId,
+      userId: identity.userId,
     },
     environmentId: pending.environmentId,
     apiVersion: pending.apiVersion,
   };
+}
+
+export function sessionFromTokenAndIdentity(
+  pending: PendingAuth,
+  token: TokenResponse,
+  identity: IdentityResponse,
+): Session {
+  const session = sessionFromToken(pending, token);
+  session.org.username = identity.username;
+  session.org.displayName = identity.display_name;
+  return session;
 }
 
 export function buildMockSession(): Session {

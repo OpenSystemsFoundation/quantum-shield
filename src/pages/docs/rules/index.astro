@@ -1,0 +1,76 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Shell from '../../../layouts/Shell.astro';
+
+const rules = (await getCollection('rules')).sort(
+  (left: CollectionEntry<'rules'>, right: CollectionEntry<'rules'>) =>
+    left.data.order - right.data.order || left.data.title.localeCompare(right.data.title),
+);
+
+const byStatus = {
+  active: rules.filter((entry: CollectionEntry<'rules'>) => entry.data.implementationStatus === 'active'),
+  draft: rules.filter((entry: CollectionEntry<'rules'>) => entry.data.implementationStatus === 'draft'),
+  disabled: rules.filter((entry: CollectionEntry<'rules'>) => entry.data.implementationStatus === 'disabled'),
+};
+
+function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
+  switch (status) {
+    case 'active': return 'var(--ok)';
+    case 'draft': return 'var(--warn)';
+    case 'disabled': return 'var(--muted)';
+  }
+}
+---
+
+<Shell title="Rule Catalog — QuantumShield" description="Browsable rule catalog generated from the same Markdown documents that define QuantumShield business logic.">
+  <main style="max-width:1100px;margin:0 auto;padding:40px 28px 72px;display:grid;gap:28px;">
+    <section style="display:grid;gap:10px;max-width:820px;">
+      <div class="tiny-caps" style="color:var(--navy-600);">Business logic source of truth</div>
+      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">Rule catalog</h1>
+      <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;">
+        These rule documents are the authoritative source for QuantumShield findings. The scanner engine interprets the generated catalog from this Markdown collection, so reviewers can inspect the same conditions, severities, deadlines, and citations that ship in the app.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <a href="/docs/regulations" class="qs-btn qs-btn-ghost qs-btn-sm" style="text-decoration:none;">Browse regulation sources</a>
+        <span class="tiny-caps" style="color:var(--muted);">{rules.length} rules in collection</span>
+      </div>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+      {(['active', 'draft', 'disabled'] as const).map((status) => (
+        <div class="qs-card" style="padding:18px;display:grid;gap:6px;">
+          <div class="tiny-caps" style={`color:${badgeColor(status)};`}>{status}</div>
+          <strong class="serif" style="font-size:28px;font-weight:500;">{byStatus[status].length}</strong>
+          <span style="font-size:12.5px;color:var(--ink-3);line-height:1.5;">Rule documents currently marked {status}.</span>
+        </div>
+      ))}
+    </section>
+
+    <section style="display:grid;gap:14px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Rule definitions</h2>
+        <span class="tiny-caps" style="color:var(--muted);">Ordered in evaluation priority</span>
+      </div>
+      <div class="qs-card" style="padding:6px 0;overflow:hidden;">
+        {rules.map((entry: CollectionEntry<'rules'>) => (
+          <a href={`/docs/rules/${entry.slug}`} style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
+            <div style="display:grid;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong style="font-size:13.5px;line-height:1.45;">{entry.data.id}</strong>
+                <span style="font:500 10.5px var(--mono);color:var(--muted);text-transform:uppercase;">{entry.data.appliesTo.join(', ')}</span>
+              </div>
+              <span style="font-size:13px;color:var(--ink-2);line-height:1.5;">{entry.data.title}</span>
+              <span style="color:var(--ink-3);font-size:12.5px;line-height:1.55;">{entry.data.summary}</span>
+            </div>
+            <div style="display:grid;justify-items:end;align-content:start;gap:4px;">
+              <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${badgeColor(entry.data.implementationStatus)};`}>
+                {entry.data.implementationStatus}
+              </span>
+              <span style="font:500 10.5px var(--mono);color:var(--muted);text-transform:uppercase;">{entry.data.cases.length} case{entry.data.cases.length === 1 ? '' : 's'}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  </main>
+</Shell>

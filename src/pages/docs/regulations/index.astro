@@ -1,0 +1,77 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Shell from '../../../layouts/Shell.astro';
+
+const docs = (await getCollection('regulations')).sort(
+  (left: CollectionEntry<'regulations'>, right: CollectionEntry<'regulations'>) =>
+    left.data.order - right.data.order || left.data.title.localeCompare(right.data.title),
+);
+const overlays = docs.filter((entry: CollectionEntry<'regulations'>) => entry.data.kind === 'overlay');
+const references = docs.filter((entry: CollectionEntry<'regulations'>) => entry.data.kind === 'reference');
+
+function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
+  switch (status) {
+    case 'active': return 'var(--ok)';
+    case 'reference-only': return 'var(--warn)';
+    case 'planned': return 'var(--muted)';
+  }
+}
+---
+
+<Shell title="Regulation Sources — QuantumShield" description="Indexed regulatory and standards source documents that drive QuantumShield mappings.">
+  <main style="max-width:1100px;margin:0 auto;padding:40px 28px 72px;display:grid;gap:28px;">
+    <section style="display:grid;gap:10px;max-width:760px;">
+      <div class="tiny-caps" style="color:var(--navy-600);">Source of truth</div>
+      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">Regulation and standards index</h1>
+      <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;">
+        Each regulation or technical source lives in its own Markdown file with machine-readable frontmatter. A build-time sync step turns those documents into the runtime citation and overlay manifest used by the scanner and report layers.
+      </p>
+    </section>
+
+    <section style="display:grid;gap:14px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Regulatory overlays</h2>
+        <span class="tiny-caps" style="color:var(--muted);">One document per overlay</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+        {overlays.map((entry: CollectionEntry<'regulations'>) => (
+          <a href={`/docs/regulations/${entry.slug}`} class="qs-card" style="padding:18px 18px 16px;display:grid;gap:10px;text-decoration:none;color:inherit;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <strong style="font-size:14px;line-height:1.4;">{entry.data.overlayLabel ?? entry.data.title}</strong>
+              <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${badgeColor(entry.data.implementationStatus)};`}>
+                {entry.data.implementationStatus}
+              </span>
+            </div>
+            <p style="margin:0;color:var(--ink-3);font-size:12.5px;line-height:1.55;">{entry.data.summary}</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font:500 10.5px var(--mono);text-transform:uppercase;">
+              <span>{entry.data.jurisdiction}</span>
+              <span>v{entry.data.documentVersion}</span>
+              <span>reviewed {entry.data.lastReviewed}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section style="display:grid;gap:14px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Reference standards</h2>
+        <span class="tiny-caps" style="color:var(--muted);">Technical guidance cited by rules</span>
+      </div>
+      <div class="qs-card" style="padding:6px 0;overflow:hidden;">
+        {references.map((entry: CollectionEntry<'regulations'>) => (
+          <a href={`/docs/regulations/${entry.slug}`} style="display:grid;grid-template-columns:minmax(0,2fr) auto;gap:14px;padding:14px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
+            <div style="display:grid;gap:4px;">
+              <strong style="font-size:13.5px;line-height:1.45;">{entry.data.title}</strong>
+              <span style="color:var(--ink-3);font-size:12.5px;line-height:1.55;">{entry.data.summary}</span>
+            </div>
+            <div style="display:grid;justify-items:end;align-content:start;gap:4px;color:var(--muted);font:500 10.5px var(--mono);text-transform:uppercase;">
+              <span>{entry.data.jurisdiction}</span>
+              <span>{entry.data.documentVersion}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  </main>
+</Shell>

@@ -6,11 +6,13 @@ import type {
   Report,
   Severity,
 } from '@lib/pdf';
-import { evaluate, ruleCatalogForOverlays } from '@lib/rules/engine';
-import { AuthError, CorsBlockedError, SfClient } from './sfClient.js';
+import { evaluate, ruleCatalogForOverlays } from '../rules/engine.js';
+import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '../rules/regulations.generated.js';
+import { AuthError, CorsBlockedError, type ScanClient, SfClient } from './sfClient.js';
 import { allScanners } from './scanners.js';
 import type { ScanEvent, ScanEventListener, ScanOptions } from './types.js';
-import { buildMockAssets } from './fixtures/mockAssets.js';
+import { SnapshotSfClient } from './fixtures/client.js';
+import { LIVE_ORG_SCAN_SNAPSHOT } from './fixtures/liveOrgSnapshot.generated.js';
 
 function emptyCategoryCounts(): Record<Category, number> {
   return {
@@ -30,24 +32,64 @@ function emptySeverityCounts(): Record<Severity, number> {
   return { critical: 0, high: 0, medium: 0, low: 0 };
 }
 
-const OVERLAY_DEFS: OverlayScope[] = [
-  { id: 'gdpr', label: 'GDPR — security of processing (Art. 32)', enabled: false },
-  { id: 'nis2', label: 'NIS 2 — risk-management measures (Art. 21)', enabled: false },
-  { id: 'dora', label: 'DORA — ICT risk management (Art. 9)', enabled: false },
-  { id: 'eidas2', label: 'eIDAS 2.0 — trust services', enabled: false },
-  { id: 'pci-dss-4', label: 'PCI DSS 4.0 — requirements 3.5–3.7', enabled: false },
-  { id: 'hipaa', label: 'HIPAA Security Rule', enabled: false },
-  { id: 'cmmc', label: 'CMMC 2.0 Levels 2 & 3', enabled: false },
-  { id: 'swift-csp', label: 'SWIFT Customer Security Programme', enabled: false },
-];
+const OVERLAY_DEFS: OverlayScope[] = GENERATED_OVERLAYS.map((overlay) => ({ ...overlay, enabled: false }));
+
+async function scanWithClient(
+  client: ScanClient,
+  emit: ScanEventListener,
+  assets: CryptoAsset[],
+): Promise<void> {
+  const scanners = allScanners();
+  const send = (e: ScanEvent) => emit(e);
+
+  for (const scanner of scanners) {
+    const progressBase = { category: scanner.category, label: scanner.label };
+    send({
+      type: 'scanner-progress',
+      progress: { ...progressBase, status: 'running', startedAt: new Date().toISOString() },
+    });
+    try {
+      let count = 0;
+      await scanner.scan(client, (asset: CryptoAsset) => {
+        count += 1;
+        assets.push(asset);
+        send({ type: 'asset', category: scanner.category, asset });
+      });
+      send({
+        type: 'scanner-progress',
+        progress: {
+          ...progressBase,
+          status: 'completed',
+          assetCount: count,
+          finishedAt: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      if (err instanceof CorsBlockedError) {
+        send({ type: 'failed', kind: 'cors', error: err.message });
+        throw err;
+      }
+      if (err instanceof AuthError) {
+        send({ type: 'failed', kind: 'auth', error: err.message });
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      send({
+        type: 'scanner-progress',
+        progress: { ...progressBase, status: 'failed', error: message, finishedAt: new Date().toISOString() },
+      });
+      send({ type: 'log', level: 'warn', message: `${scanner.category} failed: ${message}` });
+    }
+  }
+}
 
 export async function runScan(
   options: ScanOptions,
   emit: ScanEventListener,
 ): Promise<Report> {
   const startedAt = new Date();
-  const scanners = allScanners();
   const send = (e: ScanEvent) => emit(e);
+  const scanners = allScanners();
 
   send({
     type: 'started',
@@ -59,78 +101,9 @@ export async function runScan(
 
   try {
     if (options.mock) {
-      for (const scanner of scanners) {
-        send({
-          type: 'scanner-progress',
-          progress: {
-            category: scanner.category,
-            label: scanner.label,
-            status: 'running',
-            startedAt: new Date().toISOString(),
-          },
-        });
-        const mockAssets = buildMockAssets(scanner.category);
-        for (const a of mockAssets) {
-          assets.push(a);
-          send({ type: 'asset', category: scanner.category, asset: a });
-        }
-        send({
-          type: 'scanner-progress',
-          progress: {
-            category: scanner.category,
-            label: scanner.label,
-            status: 'completed',
-            assetCount: mockAssets.length,
-            finishedAt: new Date().toISOString(),
-          },
-        });
-        await new Promise((r) => setTimeout(r, 120));
-      }
+      await scanWithClient(new SnapshotSfClient(LIVE_ORG_SCAN_SNAPSHOT), emit, assets);
     } else {
-      const client = new SfClient(options.session);
-      for (const scanner of scanners) {
-        const progressBase = { category: scanner.category, label: scanner.label };
-        send({
-          type: 'scanner-progress',
-          progress: { ...progressBase, status: 'running', startedAt: new Date().toISOString() },
-        });
-        try {
-          let count = 0;
-          await scanner.scan(client, (a: CryptoAsset) => {
-            count += 1;
-            assets.push(a);
-            send({ type: 'asset', category: scanner.category, asset: a });
-          });
-          send({
-            type: 'scanner-progress',
-            progress: {
-              ...progressBase,
-              status: 'completed',
-              assetCount: count,
-              finishedAt: new Date().toISOString(),
-            },
-          });
-        } catch (err) {
-          if (err instanceof CorsBlockedError) {
-            send({
-              type: 'failed',
-              kind: 'cors',
-              error: err.message,
-            });
-            throw err;
-          }
-          if (err instanceof AuthError) {
-            send({ type: 'failed', kind: 'auth', error: err.message });
-            throw err;
-          }
-          const message = err instanceof Error ? err.message : String(err);
-          send({
-            type: 'scanner-progress',
-            progress: { ...progressBase, status: 'failed', error: message, finishedAt: new Date().toISOString() },
-          });
-          send({ type: 'log', level: 'warn', message: `${scanner.category} failed: ${message}` });
-        }
-      }
+      await scanWithClient(new SfClient(options.session), emit, assets);
     }
 
     const rules = ruleCatalogForOverlays(options.overlays);
@@ -181,18 +154,7 @@ export async function runScan(
       },
       findings,
       overlays,
-      sourceVersions: [
-        { sourceId: 'BSI-TR-02102-1', documentVersion: '2025-01', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'ENISA-PQC-2024', documentVersion: '2024', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'NCSC-NL-PQC-factsheet', documentVersion: '2024', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'NIST-FIPS-203', documentVersion: '2024-08', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'NIST-FIPS-204', documentVersion: '2024-08', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'NIST-FIPS-205', documentVersion: '2024-08', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'NIST-SP-800-131A-r3', documentVersion: 'Rev 3', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'nis2-directive', documentVersion: '2022/2555', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'dora-regulation', documentVersion: '2022/2554', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-        { sourceId: 'gdpr-art32', documentVersion: '2016/679', retrievedAt: finishedAt.toISOString().slice(0, 10) },
-      ],
+      sourceVersions: GENERATED_SOURCE_VERSIONS,
       summary: {
         totalFindings: findings.length,
         bySeverity: severityCounts,

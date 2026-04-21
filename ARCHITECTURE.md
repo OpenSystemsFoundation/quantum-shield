@@ -23,7 +23,7 @@ A browser-only post-quantum readiness scanner for Salesforce organizations. Exte
 - **Hosting:** Cloudflare Pages (static). Custom domain via Cloudflare DNS.
 - **Framework:** Astro for routing and page shell. Svelte islands for interactive surfaces (connect modal, scan progress, findings viewer, report preview).
 - **Styling:** Tailwind.
-- **Content:** Astro content collections (MDX) for docs, install guide, regulatory-mapping pages.
+- **Content:** Astro content collections (MDX/Markdown) for docs, install guide, and regulatory source files. Each regulation or standards source lives in its own Markdown file under `src/content/regulations/`; structured frontmatter is the canonical source for citation and overlay metadata, and a build-time sync step generates the runtime manifest the app imports.
 - **Salesforce integration:** `jsforce` from npm (bundled, tree-shaken — not the CDN build). Handles OAuth PKCE and the Tooling / Metadata / REST API surface.
 - **Scan engine:** Web Worker via Comlink. Main thread stays responsive during large-org scans.
 - **State:** Svelte stores for UI; scan engine state passed back through Comlink.
@@ -46,6 +46,7 @@ A browser-only post-quantum readiness scanner for Salesforce organizations. Exte
 - `/app/scan/:id` — Live scan view with progress per category, streaming findings.
 - `/app/report/:id` — Findings viewer, filters, remediation detail, export to PDF.
 - `/install` — CORS setup guide for admins. Step-by-step with screenshots. Linked inline when the app detects a CORS block.
+- `/docs/regulations/*` — Indexed regulation and standards source pages. One document per regulation/source with machine-readable frontmatter used to generate the app's citation and overlay manifest.
 - `/docs/*` — Framework mappings, scanning methodology, data handling, FAQ.
 - `/privacy` and `/terms` — Legally required, explicit about the zero-data-transmission architecture.
 - `/security` — Trust page. Open source links, CSP, OAuth scopes requested, what the scanner does and does not touch.
@@ -159,7 +160,7 @@ Every finding in the report cites at least one primary source below. The rules e
 - **CMMC 2.0 Level 2 and Level 3 — SC.L2-3.13.11, SC.L2-3.13.8** on cryptography. For DoD supply chain.
 - **SWIFT Customer Security Programme.** For banking customers using Salesforce for treasury-adjacent workflows.
 
-Sources are revisioned quarterly. A source file header records its document version, revision date, and retrieval URL. Changes trigger a rules-engine release bump.
+Sources are revisioned quarterly. Each source file in `src/content/regulations/` records its document version, review date, retrieval URL, implementation status, and requirement anchors in frontmatter. The generated manifest is rebuilt from those documents before development, checks, builds, and tests.
 
 ---
 

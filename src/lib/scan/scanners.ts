@@ -1,10 +1,10 @@
 import type { Category, CryptoAsset } from '@lib/pdf';
-import type { SfClient } from './sfClient.js';
+import type { ScanClient } from './sfClient.js';
 
 export interface Scanner {
   category: Category;
   label: string;
-  scan(client: SfClient, emit: (asset: CryptoAsset) => void): Promise<void>;
+  scan(client: ScanClient, emit: (asset: CryptoAsset) => void): Promise<void>;
 }
 
 interface ToolingCertificate {

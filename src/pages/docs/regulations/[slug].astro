@@ -1,0 +1,91 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Shell from '../../../layouts/Shell.astro';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('regulations');
+  return docs.map((entry: CollectionEntry<'regulations'>) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props as { entry: CollectionEntry<'regulations'> };
+const { Content } = await render(entry);
+
+function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
+  switch (status) {
+    case 'active': return 'var(--ok)';
+    case 'reference-only': return 'var(--warn)';
+    case 'planned': return 'var(--muted)';
+  }
+}
+---
+
+<Shell title={`${entry.data.title} — QuantumShield`} description={entry.data.summary}>
+  <main style="max-width:920px;margin:0 auto;padding:40px 28px 80px;display:grid;gap:28px;">
+    <a href="/docs/regulations" class="tiny-caps" style="color:var(--navy-600);text-decoration:none;">← Back to regulations index</a>
+
+    <section style="display:grid;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div class="tiny-caps" style="color:var(--navy-600);">{entry.data.kind === 'overlay' ? 'Overlay' : 'Reference source'}</div>
+        <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${badgeColor(entry.data.implementationStatus)};`}>
+          {entry.data.implementationStatus}
+        </span>
+      </div>
+      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
+      <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;max-width:760px;">{entry.data.summary}</p>
+    </section>
+
+    <section class="qs-card" style="padding:18px;display:grid;gap:12px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Jurisdiction</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.jurisdiction}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Document version</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.documentVersion}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Last reviewed</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.lastReviewed}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Update cadence</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.updateCadence}</div>
+        </div>
+      </div>
+      {entry.data.section && (
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Mapped section</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.section}</div>
+        </div>
+      )}
+      <div>
+        <div class="tiny-caps" style="color:var(--muted);">Canonical URL</div>
+        <a href={entry.data.retrievalUrl} style="display:inline-block;margin-top:4px;color:var(--navy-600);word-break:break-word;">
+          {entry.data.retrievalUrl}
+        </a>
+      </div>
+    </section>
+
+    {entry.data.requirements.length > 0 && (
+      <section style="display:grid;gap:12px;">
+        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Machine-readable mapping points</h2>
+        <div class="qs-card" style="padding:8px 0;overflow:hidden;">
+          {entry.data.requirements.map((item: (typeof entry.data.requirements)[number]) => (
+            <div style="padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:4px;">
+              <strong style="font-size:13px;">{item.id} · {item.title}</strong>
+              <span style="color:var(--ink-3);font-size:12.5px;line-height:1.55;">{item.mapping}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <article class="qs-card" style="padding:24px;display:grid;gap:14px;line-height:1.75;font-size:14px;color:var(--ink-2);">
+      <Content />
+    </article>
+  </main>
+</Shell>

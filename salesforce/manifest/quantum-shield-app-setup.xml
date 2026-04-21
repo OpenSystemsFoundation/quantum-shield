@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>http_localhost_4321</members>
+        <name>CorsWhitelistOrigin</name>
+    </types>
+    <types>
+        <members>QuantumShield_Scanner</members>
+        <name>ExternalClientApplication</name>
+    </types>
+    <types>
+        <members>QuantumShield_Scanner_plcy</members>
+        <name>ExtlClntAppConfigurablePolicies</name>
+    </types>
+    <types>
+        <members>QuantumShield_Scanner_glbloauth</members>
+        <name>ExtlClntAppGlobalOauthSettings</name>
+    </types>
+    <types>
+        <members>QuantumShield_Scanner_oauth</members>
+        <name>ExtlClntAppOauthSettings</name>
+    </types>
+    <version>66.0</version>
+</Package>

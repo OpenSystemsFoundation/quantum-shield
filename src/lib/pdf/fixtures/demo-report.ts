@@ -1,98 +1,25 @@
 import type {
   Category,
-  Citation,
   Finding,
   OverlayScope,
   Report,
   Severity,
 } from '../types.js';
+import { CITATIONS } from '@lib/rules/citations.js';
+import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '@lib/rules/regulations.generated.js';
 
-const NIST_FIPS_204: Citation = {
-  sourceId: 'NIST-FIPS-204',
-  title: 'Module-Lattice-Based Digital Signature Standard (ML-DSA)',
-  jurisdiction: 'INTL',
-  documentVersion: '2024-08',
-  retrievalUrl: 'https://csrc.nist.gov/pubs/fips/204/final',
-};
-
-const NIST_FIPS_203: Citation = {
-  sourceId: 'NIST-FIPS-203',
-  title: 'Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM)',
-  jurisdiction: 'INTL',
-  documentVersion: '2024-08',
-  retrievalUrl: 'https://csrc.nist.gov/pubs/fips/203/final',
-};
-
-const NIST_FIPS_205: Citation = {
-  sourceId: 'NIST-FIPS-205',
-  title: 'Stateless Hash-Based Digital Signature Standard (SLH-DSA)',
-  jurisdiction: 'INTL',
-  documentVersion: '2024-08',
-  retrievalUrl: 'https://csrc.nist.gov/pubs/fips/205/final',
-};
-
-const NIST_SP_800_131A: Citation = {
-  sourceId: 'NIST-SP-800-131A-r3',
-  title: 'Transitioning the Use of Cryptographic Algorithms and Key Lengths',
-  jurisdiction: 'INTL',
-  section: '§5.6.1, §6.2.1',
-  documentVersion: 'Rev 3',
-  retrievalUrl: 'https://csrc.nist.gov/pubs/sp/800/131/a/r3/final',
-};
-
-const BSI_TR_02102: Citation = {
-  sourceId: 'BSI-TR-02102-1',
-  title: 'Cryptographic Mechanisms: Recommendations and Key Lengths',
-  jurisdiction: 'DE',
-  section: '§3.6, §5',
-  documentVersion: '2025-01',
-  retrievalUrl:
-    'https://www.bsi.bund.de/EN/Themen/Unternehmen-und-Organisationen/Standards-und-Zertifizierung/Technische-Richtlinien/TR-nach-Thema-sortiert/tr02102/tr02102_node.html',
-};
-
-const ENISA_PQC: Citation = {
-  sourceId: 'ENISA-PQC-2024',
-  title: 'Post-Quantum Cryptography: Integration study',
-  jurisdiction: 'EU',
-  section: '§4 Migration priorities',
-  documentVersion: '2024',
-  retrievalUrl: 'https://www.enisa.europa.eu/publications/post-quantum-cryptography-integration-study',
-};
-
-const NCSC_NL_PQC: Citation = {
-  sourceId: 'NCSC-NL-PQC-factsheet',
-  title: 'Factsheet Post-Quantum Cryptography',
-  jurisdiction: 'NL',
-  documentVersion: '2024',
-  retrievalUrl: 'https://www.ncsc.nl/documenten/factsheets/2023/januari/17/factsheet-pqc',
-};
-
-const NIS2: Citation = {
-  sourceId: 'nis2-directive',
-  title: 'NIS 2 Directive — cybersecurity risk-management measures',
-  jurisdiction: 'EU',
-  section: 'Art. 21(2)(h)',
-  documentVersion: '2022/2555',
-  retrievalUrl: 'https://eur-lex.europa.eu/eli/dir/2022/2555/oj',
-};
-
-const DORA: Citation = {
-  sourceId: 'dora-regulation',
-  title: 'DORA — Digital Operational Resilience Act, ICT risk management',
-  jurisdiction: 'EU',
-  section: 'Art. 9(2)',
-  documentVersion: '2022/2554',
-  retrievalUrl: 'https://eur-lex.europa.eu/eli/reg/2022/2554/oj',
-};
-
-const GDPR: Citation = {
-  sourceId: 'gdpr-art32',
-  title: 'GDPR — security of processing',
-  jurisdiction: 'EU',
-  section: 'Art. 32(1)(a)',
-  documentVersion: '2016/679',
-  retrievalUrl: 'https://eur-lex.europa.eu/eli/reg/2016/679/oj',
-};
+const {
+  BSI_TR_02102_1: BSI_TR_02102,
+  DORA,
+  ENISA_PQC_2024: ENISA_PQC,
+  GDPR_ART_32: GDPR,
+  NCSC_NL_PQC,
+  NIS2,
+  NIST_FIPS_203,
+  NIST_FIPS_204,
+  NIST_FIPS_205,
+  NIST_SP_800_131A,
+} = CITATIONS;
 
 function mkFinding(f: Omit<Finding, 'id'> & { id?: string }): Finding {
   return { id: f.id ?? cryptoId(), ...f } as Finding;
@@ -481,15 +408,10 @@ const categoryCounts = findings.reduce<Record<Category, number>>(
   },
 );
 
-const overlays: OverlayScope[] = [
-  { id: 'gdpr', label: 'GDPR — security of processing (Art. 32)', enabled: true },
-  { id: 'nis2', label: 'NIS 2 — risk-management measures (Art. 21)', enabled: true },
-  { id: 'dora', label: 'DORA — ICT risk management (Art. 9)', enabled: true },
-  { id: 'eidas2', label: 'eIDAS 2.0 — trust services', enabled: false },
-  { id: 'pci-dss-4', label: 'PCI DSS 4.0 — requirements 3.5–3.7', enabled: false },
-  { id: 'hipaa', label: 'HIPAA Security Rule', enabled: false },
-  { id: 'cmmc', label: 'CMMC 2.0 Levels 2 & 3', enabled: false },
-];
+const overlays: OverlayScope[] = GENERATED_OVERLAYS.map((overlay) => ({
+  ...overlay,
+  enabled: overlay.id === 'gdpr' || overlay.id === 'nis2' || overlay.id === 'dora',
+}));
 
 const hndlCount = findings.filter((f) => f.hndlExposure).length;
 const earliest = findings
@@ -512,18 +434,7 @@ export const demoReport: Report = {
   },
   findings,
   overlays,
-  sourceVersions: [
-    { sourceId: 'BSI-TR-02102-1', documentVersion: '2025-01', retrievedAt: '2026-03-04' },
-    { sourceId: 'ENISA-PQC-2024', documentVersion: '2024', retrievedAt: '2026-03-04' },
-    { sourceId: 'NCSC-NL-PQC-factsheet', documentVersion: '2024', retrievedAt: '2026-03-04' },
-    { sourceId: 'NIST-FIPS-203', documentVersion: '2024-08', retrievedAt: '2026-03-04' },
-    { sourceId: 'NIST-FIPS-204', documentVersion: '2024-08', retrievedAt: '2026-03-04' },
-    { sourceId: 'NIST-FIPS-205', documentVersion: '2024-08', retrievedAt: '2026-03-04' },
-    { sourceId: 'NIST-SP-800-131A-r3', documentVersion: 'Rev 3', retrievedAt: '2026-03-04' },
-    { sourceId: 'nis2-directive', documentVersion: '2022/2555', retrievedAt: '2026-03-04' },
-    { sourceId: 'dora-regulation', documentVersion: '2022/2554', retrievedAt: '2026-03-04' },
-    { sourceId: 'gdpr-art32', documentVersion: '2016/679', retrievedAt: '2026-03-04' },
-  ],
+  sourceVersions: GENERATED_SOURCE_VERSIONS,
   summary: {
     totalFindings: findings.length,
     bySeverity: severityCounts,

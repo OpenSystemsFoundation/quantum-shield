@@ -1,0 +1,183 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Shell from '../../../layouts/Shell.astro';
+import { GENERATED_CITATIONS } from '@lib/rules/regulations.generated.js';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('rules');
+  return docs.map((entry: CollectionEntry<'rules'>) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props as { entry: CollectionEntry<'rules'> };
+const { Content } = await render(entry);
+
+type RuleCondition = (typeof entry.data.cases)[number]['when'][number];
+type RuleResult = (typeof entry.data.cases)[number]['result'];
+
+function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
+  switch (status) {
+    case 'active': return 'var(--ok)';
+    case 'draft': return 'var(--warn)';
+    case 'disabled': return 'var(--muted)';
+  }
+}
+
+function describeCondition(condition: RuleCondition): string {
+  switch (condition.op) {
+    case 'equals':
+      return `${condition.field} equals ${condition.value}`;
+    case 'contains-any':
+      return `${condition.field} contains one of ${condition.values.join(', ')}`;
+    case 'one-of':
+      return `${condition.field} is one of ${condition.values.join(', ')}`;
+    case 'lt':
+      return `${condition.field} < ${condition.value}`;
+    case 'gte':
+      return `${condition.field} >= ${condition.value}`;
+    case 'between':
+      return `${condition.field} between ${condition.min} and ${condition.max}`;
+    case 'protocol-equals':
+      return `${condition.field} protocol is ${condition.value}`;
+    case 'days-until-between':
+      return `${condition.field} falls between ${condition.min} and ${condition.max} days from scan time`;
+    case 'capture-number':
+      return `capture ${condition.capture} from ${condition.field} using ${condition.pattern}`;
+    case 'predicate':
+      return `${condition.field} matches predicate ${condition.predicate}`;
+  }
+  return '';
+}
+
+function citationLabel(key: string): string {
+  const citation = GENERATED_CITATIONS[key as keyof typeof GENERATED_CITATIONS];
+  return citation ? citation.title : key;
+}
+
+function resultTone(result: RuleResult): string {
+  switch (result.severity) {
+    case 'critical': return 'var(--crit)';
+    case 'high': return 'var(--warn)';
+    case 'medium': return 'var(--navy-600)';
+    case 'low': return 'var(--muted)';
+  }
+  return 'var(--muted)';
+}
+---
+
+<Shell title={`${entry.data.id} — QuantumShield`} description={entry.data.summary}>
+  <main style="max-width:980px;margin:0 auto;padding:40px 28px 80px;display:grid;gap:28px;">
+    <a href="/docs/rules" class="tiny-caps" style="color:var(--navy-600);text-decoration:none;">← Back to rule catalog</a>
+
+    <section style="display:grid;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div class="tiny-caps" style="color:var(--navy-600);">Rule {entry.data.id}</div>
+        <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${badgeColor(entry.data.implementationStatus)};`}>
+          {entry.data.implementationStatus}
+        </span>
+      </div>
+      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
+      <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;max-width:760px;">{entry.data.summary}</p>
+    </section>
+
+    <section class="qs-card" style="padding:18px;display:grid;gap:12px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Applies to</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.appliesTo.join(', ')}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Cases</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.cases.length}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Evaluation order</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.order}</div>
+        </div>
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Tags</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.tags.length ? entry.data.tags.join(', ') : 'none'}</div>
+        </div>
+      </div>
+      {entry.data.overlays.length > 0 && (
+        <div>
+          <div class="tiny-caps" style="color:var(--muted);">Overlay-specific scope</div>
+          <div style="margin-top:4px;font-size:13px;">{entry.data.overlays.join(', ')}</div>
+        </div>
+      )}
+      <div>
+        <div class="tiny-caps" style="color:var(--muted);">Engine description</div>
+        <div style="margin-top:4px;font-size:13px;line-height:1.6;">{entry.data.description}</div>
+      </div>
+    </section>
+
+    <section style="display:grid;gap:12px;">
+      <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Match cases</h2>
+      <div style="display:grid;gap:12px;">
+        {entry.data.cases.map((ruleCase: (typeof entry.data.cases)[number], index: number) => (
+          <article class="qs-card" style="padding:18px;display:grid;gap:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <strong style="font-size:14px;">Case {index + 1}</strong>
+              <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${resultTone(ruleCase.result)};`}>
+                {ruleCase.result.severity} · {ruleCase.result.migrationPosture}
+              </span>
+            </div>
+
+            <div style="display:grid;gap:6px;">
+              <div class="tiny-caps" style="color:var(--muted);">When</div>
+              <ul style="margin:0;padding-left:18px;color:var(--ink-2);font-size:13px;line-height:1.65;display:grid;gap:4px;">
+                {ruleCase.when.map((condition: RuleCondition) => (
+                  <li>{describeCondition(condition)}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+              <div>
+                <div class="tiny-caps" style="color:var(--muted);">Finding title template</div>
+                <div style="margin-top:4px;font-size:13px;line-height:1.6;">{ruleCase.result.title}</div>
+              </div>
+              <div>
+                <div class="tiny-caps" style="color:var(--muted);">Current crypto template</div>
+                <div style="margin-top:4px;font-size:13px;line-height:1.6;">{ruleCase.result.currentCrypto}</div>
+              </div>
+              <div>
+                <div class="tiny-caps" style="color:var(--muted);">Severity / status</div>
+                <div style="margin-top:4px;font-size:13px;line-height:1.6;">{ruleCase.result.severity} · {ruleCase.result.regulatoryStatus}</div>
+              </div>
+              <div>
+                <div class="tiny-caps" style="color:var(--muted);">Effort / deadline</div>
+                <div style="margin-top:4px;font-size:13px;line-height:1.6;">{ruleCase.result.effort}{ruleCase.result.deadline ? ` · ${ruleCase.result.deadline}` : ''}</div>
+              </div>
+            </div>
+
+            <div style="display:grid;gap:6px;">
+              <div class="tiny-caps" style="color:var(--muted);">Recommended replacement</div>
+              <div style="font-size:13px;line-height:1.65;color:var(--ink-2);">{ruleCase.result.recommendedReplacement}</div>
+            </div>
+
+            <div style="display:grid;gap:6px;">
+              <div class="tiny-caps" style="color:var(--muted);">Rationale</div>
+              <div style="font-size:13px;line-height:1.65;color:var(--ink-2);">{ruleCase.result.rationale}</div>
+            </div>
+
+            <div style="display:grid;gap:6px;">
+              <div class="tiny-caps" style="color:var(--muted);">Citations</div>
+              <ul style="margin:0;padding-left:18px;color:var(--ink-2);font-size:13px;line-height:1.65;display:grid;gap:4px;">
+                {ruleCase.result.citations.map((citationKey: string) => (
+                  <li>{citationKey} · {citationLabel(citationKey)}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <article class="qs-card" style="padding:24px;display:grid;gap:14px;line-height:1.75;font-size:14px;color:var(--ink-2);">
+      <Content />
+    </article>
+  </main>
+</Shell>

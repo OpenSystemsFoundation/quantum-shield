@@ -4,13 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host 127.0.0.1 --port 4321",
+    "sync:regulations": "node scripts/sync-regulations.mjs",
+    "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
+    "predev": "npm run sync:regulations",
+    "dev": "astro dev --host localhost --port 4321",
+    "prebuild": "npm run sync:regulations",
     "build": "astro build",
-    "preview": "astro preview --host 127.0.0.1 --port 4321",
+    "prepreview": "npm run sync:regulations",
+    "preview": "astro preview --host localhost --port 4321",
     "astro": "astro",
+    "precheck": "npm run sync:regulations",
     "check": "astro check",
+    "pretest": "npm run sync:regulations",
     "test": "vitest run",
+    "pretest:watch": "npm run sync:regulations",
     "test:watch": "vitest",
+    "pretest:e2e": "npm run sync:regulations",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -29,6 +38,7 @@
     "@astrojs/check": "^0.9.8",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
+    "gray-matter": "^4.0.3",
     "typescript": "^5.7.0",
     "vitest": "^2.1.8"
   }

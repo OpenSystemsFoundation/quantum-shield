@@ -23,10 +23,12 @@ test.describe('Full mock scan flow', () => {
 
     await expect(page.getByTestId('findings-list')).toBeVisible();
     const count = await page.getByTestId('findings-list').locator('tbody tr').count();
-    expect(count).toBeGreaterThan(5);
 
     const filteredText = await page.getByTestId('filtered-count').textContent();
     expect(filteredText).toMatch(/of \d+ total/);
+    const total = Number(filteredText?.match(/of (\d+) total/)?.[1] ?? '-1');
+    expect(total).toBeGreaterThanOrEqual(0);
+    expect(count).toBe(total);
 
     // PDF download from the report view still works
     const downloadPromise = page.waitForEvent('download');

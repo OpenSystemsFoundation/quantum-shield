@@ -33,7 +33,13 @@ export interface QueryResult<T> {
   nextRecordsUrl?: string;
 }
 
-export class SfClient {
+export interface ScanClient {
+  query<T>(soql: string): Promise<QueryResult<T>>;
+  toolingQuery<T>(soql: string): Promise<QueryResult<T>>;
+  sobject<T>(name: string, id: string): Promise<T>;
+}
+
+export class SfClient implements ScanClient {
   constructor(private readonly session: Session) {}
 
   private apiBase(): string {
