@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 
 const execFileMock = vi.fn();
+const execMock = vi.fn();
 
 vi.mock('node:child_process', () => ({
   execFile: (
@@ -14,12 +15,23 @@ vi.mock('node:child_process', () => ({
       (err: Error) => cb(err, { stdout: '', stderr: '' }),
     );
   },
+  exec: (
+    command: string,
+    _opts: unknown,
+    cb: (err: Error | null, out: { stdout: string; stderr: string }) => void,
+  ) => {
+    execMock(command).then(
+      (stdout: string) => cb(null, { stdout, stderr: '' }),
+      (err: Error) => cb(err, { stdout: '', stderr: '' }),
+    );
+  },
 }));
 
 import { buildSessionFromSfCli, SfCliError } from './sfCli.js';
 
 afterEach(() => {
   execFileMock.mockReset();
+  execMock.mockReset();
 });
 
 function displayJson(partial: Record<string, unknown> = {}) {
@@ -106,9 +118,39 @@ describe('buildSessionFromSfCli', () => {
     const err = new Error('spawn sf ENOENT') as NodeJS.ErrnoException;
     err.code = 'ENOENT';
     execFileMock.mockRejectedValue(err);
+    execMock.mockRejectedValue(new Error("'sf' is not recognized as an internal or external command"));
 
     const thrown = await buildSessionFromSfCli().catch((e: unknown) => e);
     expect(thrown).toBeInstanceOf(SfCliError);
     expect((thrown as Error).message).toMatch(/Salesforce CLI/);
+  });
+
+  it('falls back to shell invocation on Windows when sf is shell-resolved', async () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
+
+    try {
+      const err = new Error('spawn sf ENOENT') as NodeJS.ErrnoException;
+      err.code = 'ENOENT';
+      execFileMock.mockRejectedValueOnce(err);
+      execMock.mockResolvedValueOnce(displayJson());
+      execFileMock.mockRejectedValueOnce(err);
+      execMock.mockResolvedValueOnce(listJson());
+
+      const session = await buildSessionFromSfCli({ targetOrg: 'qs-scan' });
+
+      expect(session.org.orgId).toBe('00D000000000001');
+      expect(execMock).toHaveBeenCalledTimes(2);
+      expect(execMock.mock.calls[0][0]).toContain('sf org display --json --verbose --target-org qs-scan');
+      expect(execMock.mock.calls[1][0]).toContain('sf org list --json');
+    } finally {
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      });
+    }
   });
 });

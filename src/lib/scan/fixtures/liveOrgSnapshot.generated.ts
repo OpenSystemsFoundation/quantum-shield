@@ -2,12 +2,12 @@
 import type { ScanSnapshot } from './types.js';
 
 export const LIVE_ORG_SCAN_SNAPSHOT = {
-  "capturedAt": "2026-04-22T09:25:25.527Z",
+  "capturedAt": "2026-04-22T09:49:11.184Z",
   "source": {
-    "targetOrg": "devhub",
-    "orgId": "00DWV000006ABra2AG",
-    "orgName": "devhub",
-    "instanceUrl": "https://opensf.my.salesforce.com",
+    "targetOrg": "qs-scan",
+    "orgId": "00DJW00000J2nph2AB",
+    "orgName": "QuantumShield Scan Target",
+    "instanceUrl": "https://innovation-business-7521.scratch.my.salesforce.com",
     "apiVersion": "66.0"
   },
   "responses": [
@@ -16,24 +16,12 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, DeveloperName, MasterLabel, KeySize, ExpirationDate FROM Certificate",
       "outcome": "success",
       "result": {
-        "size": 1,
-        "totalSize": 1,
+        "size": 0,
+        "totalSize": 0,
         "done": true,
         "queryLocator": null,
-        "entityTypeName": "Certificate",
-        "records": [
-          {
-            "attributes": {
-              "type": "Certificate",
-              "url": "/services/data/v66.0/tooling/sobjects/Certificate/0P1WV000000LPg90AG"
-            },
-            "Id": "0P1WV000000LPg90AG",
-            "DeveloperName": "SelfSignedCert_12Nov2024_180131",
-            "MasterLabel": "SelfSignedCert_12Nov2024_180131",
-            "KeySize": 2048,
-            "ExpirationDate": "2025-11-12T12:00:00.000+0000"
-          }
-        ]
+        "entityTypeName": null,
+        "records": []
       }
     },
     {
@@ -47,22 +35,12 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, MasterLabel, KeySize FROM Certificate",
       "outcome": "success",
       "result": {
-        "size": 1,
-        "totalSize": 1,
+        "size": 0,
+        "totalSize": 0,
         "done": true,
         "queryLocator": null,
-        "entityTypeName": "Certificate",
-        "records": [
-          {
-            "attributes": {
-              "type": "Certificate",
-              "url": "/services/data/v66.0/tooling/sobjects/Certificate/0P1WV000000LPg90AG"
-            },
-            "Id": "0P1WV000000LPg90AG",
-            "MasterLabel": "SelfSignedCert_12Nov2024_180131",
-            "KeySize": 2048
-          }
-        ]
+        "entityTypeName": null,
+        "records": []
       }
     },
     {
@@ -70,52 +48,19 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, DeveloperName, MasterLabel, Endpoint, PrincipalType FROM NamedCredential",
       "outcome": "success",
       "result": {
-        "totalSize": 4,
+        "totalSize": 1,
         "done": true,
         "records": [
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAWV0000002eFt4AI"
+              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAJW000000bMET4A2"
             },
-            "Id": "0XAWV0000002eFt4AI",
-            "DeveloperName": "DevOps_Center_Bitbucket",
-            "MasterLabel": "DevOps Center Bitbucket",
-            "Endpoint": "https://api.bitbucket.org",
-            "PrincipalType": "PerUser"
-          },
-          {
-            "attributes": {
-              "type": "NamedCredential",
-              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAWV0000002eFu4AI"
-            },
-            "Id": "0XAWV0000002eFu4AI",
-            "DeveloperName": "DevOps_Center_GitHub",
-            "MasterLabel": "DevOps Center GitHub",
-            "Endpoint": "https://api.github.com",
-            "PrincipalType": "PerUser"
-          },
-          {
-            "attributes": {
-              "type": "NamedCredential",
-              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAWV0000002eFv4AI"
-            },
-            "Id": "0XAWV0000002eFv4AI",
-            "DeveloperName": "DevOps_Center_Service",
-            "MasterLabel": "DevOps Center Service",
-            "Endpoint": "https://devops-center.staging.repo-ops.sfdc.sh",
+            "Id": "0XAJW000000bMET4A2",
+            "DeveloperName": "Partner_OAuth_API",
+            "MasterLabel": "Partner OAuth API",
+            "Endpoint": "https://api.partner.example/v1",
             "PrincipalType": "Anonymous"
-          },
-          {
-            "attributes": {
-              "type": "NamedCredential",
-              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAWV0000002eJ74AI"
-            },
-            "Id": "0XAWV0000002eJ74AI",
-            "DeveloperName": "a2bWV000001MeFxYAK_OpenSF_Production_001",
-            "MasterLabel": "a2bWV000001MeFxYAK_OpenSF_Production_001",
-            "Endpoint": "https://login.salesforce.com",
-            "PrincipalType": "PerUser"
           }
         ]
       }
@@ -129,8 +74,46 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
     {
       "kind": "toolingQuery",
       "soql": "SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"When retrieving results with Metadata or FullName fields, the query qualificatio​ns must specify no more than one row for retrieval. Result size: 10\",\"errorCode\":\"MALFORMED_QUERY\"}]"
+      "outcome": "success",
+      "result": {
+        "size": 3,
+        "totalSize": 3,
+        "done": true,
+        "queryLocator": null,
+        "entityTypeName": "RemoteProxy",
+        "records": [
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FZYAY"
+            },
+            "Id": "0rpJW000001q1FZYAY",
+            "FullName": "Internal_Reporting_HTTP",
+            "EndpointUrl": "http://reporting.internal.example",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FaYAI"
+            },
+            "Id": "0rpJW000001q1FaYAI",
+            "FullName": "Legacy_Billing_HTTP",
+            "EndpointUrl": "http://billing-legacy.internal.example",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FbYAI"
+            },
+            "Id": "0rpJW000001q1FbYAI",
+            "FullName": "Partner_API_HTTPS",
+            "EndpointUrl": "https://api.partner.example",
+            "IsActive": true
+          }
+        ]
+      }
     },
     {
       "kind": "toolingQuery",
@@ -155,8 +138,8 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexClass WHERE NamespacePrefix = null",
       "outcome": "success",
       "result": {
-        "size": 21,
-        "totalSize": 21,
+        "size": 4,
+        "totalSize": 4,
         "done": true,
         "queryLocator": null,
         "entityTypeName": "ApexClass",
@@ -164,231 +147,44 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001HhsnYAC"
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6rYAB"
             },
-            "Id": "01pWV000001HhsnYAC",
-            "Name": "TestLinkCOACustomerToLMALicense",
-            "Body": "@isTest\npublic class TestLinkCOACustomerToLMALicense {\n\t@testSetup\n    static void setup() {\n        // Create test data for licenses\n        List<sfLma__License__c> licenses = new List<sfLma__License__c>();\n        for (Integer i = 0; i < 5; i++) {\n            sfLma__License__c license = new sfLma__License__c();\n                license.sfLma__Subscriber_Org_ID__c = '00D' + i + '00000000001';\n            \tlicense.sfLma__Seats__c = 4;\n            licenses.add(license);\n        }\n        insert licenses;\n    }\n\t\n    @isTest\n    static void testTriggerAfterInsert() {\n        // Create test customer records\n        List<CHANNEL_ORDERS__Customer__c> customers = new List<CHANNEL_ORDERS__Customer__c>();\n        for (Integer i = 0; i < 5; i++) {\n            CHANNEL_ORDERS__Customer__c customer = new CHANNEL_ORDERS__Customer__c();\n             customer.CHANNEL_ORDERS__Customer_Company_Name__c = 'Test Customer'+ i;\n             customer.CHANNEL_ORDERS__Customer_Country__c = 'US';\n             customer.CHANNEL_ORDERS__Customer_State__c = 'CA';\n             customer.CHANNEL_ORDERS__Customer_City__c = 'Marseille';\n             customer.CHANNEL_ORDERS__Customer_Street__c = 'MyStreet';\n             customer.CHANNEL_ORDERS__Customer_Zip_Postal_Code__c = '13001';\n             customer.CHANNEL_ORDERS__Customer_Org_ID__c = '00D' + i + '00000000001';\n            customers.add(customer);\n        }\n        insert customers;\n\n        // Query licenses to verify they are updated\n        List<sfLma__License__c> updatedLicenses = [SELECT COA_Customer__c \n                                                   FROM sfLma__License__c \n                                                   WHERE COA_Customer__c != null];\n        \n        // Assert that the licenses have been correctly updated with customer references\n        System.assertEquals(5, updatedLicenses.size(), 'All licenses should be updated');\n        for (sfLma__License__c license : updatedLicenses) {\n            System.assertNotEquals(null, license.COA_Customer__c, 'License should be linked to a customer');\n        }\n    }\n\n    @isTest\n    static void testTriggerAfterUpdate() {\n        // Create a test customer record and insert it\n        CHANNEL_ORDERS__Customer__c customer = new CHANNEL_ORDERS__Customer__c();\n            customer.CHANNEL_ORDERS__Customer_Company_Name__c = 'Test Customer A';\n             customer.CHANNEL_ORDERS__Customer_Country__c = 'US';\n             customer.CHANNEL_ORDERS__Customer_State__c = 'CA';\n             customer.CHANNEL_ORDERS__Customer_City__c = 'Marseille';\n             customer.CHANNEL_ORDERS__Customer_Street__c = 'MyStreet';\n             customer.CHANNEL_ORDERS__Customer_Zip_Postal_Code__c = '13001';\n             customer.CHANNEL_ORDERS__Customer_Org_ID__c = '00DA00000000001';\n        insert customer;\n\n        // Update the customer to trigger the update scenario\n        customer.CHANNEL_ORDERS__Customer_Org_ID__c = '00D100000000001';\n        update customer;\n\n        // Query licenses to verify they are updated\n        List<sfLma__License__c> updatedLicenses = [SELECT Id, COA_Customer__c, sfLma__Subscriber_Org_ID__c \n                                                   FROM sfLma__License__c \n                                                   WHERE sfLma__Subscriber_Org_ID__c = :customer.CHANNEL_ORDERS__Customer_Org_ID__c];\n        \n        // Assert that the license has been correctly updated with customer references\n        System.assertEquals(1, updatedLicenses.size(), 'One license should be updated');\n        for (sfLma__License__c license : updatedLicenses) {\n            System.assertEquals(customer.Id, license.COA_Customer__c, 'License should be linked to the updated customer');\n        }\n    }\n\n    @isTest\n    static void testTriggerNoMatchingLicense() {\n        // Create a customer with an org ID that does not match any licenses\n        CHANNEL_ORDERS__Customer__c customer = new CHANNEL_ORDERS__Customer__c();\n             customer.CHANNEL_ORDERS__Customer_Company_Name__c = 'Test Customer B';\n             customer.CHANNEL_ORDERS__Customer_Country__c = 'US';\n             customer.CHANNEL_ORDERS__Customer_State__c = 'CA';\n             customer.CHANNEL_ORDERS__Customer_City__c = 'Marseille';\n             customer.CHANNEL_ORDERS__Customer_Street__c = 'MyStreet';\n             customer.CHANNEL_ORDERS__Customer_Zip_Postal_Code__c = '13001';\n             customer.CHANNEL_ORDERS__Customer_Org_ID__c = '00D000000000999';\n        insert customer;\n\n        // Ensure no licenses are updated\n        List<sfLma__License__c> licenses = [SELECT Id, COA_Customer__c FROM sfLma__License__c WHERE COA_Customer__c != null];\n        System.assertEquals(0, licenses.size(), 'No licenses should be updated when there is no matching org ID');\n    }\n}",
-            "ApiVersion": 61,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdZYAU"
-            },
-            "Id": "01pWV000001ySdZYAU",
-            "Name": "SiteLoginController",
-            "Body": "/**\n * An apex page controller that exposes the site login functionality\n */\nglobal with sharing class SiteLoginController {\n    global String username {get; set;}\n    global String password {get; set;}\n\n    global PageReference login() {\n        String startUrl = System.currentPageReference().getParameters().get('startURL');\n        return Site.login(username, password, startUrl);\n    }\n    \n   \tglobal SiteLoginController () {}\n}",
+            "Id": "01pJW00000G7f6rYAB",
+            "Name": "LegacyCipher",
+            "Body": "/**\n * Legacy AES cipher with a HARDCODED key baked into source.\n * Flagged by R-APEX-CRYPTO for hardcoded key material and\n * separately by R-APEX-CRYPTO for AES-128 encryption.\n */\npublic with sharing class LegacyCipher {\n\n    // HARDCODED 128-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob HARDCODED_KEY =\n        Blob.valueOf('ThisIsA16ByteKey');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES128', HARDCODED_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES128', HARDCODED_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
             "ApiVersion": 63,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdaYAE"
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6sYAB"
             },
-            "Id": "01pWV000001ySdaYAE",
-            "Name": "SiteLoginControllerTest",
-            "Body": "/**\n * An apex page controller that exposes the site login functionality\n */\n@IsTest global with sharing class SiteLoginControllerTest {\n    @IsTest(SeeAllData=true) global static void testSiteLoginController () {\n        // Instantiate a new controller with all parameters in the page\n        SiteLoginController controller = new SiteLoginController ();\n        controller.username = 'test@salesforce.com';\n        controller.password = '123456'; \n                \n        System.assertEquals(controller.login(),null);                           \n    }    \n}",
+            "Id": "01pJW00000G7f6sYAB",
+            "Name": "LegacyHashUtil",
+            "Body": "/**\n * Legacy hash utility. Deliberately uses MD5 and SHA-1 to\n * exercise the QuantumShield apex-crypto weak-hash rule.\n * DO NOT use these methods for anything security-relevant.\n */\npublic with sharing class LegacyHashUtil {\n\n    /** MD5 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String md5(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('MD5', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-1 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String sha1(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-1', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-256 digest — compliant, scanner should NOT flag. */\n    public static String sha256(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-256', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n}",
             "ApiVersion": 63,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdbYAE"
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6tYAB"
             },
-            "Id": "01pWV000001ySdbYAE",
-            "Name": "SiteRegisterController",
-            "Body": "/**\n * An apex class that creates a portal user\n */\npublic with sharing class SiteRegisterController {\n    // PORTAL_ACCOUNT_ID is the account on which the contact will be created on and then enabled as a portal user.\n    // you need to add the account owner into the role hierarchy before this will work - please see Customer Portal Setup help for more information.       \n    private static Id PORTAL_ACCOUNT_ID = '001x000xxx35tPN';\n    \n    public SiteRegisterController () {\n    }\n\n    public String username {get; set;}\n    public String email {get; set;}\n    public String password {get; set {password = value == null ? value : value.trim(); } }\n    public String confirmPassword {get; set { confirmPassword = value == null ? value : value.trim(); } }\n    public String communityNickname {get; set { communityNickname = value == null ? value : value.trim(); } }\n      \n    private boolean isValidPassword() {\n        return password == confirmPassword;\n    }\n    \n    public PageReference registerUser() {\n        // it's okay if password is null - we'll send the user a random password in that case\n        if (!isValidPassword()) {\n        \tApexPages.Message msg = new ApexPages.Message(ApexPages.Severity.ERROR, Label.site.passwords_dont_match);\n        \tApexPages.addMessage(msg);\n            return null;\n        }    \n        User u = new User();\n        u.Username = username;\n        u.Email = email;\n        u.CommunityNickname = communityNickname;\n        \n        String accountId = PORTAL_ACCOUNT_ID;\n\n        // lastName is a required field on user, but if it isn't specified, we'll default it to the username\n        String userId = Site.createPortalUser(u, accountId, password);\n        if (userId != null) { \n            if (password != null && password.length() > 1) {\n                return Site.login(username, password, null);\n            }\n            else {\n                PageReference page = System.Page.SiteRegisterConfirm;\n                page.setRedirect(true);\n                return page;\n            }\n        }\n        return null;\n    }\n}",
+            "Id": "01pJW00000G7f6tYAB",
+            "Name": "ModernCrypto",
+            "Body": "/**\n * Compliant crypto helpers. QuantumShield should NOT flag this class\n * — it's the negative control.\n */\npublic with sharing class ModernCrypto {\n\n    public static String sha256(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-256', Blob.valueOf(input))\n        );\n    }\n\n    public static String sha3(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA3-256', Blob.valueOf(input))\n        );\n    }\n\n    public static Blob encryptAes256(Blob key, Blob data) {\n        return Crypto.encryptWithManagedIV('AES256', key, data);\n    }\n}",
             "ApiVersion": 63,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdcYAE"
+              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6uYAB"
             },
-            "Id": "01pWV000001ySdcYAE",
-            "Name": "SiteRegisterControllerTest",
-            "Body": "/**\n * Class containing tests for SiteRegisterController\n */\n@IsTest public with sharing class SiteRegisterControllerTest {\n    @IsTest(SeeAllData=true) static void testRegistration() {\n        SiteRegisterController controller = new SiteRegisterController();\n        controller.username = 'test@force.com';\n        controller.email = 'test@force.com';\n        controller.communityNickname = 'test';\n        // registerUser will always return null when the page isn't accessed as a guest user\n        System.assert(controller.registerUser() == null);    \n        \n        controller.password = 'abcd1234';\n        controller.confirmPassword = 'abcd123';\n        System.assert(controller.registerUser() == null);  \n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySddYAE"
-            },
-            "Id": "01pWV000001ySddYAE",
-            "Name": "ChangePasswordController",
-            "Body": "/**\n * An apex page controller that exposes the change password functionality\n */\npublic with sharing class ChangePasswordController {\n    public String oldPassword {get; set;}\n    public String newPassword {get; set;}\n    public String verifyNewPassword {get; set;}        \n    \n    public PageReference changePassword() {\n        return Site.changePassword(newPassword, verifyNewPassword, oldpassword);    \n    }     \n    \n   \tpublic ChangePasswordController() {}\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdeYAE"
-            },
-            "Id": "01pWV000001ySdeYAE",
-            "Name": "ChangePasswordControllerTest",
-            "Body": "/**\n * An apex page controller that exposes the change password functionality\n */\n@IsTest public with sharing class ChangePasswordControllerTest {\n   \t@IsTest(SeeAllData=true) public static void testChangePasswordController() {\n        // Instantiate a new controller with all parameters in the page\n        ChangePasswordController controller = new ChangePasswordController();\n        controller.oldPassword = '123456';\n        controller.newPassword = 'qwerty1'; \n        controller.verifyNewPassword = 'qwerty1';                \n        \n        System.assertEquals(controller.changePassword(),null);                           \n    }    \n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdfYAE"
-            },
-            "Id": "01pWV000001ySdfYAE",
-            "Name": "ForgotPasswordController",
-            "Body": "/**\n * An apex page controller that exposes the site forgot password functionality\n */\npublic with sharing class ForgotPasswordController {\n    public String username {get; set;}   \n       \n    public ForgotPasswordController() {}\n\t\n  \tpublic PageReference forgotPassword() {\n  \t\tboolean success = Site.forgotPassword(username);\n  \t\tPageReference pr = Page.ForgotPasswordConfirm;\n  \t\tpr.setRedirect(true);\n  \t\t\n  \t\tif (success) {  \t\t\t\n  \t\t\treturn pr;\n  \t\t}\n  \t\treturn null;\n  \t}\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdgYAE"
-            },
-            "Id": "01pWV000001ySdgYAE",
-            "Name": "ForgotPasswordControllerTest",
-            "Body": "/**\n * An apex page controller that exposes the site forgot password functionality\n */\n@IsTest public with sharing class ForgotPasswordControllerTest {\n  \t @IsTest(SeeAllData=true) public static void testForgotPasswordController() {\n    \t// Instantiate a new controller with all parameters in the page\n    \tForgotPasswordController controller = new ForgotPasswordController();\n    \tcontroller.username = 'test@salesforce.com';     \t\n    \n    \tSystem.assertEquals(controller.forgotPassword(),null); \n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdhYAE"
-            },
-            "Id": "01pWV000001ySdhYAE",
-            "Name": "MyProfilePageController",
-            "Body": "/**\n * An apex class that updates portal user details.\n   Guest users are never able to access this page.\n */\npublic with sharing class MyProfilePageController {\n\n    private User user;\n    private boolean isEdit = false;\n\n    public User getUser() {\n        return user;\n    }\n\n    public MyProfilePageController() {\n        user = [SELECT id, email, username, usertype, communitynickname, timezonesidkey, languagelocalekey, firstname, lastname, phone, title,\n                street, city, country, postalcode, state, localesidkey, mobilephone, extension, fax, contact.email\n                FROM User\n                WHERE id = :UserInfo.getUserId()];\n        // guest users should never be able to access this page\n        if (user.usertype == 'GUEST') {\n            throw new NoAccessException();\n        }\n    }\n\n    public Boolean getIsEdit() {\n        return isEdit;\n    }\n\n    public void edit() {\n        isEdit=true;\n    }\n\n    public void save() {\n        try {\n            update user;\n            isEdit=false;\n        } catch(DmlException e) {\n            ApexPages.addMessages(e);\n        }\n    }\n\n    public PageReference changePassword() {\n        return Page.ChangePassword;\n    }\n\n    public void cancel() {\n        isEdit=false;\n        user = [SELECT id, email, username, communitynickname, timezonesidkey, languagelocalekey, firstname, lastname, phone, title,\n                street, city, country, postalcode, state, localesidkey, mobilephone, extension, fax, contact.email\n                FROM User\n                WHERE id = :UserInfo.getUserId()];\n    }    \n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdiYAE"
-            },
-            "Id": "01pWV000001ySdiYAE",
-            "Name": "MyProfilePageControllerTest",
-            "Body": "/**\n * An apex class that updates details of a portal user.\n   Guest users are never able to access this page.\n */\n@IsTest public with sharing class MyProfilePageControllerTest {\n\n    @IsTest(SeeAllData=true) static void testSave() {\n        // Modify the test to query for a portal user that exists in your org\n        List<User> existingPortalUsers = [SELECT id, profileId, userRoleId FROM User WHERE UserRoleId <> null AND UserType='CustomerSuccess'];\n\n        if (existingPortalUsers.isEmpty()) {\n            User currentUser = [select id, title, firstname, lastname, email, phone, mobilephone, fax, street, city, state, postalcode, country\n                                FROM User WHERE id =: UserInfo.getUserId()];\n            MyProfilePageController controller = new MyProfilePageController();\n            System.assertEquals(currentUser.Id, controller.getUser().Id, 'Did not successfully load the current user');\n            System.assert(controller.getIsEdit() == false, 'isEdit should default to false');\n            controller.edit();\n            System.assert(controller.getIsEdit() == true);\n            controller.cancel();\n            System.assert(controller.getIsEdit() == false);\n            \n            System.assert(Page.ChangePassword.getUrl().equals(controller.changePassword().getUrl()));\n            \n            String randFax = Math.rint(Math.random() * 1000) + '5551234';\n            controller.getUser().Fax = randFax;\n            controller.save();\n            System.assert(controller.getIsEdit() == false);\n            \n            currentUser = [Select id, fax from User where id =: currentUser.Id];\n            System.assert(currentUser.fax == randFax);\n        } else {\n            User existingPortalUser = existingPortalUsers[0];\n            String randFax = Math.rint(Math.random() * 1000) + '5551234';\n\n            System.runAs(existingPortalUser) {\n                MyProfilePageController controller = new MyProfilePageController();\n                System.assertEquals(existingPortalUser.Id, controller.getUser().Id, 'Did not successfully load the current user');\n                System.assert(controller.getIsEdit() == false, 'isEdit should default to false');\n                controller.edit();\n                System.assert(controller.getIsEdit() == true);\n\n                controller.cancel();\n                System.assert(controller.getIsEdit() == false);\n\n                controller.getUser().Fax = randFax;\n                controller.save();\n                System.assert(controller.getIsEdit() == false);\n            }\n\n            // verify that the user was updated\n            existingPortalUser = [Select id, fax from User where id =: existingPortalUser.Id];\n            System.assert(existingPortalUser.fax == randFax);\n        }\n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdjYAE"
-            },
-            "Id": "01pWV000001ySdjYAE",
-            "Name": "CommunitiesLoginController",
-            "Body": "/**\n * An apex page controller that exposes the site login functionality\n */\nglobal with sharing class CommunitiesLoginController {\n\n    global CommunitiesLoginController () {}\n    \n    // Code we will invoke on page load.\n    global PageReference forwardToAuthPage() {\n    \tString startUrl = System.currentPageReference().getParameters().get('startURL');\n    \tString displayType = System.currentPageReference().getParameters().get('display');\n        return Network.forwardToAuthPage(startUrl, displayType);\n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdkYAE"
-            },
-            "Id": "01pWV000001ySdkYAE",
-            "Name": "CommunitiesLoginControllerTest",
-            "Body": "/**\n * An apex page controller that exposes the site login functionality\n */\n@IsTest global with sharing class CommunitiesLoginControllerTest {\n    @IsTest(SeeAllData=true) \n    global static void testCommunitiesLoginController () {\n     \tCommunitiesLoginController controller = new CommunitiesLoginController();\n     \tSystem.assertEquals(null, controller.forwardToAuthPage());       \n    }    \n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdlYAE"
-            },
-            "Id": "01pWV000001ySdlYAE",
-            "Name": "CommunitiesLandingController",
-            "Body": "/**\n * An apex page controller that takes the user to the right start page based on credentials or lack thereof\n */\npublic with sharing class CommunitiesLandingController {\n    \n    // Code we will invoke on page load.\n    public PageReference forwardToStartPage() {\n        return Network.communitiesLanding();\n    }\n    \n    public CommunitiesLandingController() {}\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdmYAE"
-            },
-            "Id": "01pWV000001ySdmYAE",
-            "Name": "CommunitiesLandingControllerTest",
-            "Body": "/**\n * An apex page controller that takes the user to the right start page based on credentials or lack thereof\n */\n@IsTest public with sharing class CommunitiesLandingControllerTest {\n    @IsTest(SeeAllData=true) public static void testCommunitiesLandingController() {\n        // Instantiate a new controller with all parameters in the page\n        CommunitiesLandingController controller = new CommunitiesLandingController();\n        PageReference pageRef = controller.forwardToStartPage();\n        //PageRef is either null or an empty object in test context\n        if(pageRef != null){\n            String url = pageRef.getUrl();\n            if(url != null){\n                System.assertEquals(true, String.isEmpty(url));\n                //show up in perforce\n            }\n        }\n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdnYAE"
-            },
-            "Id": "01pWV000001ySdnYAE",
-            "Name": "CommunitiesSelfRegController",
-            "Body": "/**\n * An apex page controller that supports self registration of users in communities that allow self registration\n */\npublic class CommunitiesSelfRegController {\n\n    public String firstName {get; set;}\n    public String lastName {get; set;}\n    public String email {get; set;}\n    public String password {get; set {password = value == null ? value : value.trim(); } }\n    public String confirmPassword {get; set { confirmPassword = value == null ? value : value.trim(); } }\n    public String communityNickname {get; set { communityNickname = value == null ? value : value.trim(); } }\n    \n    public CommunitiesSelfRegController() {\n        String expid = ApexPages.currentPage().getParameters().get('expid');            \n        if (expId != null) {\n            Site.setExperienceId(expId); \n        }    \n    }\n    \n    private boolean isValidPassword() {\n        return password == confirmPassword;\n    }\n\n    public PageReference registerUser() {\n    \n           // it's okay if password is null - we'll send the user a random password in that case\n        if (!isValidPassword()) {\n            ApexPages.Message msg = new ApexPages.Message(ApexPages.Severity.ERROR, Label.site.passwords_dont_match);\n            ApexPages.addMessage(msg);\n            return null;\n        }    \n\n        String profileId = null; // To be filled in by customer.\n        String roleEnum = null; // To be filled in by customer.\n        String accountId = ''; // To be filled in by customer.\n        \n        String userName = email;\n\n        User u = new User();\n        u.Username = userName;\n        u.Email = email;\n        u.FirstName = firstName;\n        u.LastName = lastName;\n        u.CommunityNickname = communityNickname;\n\t\tu.ProfileId = profileId;\n\t\t\n        String userId;\n\n        try {\n            userId = Site.createExternalUser(u, accountId, password);\n        } catch(Site.ExternalUserCreateException ex) {\n            List<String> errors = ex.getDisplayMessages();\n            for (String error : errors)  {\n                ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, error));\n            }\n            \n            // This message is used for debugging. Do not display this in the UI to the end user.\n            // It has the information around why the user creation failed.\n            System.debug(ex.getMessage());\n        }\n        \n        if (userId != null) { \n            if (password != null && password.length() > 1) {\n                return Site.login(userName, password, ApexPages.currentPage().getParameters().get('startURL'));\n            }\n            else {\n                PageReference page = System.Page.CommunitiesSelfRegConfirm;\n                page.setRedirect(true);\n                return page;\n            }\n        }\n        return null;\n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdoYAE"
-            },
-            "Id": "01pWV000001ySdoYAE",
-            "Name": "CommunitiesSelfRegControllerTest",
-            "Body": "/**\n * An apex page controller that supports self registration of users in communities that allow self registration\n */\n@IsTest public with sharing class CommunitiesSelfRegControllerTest {\n    @IsTest(SeeAllData=true) \n    public static void testCommunitiesSelfRegController() {\n        CommunitiesSelfRegController controller = new CommunitiesSelfRegController();\n        controller.firstName = 'FirstName';\n        controller.lastName = 'LastName';\n        controller.email = 'test@force.com';\n        controller.communityNickname = 'test';\n        \n        // registerUser will always return null when the page isn't accessed as a guest user\n        System.assert(controller.registerUser() == null);    \n        \n        controller.password = 'abcd1234';\n        controller.confirmPassword = 'abcd123';\n        System.assert(controller.registerUser() == null);  \n    }    \n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdpYAE"
-            },
-            "Id": "01pWV000001ySdpYAE",
-            "Name": "CommunitiesSelfRegConfirmController",
-            "Body": "/**\n * An apex page controller that takes the user to the right start page based on credentials or lack thereof\n */\npublic with sharing class CommunitiesSelfRegConfirmController {\n    \n    public CommunitiesSelfRegConfirmController() {}\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdqYAE"
-            },
-            "Id": "01pWV000001ySdqYAE",
-            "Name": "CommunitiesSelfRegConfirmControllerTest",
-            "Body": "/**\n * An apex page controller that takes the user to the right start page based on credentials or lack thereof\n */\n@IsTest public with sharing class CommunitiesSelfRegConfirmControllerTest {\n    @IsTest(SeeAllData=true) public static void testCommunitiesSelfRegConfirmController() {\n        // Instantiate a new controller with all parameters in the page\n        CommunitiesSelfRegConfirmController controller = new CommunitiesSelfRegConfirmController();\n      }    \n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdrYAE"
-            },
-            "Id": "01pWV000001ySdrYAE",
-            "Name": "MicrobatchSelfRegController",
-            "Body": "public class MicrobatchSelfRegController {\n    public String firstName {get; set;}\n    public String lastName {get; set;}\n    public String email {get; set;}\n    public String communityNickname {get; set { communityNickname = value == null ? value : value.trim(); } }\n\n    public MicrobatchSelfRegController() {\n        String expid = ApexPages.currentPage().getParameters().get('expid');\n        if (expId != null) {\n            Site.setExperienceId(expId);\n        }\n    }\n\n    public PageReference registerUser() {\n        String userName = email;\n        String accountName; // to be filled by customer\n        String contactName; //to be filled by customer\n        String profileId = null; //to be filled by customer\n        String UUID;\n\n        User u = new User();\n        u.Username = userName;\n        u.Email = email;\n        u.FirstName = firstName;\n        u.LastName = lastName;\n        u.CommunityNickname = communityNickname;\n        u.ProfileId = profileId;\n        u.LocaleSidKey = 'en_US';\n        u.TimeZoneSidKey = 'GMT';\n        u.LanguageLocaleKey = 'en_US';\n        u.EmailEncodingKey = 'UTF-8';\n\n        Account acc = new Account();\n        acc.Name = 'Account for ' + lastName;\n        Contact c = new Contact();\n        c.lastName = lastName;\n\n        try {\n            UUID =  Network.createExternalUserAsync(u, c,acc);\n        } catch(Site.ExternalUserCreateException ex) {\n            List<String> errors = ex.getDisplayMessages();\n            for (String error : errors)  {\n                ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, error));\n            }\n\n            // This message is used for debugging. Do not display this in the UI to the end user.\n            // It has the information around why the user creation failed.\n            System.debug(ex.getMessage());\n        }\n        if (UUID != null) {\n           PageReference page = System.Page.CommunitiesSelfRegConfirm;\n           page.setRedirect(true);\n           return page;\n        }\n        return null;\n    }\n}",
-            "ApiVersion": 63,
-            "NamespacePrefix": null
-          },
-          {
-            "attributes": {
-              "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pWV000001ySdsYAE"
-            },
-            "Id": "01pWV000001ySdsYAE",
-            "Name": "MicrobatchSelfRegControllerTest",
-            "Body": "@IsTest\n public with sharing class MicrobatchSelfRegControllerTest {\n      @IsTest(SeeAllData=true)\n     public static void testMicrobatchSelfRegController() {\n         MicrobatchSelfRegController controller = new MicrobatchSelfRegController();\n         controller.firstName = 'FirstName';\n         controller.lastName = 'LastName';\n         controller.email = 'test@force.com';\n         controller.communityNickname = 'test';\n\n         // registerUser will always return null when the page isn't accessed as a guest user\n         System.assert(controller.registerUser() == null);\n     }\n }",
+            "Id": "01pJW00000G7f6uYAB",
+            "Name": "PartnerWebhookSigner",
+            "Body": "/**\n * Signs outbound webhook payloads with RSA-SHA256.\n * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high, HNDL).\n */\npublic with sharing class PartnerWebhookSigner {\n\n    private static final String CERT_NAME = 'partner_signing_2026';\n\n    public static String signPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    /** ECDSA signing — also flagged by R-APEX-CRYPTO (high). */\n    public static String signPayloadEcdsa(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('ECDSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n}",
             "ApiVersion": 63,
             "NamespacePrefix": null
           }
@@ -422,388 +218,12 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, SubscriberPackageId, SubscriberPackage.Name, SubscriberPackage.NamespacePrefix, SubscriberPackageVersion.MajorVersion, SubscriberPackageVersion.MinorVersion, SubscriberPackageVersion.Name FROM InstalledSubscriberPackage",
       "outcome": "success",
       "result": {
-        "size": 15,
-        "totalSize": 15,
+        "size": 0,
+        "totalSize": 0,
         "done": true,
         "queryLocator": null,
-        "entityTypeName": "InstalledSubscriberPackage",
-        "records": [
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJqz0AG"
-            },
-            "Id": "0A3WV000000AJqz0AG",
-            "SubscriberPackageId": "0334x0000004vn6AAA",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/0334x0000004vn6AAA"
-              },
-              "Name": "pmcPartner",
-              "NamespacePrefix": "KPIapp"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tKY00000097ivYAA"
-              },
-              "MajorVersion": 2,
-              "MinorVersion": 13,
-              "Name": "GTMR Partner 2.13"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJr00AG"
-            },
-            "Id": "0A3WV000000AJr00AG",
-            "SubscriberPackageId": "0331n000000E93DAAS",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/0331n000000E93DAAS"
-              },
-              "Name": "Org Expiry Notifier",
-              "NamespacePrefix": "MHolt"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t1n0000028OJ6AAM"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 0,
-              "Name": "ver 0.2"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJr10AG"
-            },
-            "Id": "0A3WV000000AJr10AG",
-            "SubscriberPackageId": "033300000004PVbAAM",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033300000004PVbAAM"
-              },
-              "Name": "License Management App",
-              "NamespacePrefix": "sfLma"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t30000001DX1FAAW"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 21,
-              "Name": "1.21"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJr20AG"
-            },
-            "Id": "0A3WV000000AJr20AG",
-            "SubscriberPackageId": "033A0000000NIQNIA4",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033A0000000NIQNIA4"
-              },
-              "Name": "SFDC Channel Order",
-              "NamespacePrefix": "CHANNEL_ORDERS"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tDp000000RmLfIAK"
-              },
-              "MajorVersion": 3,
-              "MinorVersion": 83,
-              "Name": "3.83"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJr30AG"
-            },
-            "Id": "0A3WV000000AJr30AG",
-            "SubscriberPackageId": "03336000000HH9dAAG",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/03336000000HH9dAAG"
-              },
-              "Name": "Checkout Management App",
-              "NamespacePrefix": "sfcma"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tHp000001YxM3IAK"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 15,
-              "Name": "1.15"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000AJr40AG"
-            },
-            "Id": "0A3WV000000AJr40AG",
-            "SubscriberPackageId": "03350000000H5R9AAK",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/03350000000H5R9AAK"
-              },
-              "Name": "Feature Management App",
-              "NamespacePrefix": "sfFma"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t2J000000RdDTQA0"
-              },
-              "MajorVersion": 2,
-              "MinorVersion": 3,
-              "Name": "2.3"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000BJIg0AO"
-            },
-            "Id": "0A3WV000000BJIg0AO",
-            "SubscriberPackageId": "033o000000054VdAAI",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033o000000054VdAAI"
-              },
-              "Name": "Salesforce Agile Accelerator",
-              "NamespacePrefix": "agf"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tKg000000gNaNIAU"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 181,
-              "Name": "LWC Kanban and Sprint Boards"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000BQXa0AO"
-            },
-            "Id": "0A3WV000000BQXa0AO",
-            "SubscriberPackageId": "03330000000wDAbAAM",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/03330000000wDAbAAM"
-              },
-              "Name": "Salesforce Connected Apps",
-              "NamespacePrefix": "sf_com_apps"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t30000001DUvrAAG"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 7,
-              "Name": "Winter '16"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000BcGY0A0"
-            },
-            "Id": "0A3WV000000BcGY0A0",
-            "SubscriberPackageId": "03358000000Q8xqAAC",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/03358000000Q8xqAAC"
-              },
-              "Name": "Sales Insights",
-              "NamespacePrefix": "OIQ"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t58000000SGw3AAG"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 0,
-              "Name": "1.0"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000BcJs0AK"
-            },
-            "Id": "0A3WV000000BcJs0AK",
-            "SubscriberPackageId": "033f40000004aGxAAI",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033f40000004aGxAAI"
-              },
-              "Name": "b2bmaIntegration",
-              "NamespacePrefix": "b2bma"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t5G000004F39PQAS"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 7,
-              "Name": "Pardot Internal Integration"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000EhDq0AK"
-            },
-            "Id": "0A3WV000000EhDq0AK",
-            "SubscriberPackageId": "03330000001Ig8MAAS",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/03330000001Ig8MAAS"
-              },
-              "Name": "Salesforce Mobile Apps",
-              "NamespacePrefix": "sf_chttr_apps"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04t4V000001i8c0QAA"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 24,
-              "Name": "Summer 2025"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000Ehd00AC"
-            },
-            "Id": "0A3WV000000Ehd00AC",
-            "SubscriberPackageId": "0335w000000Me7pAAC",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/0335w000000Me7pAAC"
-              },
-              "Name": "Package Visualizer",
-              "NamespacePrefix": "pkgviz"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tRh000001bIobIAE"
-              },
-              "MajorVersion": 8,
-              "MinorVersion": 21,
-              "Name": "Version 8.21"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000Ehec0AC"
-            },
-            "Id": "0A3WV000000Ehec0AC",
-            "SubscriberPackageId": "033Rh000000AYI9IAO",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033Rh000000AYI9IAO"
-              },
-              "Name": "Package Visualizer + ISV Tooling Extension",
-              "NamespacePrefix": "pkgviz"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tRh000000iA0TIAU"
-              },
-              "MajorVersion": 0,
-              "MinorVersion": 19,
-              "Name": "ver 0.19"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000Ehl40AC"
-            },
-            "Id": "0A3WV000000Ehl40AC",
-            "SubscriberPackageId": "033WV0000001c3FYAQ",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/033WV0000001c3FYAQ"
-              },
-              "Name": "Alex - A Kanban App",
-              "NamespacePrefix": "OpenSF"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tWV00000036gnYAA"
-              },
-              "MajorVersion": 1,
-              "MinorVersion": 1,
-              "Name": "ver 1.1.1"
-            }
-          },
-          {
-            "attributes": {
-              "type": "InstalledSubscriberPackage",
-              "url": "/services/data/v66.0/tooling/sobjects/InstalledSubscriberPackage/0A3WV000000Ia8I0AS"
-            },
-            "Id": "0A3WV000000Ia8I0AS",
-            "SubscriberPackageId": "0336g000000kGMcAAM",
-            "SubscriberPackage": {
-              "attributes": {
-                "type": "SubscriberPackage",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackage/0336g000000kGMcAAM"
-              },
-              "Name": "DevOps Center",
-              "NamespacePrefix": "sf_devops"
-            },
-            "SubscriberPackageVersion": {
-              "attributes": {
-                "type": "SubscriberPackageVersion",
-                "url": "/services/data/v66.0/tooling/sobjects/SubscriberPackageVersion/04tKf0000000WPPIA2"
-              },
-              "MajorVersion": 12,
-              "MinorVersion": 2,
-              "Name": "12.2.0"
-            }
-          }
-        ]
+        "entityTypeName": null,
+        "records": []
       }
     }
   ]

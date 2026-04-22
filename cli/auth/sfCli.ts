@@ -1,8 +1,10 @@
-import { execFile } from 'node:child_process';
+import { exec, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { Session } from '../../src/lib/auth/types.js';
 
 const run = promisify(execFile);
+const runInShell = promisify(exec);
+const MAX_BUFFER = 32 * 1024 * 1024;
 
 export class SfCliError extends Error {
   constructor(
@@ -51,12 +53,57 @@ interface OrgListResult {
   other?: OrgListEntry[];
 }
 
-async function invokeSf<R>(args: string[]): Promise<R> {
+function notFoundError(cause: unknown): SfCliError {
+  return new SfCliError(
+    'Salesforce CLI (`sf`) was not found on PATH. Install it from https://developer.salesforce.com/tools/salesforcecli and run `sf org login web` before using qshield.',
+    cause,
+  );
+}
+
+function quoteForShell(value: string): string {
+  if (/^[A-Za-z0-9_./:@=-]+$/.test(value)) return value;
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+function shellLookupFailed(message: string): boolean {
+  return /not recognized as an internal or external command|could not be found/i.test(message);
+}
+
+async function invokeSfStdout(args: string[]): Promise<string> {
   try {
     const { stdout } = await run('sf', args, {
-      maxBuffer: 32 * 1024 * 1024,
+      maxBuffer: MAX_BUFFER,
       windowsHide: true,
     });
+    return stdout;
+  } catch (err) {
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (process.platform === 'win32' && nodeErr?.code === 'ENOENT') {
+      const command = ['sf', ...args].map(quoteForShell).join(' ');
+      try {
+        const { stdout } = await runInShell(command, {
+          maxBuffer: MAX_BUFFER,
+          windowsHide: true,
+        });
+        return stdout;
+      } catch (shellErr) {
+        const shellNodeErr = shellErr as NodeJS.ErrnoException & { stderr?: string; stdout?: string };
+        const details = [shellNodeErr.stderr, shellNodeErr.stdout, shellNodeErr.message]
+          .filter((value): value is string => Boolean(value))
+          .join('\n');
+        if (shellLookupFailed(details)) {
+          throw notFoundError(shellErr);
+        }
+        throw shellErr;
+      }
+    }
+    throw err;
+  }
+}
+
+async function invokeSf<R>(args: string[]): Promise<R> {
+  try {
+    const stdout = await invokeSfStdout(args);
     const parsed = JSON.parse(stdout) as SfCliBaseResult<R>;
     if (parsed.status !== 0) {
       throw new SfCliError(`sf ${args.join(' ')} returned status ${parsed.status}`);
@@ -66,10 +113,7 @@ async function invokeSf<R>(args: string[]): Promise<R> {
     if (err instanceof SfCliError) throw err;
     const nodeErr = err as NodeJS.ErrnoException;
     if (nodeErr?.code === 'ENOENT') {
-      throw new SfCliError(
-        'Salesforce CLI (`sf`) was not found on PATH. Install it from https://developer.salesforce.com/tools/salesforcecli and run `sf org login web` before using qshield.',
-        err,
-      );
+      throw notFoundError(err);
     }
     throw new SfCliError(`Failed to invoke sf CLI: ${(err as Error).message ?? String(err)}`, err);
   }

@@ -42,6 +42,14 @@ const REG_STATUS_LABELS: Record<string, string> = {
   advisory: 'Advisory',
 };
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    rows.push(items.slice(i, i + size));
+  }
+  return rows;
+}
+
 export function drawCoverSection(cursor: Cursor, report: Report): void {
   cursor.y = PAGE.height - PAGE.marginTop - 40;
 
@@ -67,19 +75,15 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
 
   const w = contentWidth();
   const boxTop = cursor.y;
-  const boxHeight = 120;
-  drawRect(cursor, w, boxHeight, {
-    color: COLORS.panel,
-    borderColor: COLORS.hairline,
-    borderWidth: 0.5,
-  });
-
-  const colX = [
-    PAGE.marginX + 18,
-    PAGE.marginX + 18 + w / 3,
-    PAGE.marginX + 18 + (w / 3) * 2,
-  ];
-  const lineY = boxTop - 24;
+  const columns = 3;
+  const gap = 12;
+  const paddingX = 18;
+  const paddingTop = 24;
+  const paddingBottom = 18;
+  const labelGap = 16;
+  const valueLineHeight = FONT.h3 * 1.2;
+  const rowGap = 10;
+  const cellWidth = (w - paddingX * 2 - gap * (columns - 1)) / columns;
 
   const pairs: Array<[string, string]> = [
     ['Organization', report.org.orgName],
@@ -90,25 +94,46 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
     ['Findings', String(report.summary.totalFindings)],
   ];
 
-  pairs.forEach(([label, value], idx) => {
-    const col = idx % 3;
-    const row = Math.floor(idx / 3);
-    const x = colX[col];
-    const y = lineY - row * 50;
-    cursor.page.drawText(label.toUpperCase(), {
-      x,
-      y,
-      size: FONT.micro,
-      font: cursor.fonts.bold,
-      color: COLORS.muted,
+  const cells = pairs.map(([label, value]) => ({
+    label,
+    lines: wrapText(value, cursor.fonts.bold, FONT.h3, cellWidth),
+  }));
+  const rows = chunk(cells, columns);
+  const rowHeights = rows.map((row) => {
+    const lineCount = Math.max(...row.map((cell) => Math.max(cell.lines.length, 1)));
+    return labelGap + lineCount * valueLineHeight + 6;
+  });
+  const boxHeight = paddingTop + paddingBottom + rowHeights.reduce((sum, height) => sum + height, 0) + rowGap * Math.max(rows.length - 1, 0);
+
+  drawRect(cursor, w, boxHeight, {
+    color: COLORS.panel,
+    borderColor: COLORS.hairline,
+    borderWidth: 0.5,
+  });
+
+  let rowTop = boxTop - paddingTop;
+  rows.forEach((row, rowIdx) => {
+    row.forEach((cell, colIdx) => {
+      const x = PAGE.marginX + paddingX + colIdx * (cellWidth + gap);
+      cursor.page.drawText(cell.label.toUpperCase(), {
+        x,
+        y: rowTop,
+        size: FONT.micro,
+        font: cursor.fonts.bold,
+        color: COLORS.muted,
+      });
+
+      cell.lines.forEach((line, lineIdx) => {
+        cursor.page.drawText(line, {
+          x,
+          y: rowTop - labelGap - lineIdx * valueLineHeight,
+          size: FONT.h3,
+          font: cursor.fonts.bold,
+          color: COLORS.ink,
+        });
+      });
     });
-    cursor.page.drawText(value, {
-      x,
-      y: y - 16,
-      size: FONT.h3,
-      font: cursor.fonts.bold,
-      color: COLORS.ink,
-    });
+    rowTop -= rowHeights[rowIdx] + rowGap;
   });
 
   cursor.y = boxTop - boxHeight - 24;
@@ -127,7 +152,8 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
   if (report.summary.hndlFindings > 0) {
     const msg = `${report.summary.hndlFindings} asset${report.summary.hndlFindings === 1 ? '' : 's'} carry long-confidentiality data and are exposed to Harvest-Now-Decrypt-Later attacks today.`;
     drawPill(cursor, 'HNDL exposure', COLORS.critical, COLORS.white);
-    cursor.y -= 18;
+    const pillHeight = FONT.small + 6;
+    cursor.y -= pillHeight + 8;
     drawParagraph(cursor, msg, { color: COLORS.inkSoft, size: FONT.body });
   }
 }
@@ -500,11 +526,19 @@ export function drawCbomAppendix(cursor: Cursor, report: Report): void {
   );
 
   const headers = ['Asset', 'Type', 'Algorithm', 'Key', 'PQ-safe'];
-  const colWidths = [200, 70, 110, 50, 50];
-  const rowHeight = 18;
+  const colWidths = [150, 70, 170, 42, 55];
+  const lineHeight = FONT.small * 1.25;
+  const minRowHeight = 18;
   const startX = PAGE.marginX;
 
   const drawRow = (values: string[], bold: boolean, zebra: boolean) => {
+    const font = bold ? cursor.fonts.bold : cursor.fonts.regular;
+    const cellLines = values.map((value, idx) =>
+      wrapText(value, font, FONT.small, colWidths[idx] - 6),
+    );
+    const maxLines = Math.max(...cellLines.map((lines) => Math.max(lines.length, 1)));
+    const rowHeight = Math.max(minRowHeight, maxLines * lineHeight + 8);
+
     ensureSpace(cursor, rowHeight + 2);
     if (zebra) {
       cursor.page.drawRectangle({
@@ -517,14 +551,15 @@ export function drawCbomAppendix(cursor: Cursor, report: Report): void {
     }
     let x = startX + 4;
     for (let i = 0; i < values.length; i += 1) {
-      const v = values[i];
-      const lines = wrapText(v, cursor.fonts.regular, FONT.small, colWidths[i] - 6);
-      cursor.page.drawText(lines[0] ?? '', {
-        x,
-        y: cursor.y - 8,
-        size: FONT.small,
-        font: bold ? cursor.fonts.bold : cursor.fonts.regular,
-        color: bold ? COLORS.muted : COLORS.ink,
+      const lines = cellLines[i];
+      lines.forEach((line, lineIdx) => {
+        cursor.page.drawText(line, {
+          x,
+          y: cursor.y - 8 - lineIdx * lineHeight,
+          size: FONT.small,
+          font,
+          color: bold ? COLORS.muted : COLORS.ink,
+        });
       });
       x += colWidths[i];
     }
