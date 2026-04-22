@@ -6,10 +6,12 @@ import type {
   Report,
   Severity,
 } from '@lib/pdf';
-import { evaluate, ruleCatalogForOverlays } from '../rules/engine.js';
+import { evaluate, ruleCatalogFor } from '../rules/engine.js';
+import { tlsProbeRules } from '../rules/tls-rules.js';
 import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '../rules/regulations.generated.js';
 import { AuthError, CorsBlockedError, type ScanClient, SfClient } from './sfClient.js';
 import { allScanners } from './scanners.js';
+import type { EndpointProbe } from './probe.js';
 import type { ScanEvent, ScanEventListener, ScanOptions } from './types.js';
 import { SnapshotSfClient } from './fixtures/client.js';
 import { LIVE_ORG_SCAN_SNAPSHOT } from './fixtures/liveOrgSnapshot.generated.js';
@@ -83,9 +85,74 @@ async function scanWithClient(
   }
 }
 
+async function runEndpointProbes(
+  probe: EndpointProbe,
+  assets: CryptoAsset[],
+  emit: ScanEventListener,
+): Promise<void> {
+  const endpoints = new Map<string, CryptoAsset>();
+  for (const asset of assets) {
+    if (!asset.endpointUrl) continue;
+    try {
+      const url = new URL(asset.endpointUrl);
+      if (url.protocol !== 'https:') continue;
+      if (!endpoints.has(url.origin)) endpoints.set(url.origin, asset);
+    } catch {
+      /* ignore unparseable URLs */
+    }
+  }
+
+  if (endpoints.size === 0) return;
+
+  emit({
+    type: 'scanner-progress',
+    progress: {
+      category: 'named-credentials',
+      label: 'TLS endpoint probing',
+      status: 'running',
+      startedAt: new Date().toISOString(),
+    },
+  });
+
+  let probed = 0;
+  for (const [origin, source] of endpoints) {
+    const result = await probe.probe(origin);
+    if (!result.ok) {
+      emit({ type: 'log', level: 'warn', message: `probe failed for ${origin}: ${result.error ?? 'unknown'}` });
+      continue;
+    }
+    probed += 1;
+    const asset: CryptoAsset = {
+      kind: 'tls-endpoint',
+      name: `${origin} (probed)`,
+      identifier: origin,
+      endpointUrl: origin,
+      algorithm: result.cipher,
+      tlsVersion: result.tlsVersion,
+      kexGroup: result.keyExchangeGroup,
+      hybridKem: result.hybridKemNegotiated === true,
+      location: `discovered via ${source.kind}:${source.identifier}`,
+    };
+    assets.push(asset);
+    emit({ type: 'asset', category: 'named-credentials', asset });
+  }
+
+  emit({
+    type: 'scanner-progress',
+    progress: {
+      category: 'named-credentials',
+      label: 'TLS endpoint probing',
+      status: 'completed',
+      assetCount: probed,
+      finishedAt: new Date().toISOString(),
+    },
+  });
+}
+
 export async function runScan(
   options: ScanOptions,
   emit: ScanEventListener,
+  probe?: EndpointProbe,
 ): Promise<Report> {
   const startedAt = new Date();
   const send = (e: ScanEvent) => emit(e);
@@ -106,7 +173,18 @@ export async function runScan(
       await scanWithClient(new SfClient(options.session), emit, assets);
     }
 
-    const rules = ruleCatalogForOverlays(options.overlays);
+    if (options.probeTls && probe) {
+      try {
+        await runEndpointProbes(probe, assets, emit);
+      } catch (err) {
+        emit({ type: 'log', level: 'warn', message: `TLS probing pass failed: ${(err as Error).message}` });
+      }
+    }
+
+    const rules = [
+      ...ruleCatalogFor(options.overlays, (options.regions ?? []) as string[]),
+      ...tlsProbeRules(),
+    ];
     const ctx = { scanId: options.scanId, now: new Date() };
     const findings: Finding[] = [];
     const dedupe = new Set<string>();
@@ -173,15 +251,18 @@ export async function runScan(
             ? 'certificate'
             : a.kind === 'apex-call'
               ? 'algorithm'
-              : a.kind === 'remote-site' || a.kind === 'named-credential' || a.kind === 'external-credential'
+              : a.kind === 'remote-site' ||
+                  a.kind === 'named-credential' ||
+                  a.kind === 'external-credential' ||
+                  a.kind === 'tls-endpoint'
                 ? 'protocol'
                 : a.kind === 'installed-package'
                   ? 'library'
                   : 'key',
-        algorithm: a.algorithm ?? a.endpointUrl ?? 'unknown',
+        algorithm: a.algorithm ?? a.tlsVersion ?? a.endpointUrl ?? 'unknown',
         keySize: a.keySize,
         location: a.location ?? `${a.kind}:${a.identifier}`,
-        quantumSafe: false,
+        quantumSafe: a.kind === 'tls-endpoint' ? Boolean(a.hybridKem) : false,
       })),
     };
 

@@ -135,17 +135,38 @@ function connectedAppsScanner(): Scanner {
     category: 'connected-apps',
     label: 'Connected Apps',
     async scan(client, emit) {
+      let certIndex: Record<string, { KeySize?: number; MasterLabel?: string }> = {};
+      try {
+        const certs = await client.toolingQuery<ToolingCertificate>(
+          'SELECT Id, MasterLabel, KeySize FROM Certificate',
+        );
+        for (const c of certs.records) {
+          certIndex[c.Id] = { KeySize: c.KeySize, MasterLabel: c.MasterLabel };
+        }
+      } catch {
+        /* no tooling access to Certificates; fall back to defaults */
+      }
+
       try {
         const res = await client.toolingQuery<ConnectedApp>(
-          'SELECT Id, Name, ContactEmail FROM ConnectedApplication',
+          'SELECT Id, Name, ContactEmail, OauthConfig.ConsumerKey, OauthConfig.CertificateId FROM ConnectedApplication',
         );
         for (const app of res.records) {
+          const certId = app.OauthConfig?.CertificateId;
+          const hasJwtSigningCert = Boolean(certId);
+          const jwtCert = certId ? certIndex[certId] : undefined;
           emit({
             kind: 'connected-app',
             name: app.Name,
             identifier: app.Id,
-            algorithm: 'RSA',
-            keySize: 2048,
+            // When JWT bearer flow is configured Salesforce uses RS256 against
+            // the mapped Certificate's RSA key; we surface the real modulus so
+            // the key-size rule fires instead of a blanket 2048 assumption.
+            algorithm: hasJwtSigningCert ? 'RSA-SHA256' : 'RSA',
+            keySize: jwtCert?.KeySize ?? 2048,
+            location: hasJwtSigningCert
+              ? `JWT signing cert ${jwtCert?.MasterLabel ?? certId}`
+              : 'OAuth bearer (no JWT signing cert configured)',
           });
         }
       } catch {
@@ -264,23 +285,58 @@ function ssoScanner(): Scanner {
   };
 }
 
+interface TenantSecretRecord {
+  Id: string;
+  Type: string;
+  Status: string;
+  Version?: number;
+  Source?: string; // 'SALESFORCE' | 'BYOK' | 'CACHE_ONLY' etc. (not always present)
+  RemoteKeyIdentifier?: string; // set when BYOK/EKM is configured
+  CreatedDate?: string;
+}
+
 function shieldEncryptionScanner(): Scanner {
   return {
     category: 'shield-encryption',
     label: 'Shield Platform Encryption',
     async scan(client, emit) {
       try {
-        const res = await client.toolingQuery<{ Id: string; Type: string; Status: string }>(
-          'SELECT Id, Type, Status FROM TenantSecret',
+        const res = await client.toolingQuery<TenantSecretRecord>(
+          'SELECT Id, Type, Status, Version, Source, RemoteKeyIdentifier, CreatedDate FROM TenantSecret',
         );
+        const byType = new Map<string, TenantSecretRecord[]>();
         for (const r of res.records) {
-          if (r.Status !== 'ACTIVE') continue;
+          const list = byType.get(r.Type) ?? [];
+          list.push(r);
+          byType.set(r.Type, list);
+        }
+
+        for (const [type, records] of byType) {
+          const active = records.find((r) => r.Status === 'ACTIVE');
+          if (!active) continue;
+          const byok = active.Source === 'BYOK' || Boolean(active.RemoteKeyIdentifier);
+          const totalVersions = records.length;
+          const latestCreated = records
+            .map((r) => r.CreatedDate)
+            .filter((d): d is string => Boolean(d))
+            .sort()
+            .at(-1);
+          const location = [
+            byok ? 'BYOK / external key mat.' : 'Salesforce-derived key material',
+            `${totalVersions} version${totalVersions === 1 ? '' : 's'}`,
+            latestCreated ? `latest rotated ${latestCreated.slice(0, 10)}` : 'no rotation timestamp',
+          ].join(' · ');
           emit({
             kind: 'shield-key',
-            name: `Tenant secret (${r.Type})`,
-            identifier: r.Id,
+            name: `Tenant secret (${type})${byok ? ' · BYOK' : ''}`,
+            identifier: active.Id,
             algorithm: 'AES',
-            keySize: 128,
+            // Shield data-at-rest keys are AES-256 on Hyperforce but the
+            // tenant-secret wrapper the Tooling API exposes is the AES-128
+            // derivation root. Report what the customer can see rather than
+            // guessing and keep a clear note in location.
+            keySize: 256,
+            location,
           });
         }
       } catch {

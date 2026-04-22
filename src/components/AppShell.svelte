@@ -7,6 +7,15 @@
   let session = $state<Session | null>(null);
   let scans = $state<ScanSummary[]>([]);
   let ready = $state(false);
+  const REGIONS = [
+    { id: 'US', label: 'United States (NIST, CNSA 2.0)' },
+    { id: 'EU', label: 'European Union (ENISA, NIS2, DORA)' },
+    { id: 'NL', label: 'Netherlands (NCSC-NL, AIVD)' },
+    { id: 'DE', label: 'Germany (BSI TR-02102)' },
+    { id: 'FR', label: 'France (ANSSI)' },
+    { id: 'UK', label: 'United Kingdom (NCSC-UK)' },
+  ] as const;
+  let selectedRegions = $state<string[]>([]);
 
   onMount(async () => {
     const s = loadSession();
@@ -17,7 +26,24 @@
     session = s;
     ready = true;
     scans = await getScansForOrg(s.org.orgId);
+    try {
+      const stored = localStorage.getItem('qs:regions');
+      if (stored) selectedRegions = JSON.parse(stored);
+    } catch {
+      /* invalid cached value; ignore */
+    }
   });
+
+  function toggleRegion(id: string) {
+    selectedRegions = selectedRegions.includes(id)
+      ? selectedRegions.filter((x) => x !== id)
+      : [...selectedRegions, id];
+    try {
+      localStorage.setItem('qs:regions', JSON.stringify(selectedRegions));
+    } catch {
+      /* storage full or blocked; tolerable */
+    }
+  }
 
   async function wipeData() {
     if (!confirm('Delete all local scan history from this browser?')) return;
@@ -27,12 +53,14 @@
 
   function startScan() {
     const scanId = `scan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    window.location.assign(`/app/scan/${scanId}`);
+    const params = new URLSearchParams({ id: scanId });
+    if (selectedRegions.length > 0) params.set('regions', selectedRegions.join(','));
+    window.location.assign(`/app/scan/?${params.toString()}`);
   }
 
   function openScan(s: ScanSummary) {
-    const target = s.status === 'completed' ? `/app/report/${s.scanId}` : `/app/scan/${s.scanId}`;
-    window.location.assign(target);
+    const base = s.status === 'completed' ? '/app/report/' : '/app/scan/';
+    window.location.assign(`${base}?id=${encodeURIComponent(s.scanId)}`);
   }
 
   function fmtDate(s: string): string {
@@ -138,6 +166,30 @@
                   <dd class="mono" style="margin:4px 0 0;">on tab close</dd>
                 </div>
               </dl>
+            </div>
+          </div>
+
+          <div class="qs-card" data-testid="region-selector">
+            <div class="qs-card-head"><h3>Regulatory region</h3></div>
+            <div class="qs-card-body">
+              <p style="margin:0 0 10px;font-size:12px;color:var(--ink-3);">
+                Pick the jurisdictions that apply to this org. Only rules citing one of
+                those authorities (plus universal INTL rules) will fire. Leave all unchecked
+                to run the full catalog.
+              </p>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+                {#each REGIONS as r (r.id)}
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input
+                      type="checkbox"
+                      checked={selectedRegions.includes(r.id)}
+                      onchange={() => toggleRegion(r.id)}
+                      data-testid={`region-${r.id}`}
+                    />
+                    <span>{r.label}</span>
+                  </label>
+                {/each}
+              </div>
             </div>
           </div>
 

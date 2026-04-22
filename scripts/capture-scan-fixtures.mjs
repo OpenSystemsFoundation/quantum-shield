@@ -14,7 +14,11 @@ const QUERY_PLAN = [
   },
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, Name, ContactEmail FROM ConnectedApplication',
+    soql: 'SELECT Id, Name, ContactEmail, OauthConfig.ConsumerKey, OauthConfig.CertificateId FROM ConnectedApplication',
+  },
+  {
+    kind: 'toolingQuery',
+    soql: 'SELECT Id, MasterLabel, KeySize FROM Certificate',
   },
   {
     kind: 'query',
@@ -38,7 +42,7 @@ const QUERY_PLAN = [
   },
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, Type, Status FROM TenantSecret',
+    soql: 'SELECT Id, Type, Status, Version, Source, RemoteKeyIdentifier, CreatedDate FROM TenantSecret',
   },
   {
     kind: 'toolingQuery',

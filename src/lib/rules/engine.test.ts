@@ -73,8 +73,8 @@ describe('docs-backed rule catalog', () => {
     expect(finding.title).toBe('Hardcoded cryptographic key in Apex');
     expect(finding.severity).toBe('critical');
     expect(finding.citations.map((citation) => citation.sourceId)).toEqual([
-      'gdpr-art32',
-      'nis2-directive',
+      'NIST-SP-800-53-r5',
+      'NIST-SP-800-57-pt1-r5',
     ]);
   });
 

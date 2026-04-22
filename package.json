@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "bin": {
+    "qshield": "./bin/qshield.mjs"
+  },
   "scripts": {
     "sync:regulations": "node scripts/sync-regulations.mjs",
     "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
@@ -20,7 +23,9 @@
     "pretest:watch": "npm run sync:regulations",
     "test:watch": "vitest",
     "pretest:e2e": "npm run sync:regulations",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "preqshield": "npm run sync:regulations",
+    "qshield": "tsx cli/index.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.0.0",
@@ -39,6 +44,7 @@
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
     "gray-matter": "^4.0.3",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.8"
   }

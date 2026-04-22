@@ -10,3 +10,4 @@ coverage/
 *.log
 .sfdx
 .sf
+qshield-out/

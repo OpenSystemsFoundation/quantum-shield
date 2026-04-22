@@ -7,7 +7,15 @@
   import AppChrome from './AppChrome.svelte';
   import FindingDrawer from './FindingDrawer.svelte';
 
-  const { scanId } = $props<{ scanId: string }>();
+  const initialScanId = (() => {
+    if (typeof window === 'undefined') return '';
+    const url = new URL(window.location.href);
+    const fromQuery = url.searchParams.get('id');
+    if (fromQuery) return fromQuery;
+    const fromHash = url.hash.startsWith('#') ? url.hash.slice(1) : '';
+    return fromHash;
+  })();
+  const scanId = initialScanId;
 
   let session = $state<Session | null>(null);
   let report = $state<Report | null>(null);
