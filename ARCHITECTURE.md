@@ -1,6 +1,11 @@
 # QuantumShield — Architecture
 
-A browser-only post-quantum readiness scanner for Salesforce organizations. External SaaS, not an AppExchange app. Customer signs in with their own Salesforce credentials; the browser queries their org directly; findings, scoring, and PDF report are generated entirely client-side. Zero backend infrastructure.
+A post-quantum readiness scanner for Salesforce organizations. Ships as **two front-ends sharing one scan engine**:
+
+1. **Browser-only web app** (Astro + Svelte, zero backend). Public demo. Customer signs in via OAuth to our Connected App; the browser queries their org directly.
+2. **Local Node CLI (`qshield`)**. Reuses the Salesforce CLI's own authenticated session — **no external Connected App required**. Targeted at admins who live in a terminal and produce CBOM / VEX / PDF artifacts for their security & privacy teams.
+
+Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX builder, and PDF renderer, all of which live under `src/lib/` and are pure TypeScript with no browser- or Node-specific globals.
 
 ---
 
@@ -204,9 +209,42 @@ Generated entirely client-side by the PDF module. Produces:
 - **Findings register** (variable). Every finding with asset, current crypto, replacement, citation, migration posture, effort.
 - **Regulatory appendix.** For each enabled overlay (PCI, HIPAA, CMMC, etc.), the findings that map to each requirement.
 - **Methodology** (1 page). What was scanned, what was not, how severity is computed, source document versions.
-- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, in CycloneDX CBOM format, so customers can feed it into their own GRC tooling.
+- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, in CycloneDX v1.6 format with `cryptoProperties` populated (`oid`, `nistQuantumSecurityLevel`, `executionEnvironment`, `quantumSafe`), so customers can feed it into Dependency-Track, ServiceNow, or any CycloneDX-aware GRC tooling.
+- **OpenVEX document.** One statement per finding (`affected` / `under_investigation`) with action statement and HNDL impact statement, consumable by Grype / Trivy / Dependency-Track without parsing the PDF.
 
-Export options: PDF (primary), CBOM JSON, findings CSV. All generated in the browser, downloaded directly — never uploaded anywhere.
+Export options: PDF (primary), CBOM JSON (CycloneDX 1.6), OpenVEX JSON, findings CSV, raw report JSON. The web app streams these directly from the browser to the user's disk; the CLI writes them all to `./qshield-out/`. Neither path uploads anywhere.
+
+---
+
+## Local CLI (`qshield`)
+
+The CLI exists specifically so admins can run a scan without the customer org having to set up a Connected App, custom domain, CORS whitelist entry, or any of our cloud infrastructure. It reuses the session the admin already authorised with `sf org login`.
+
+**Boot path:**
+
+1. Admin runs `sf org login web --alias prod-eu` (one-time, per org).
+2. `npm run qshield -- scan --target-org prod-eu` (or a globally-installed `qshield scan -o prod-eu`).
+3. The CLI shells out to `sf org display --json --verbose --target-org <alias>` to lift the access token + instance URL into an in-memory `Session` compatible with the browser's type.
+4. From there, the same `runScan()` from `src/lib/scan/engine.ts` runs unmodified. No Connected App, no CORS, no OAuth callback, no browser.
+
+**CLI-only additions:**
+
+- `NodeTlsProbe` (`cli/probe/tls.ts`) — a `node:tls`-backed probe that performs a live handshake with every HTTPS endpoint referenced by a `NamedCredential` or `RemoteSiteSetting`, records the negotiated TLS version, cipher suite, and ephemeral key-exchange group, and flags TLS 1.2 (HNDL-exposed) plus TLS 1.3 without a hybrid PQC KEM (X25519MLKEM768 and friends). Enabled via `--probe-tls`.
+- File-system writers (`cli/output/writers.ts`) that hand raw bytes from `renderReportPdf()`, `buildCbomJson()`, `buildVexJson()`, `buildFindingsCsv()` directly to disk.
+- `--region US,EU,NL,...` — filters the rule catalog to only fire rules that cite the listed jurisdictions (or INTL), so Dutch customers see Dutch/EU guidance and US customers see CNSA 2.0 framing.
+- `--overlay nis2,dora,pci-dss-4,...` — same overlay system the web app exposes via the `OverlayScope` type.
+
+**Tech choices:**
+
+- TypeScript. Shares types with the browser scan engine verbatim — the CLI imports from `src/lib/` directly.
+- `tsx` as the runtime, so we ship no separate compile step for v1. The bin shim (`bin/qshield.mjs`) uses `tsx`'s `tsImport` API to execute `cli/index.ts`. `npm install` in the repo is the only prerequisite.
+- No external argv parser. `cli/args.ts` is ~60 lines of string-crunching.
+- No external Salesforce SDK for the CLI either — `src/lib/scan/sfClient.ts` was already plain `fetch` + `Authorization: Bearer`, portable to Node 18+ as-is.
+
+**Out of scope for the CLI:**
+
+- No Rust/Python rewrite; the web and CLI share one TypeScript engine. If we ever ship a single-binary build, that'll be a `bun build --compile` or `tsup` step on top of `cli/`, not a language change.
+- No bundled Connected App config. We deliberately never touched that surface — `sf` already handles it.
 
 ---
 

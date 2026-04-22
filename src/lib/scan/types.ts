@@ -1,10 +1,22 @@
-import type { Category, CryptoAsset, Finding, Report } from '@lib/pdf';
+import type { Category, CryptoAsset, Finding, Jurisdiction, Report } from '@lib/pdf';
 import type { Session } from '@lib/auth';
 
 export interface ScanOptions {
   scanId: string;
   session: Session;
   overlays: string[];
+  /**
+   * Regulatory jurisdictions to include in rule filtering. Rules whose
+   * citations do not map to any listed jurisdiction (and are not tagged INTL)
+   * are skipped. Empty array = no region filter (all rules fire).
+   */
+  regions?: Jurisdiction[] | string[];
+  /**
+   * If true, run live TLS probes against NamedCredential / RemoteSite
+   * endpoints. Only supported when `node:tls` is available (CLI). Ignored in
+   * the browser scan engine.
+   */
+  probeTls?: boolean;
   mock?: boolean;
 }
 

@@ -1,42 +1,56 @@
-import type { Report } from './types.js';
+import { classifyCryptoAsset, executionEnvironmentFor } from './crypto-classification.js';
+import type { CbomComponent, Report } from './types.js';
+
+interface CycloneDxAlgorithmProperties {
+  primitive: string;
+  parameterSetIdentifier?: string;
+  executionEnvironment?: string;
+  nistQuantumSecurityLevel?: number;
+}
+
+interface CycloneDxCryptoProperties {
+  assetType: string;
+  algorithmProperties?: CycloneDxAlgorithmProperties;
+  oid?: string;
+  quantumSafe: boolean;
+}
 
 interface CycloneDxComponent {
   type: 'cryptographic-asset';
   'bom-ref': string;
   name: string;
-  cryptoProperties: {
-    assetType: string;
-    algorithmProperties?: {
-      primitive: string;
-      parameterSetIdentifier?: string;
-      executionEnvironment?: string;
-      nistQuantumSecurityLevel?: number;
-    };
-    oid?: string;
-    quantumSafe: boolean;
-  };
+  description?: string;
+  cryptoProperties: CycloneDxCryptoProperties;
   evidence?: {
     occurrences: Array<{ location: string }>;
   };
 }
 
-export function buildCbomJson(report: Report): string {
-  const components: CycloneDxComponent[] = report.cbom.map((c, idx) => ({
+function componentFor(c: CbomComponent, idx: number): CycloneDxComponent {
+  const cls = classifyCryptoAsset(c);
+  const algorithmProperties: CycloneDxAlgorithmProperties = {
+    primitive: cls.primitive,
+    parameterSetIdentifier: c.keySize ? `${c.keySize}` : undefined,
+    executionEnvironment: executionEnvironmentFor(c),
+    nistQuantumSecurityLevel: cls.nistQuantumSecurityLevel,
+  };
+  return {
     type: 'cryptographic-asset',
     'bom-ref': `quantum-shield:cbom:${idx}`,
     name: c.name,
+    description: cls.legalAlgorithmName,
     cryptoProperties: {
       assetType: c.type,
-      algorithmProperties: {
-        primitive: c.algorithm,
-        parameterSetIdentifier: c.keySize ? `${c.keySize}` : undefined,
-      },
-      quantumSafe: c.quantumSafe,
+      algorithmProperties,
+      oid: cls.oid,
+      quantumSafe: cls.quantumSafe,
     },
-    evidence: {
-      occurrences: [{ location: c.location }],
-    },
-  }));
+    evidence: { occurrences: [{ location: c.location }] },
+  };
+}
+
+export function buildCbomJson(report: Report): string {
+  const components = report.cbom.map((c, idx) => componentFor(c, idx));
 
   const bom = {
     bomFormat: 'CycloneDX',

@@ -64,7 +64,8 @@ export interface CryptoAsset {
     | 'oidc-provider'
     | 'shield-key'
     | 'apex-call'
-    | 'installed-package';
+    | 'installed-package'
+    | 'tls-endpoint';
   name: string;
   identifier: string;
   location?: string;
@@ -74,6 +75,12 @@ export interface CryptoAsset {
   issuer?: string;
   expiresAt?: string;
   endpointUrl?: string;
+  /** TLS protocol version reported by a probe, e.g. "TLSv1.2" */
+  tlsVersion?: string;
+  /** Ephemeral KEX group reported by a probe, e.g. "X25519MLKEM768" */
+  kexGroup?: string;
+  /** True if probe saw a negotiated PQC hybrid KEM */
+  hybridKem?: boolean;
 }
 
 export interface Finding {

@@ -7,7 +7,15 @@
   import type { Category, Finding, Report } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
 
-  const { scanId } = $props<{ scanId: string }>();
+  const initialScanId = (() => {
+    if (typeof window === 'undefined') return '';
+    const url = new URL(window.location.href);
+    const fromQuery = url.searchParams.get('id');
+    if (fromQuery) return fromQuery;
+    const fromHash = url.hash.startsWith('#') ? url.hash.slice(1) : '';
+    return fromHash;
+  })();
+  const scanId = initialScanId;
 
   let session = $state<Session | null>(null);
   let status = $state<'booting' | 'running' | 'complete' | 'failed' | 'cors' | 'auth'>('booting');
@@ -60,9 +68,21 @@
     });
 
     status = 'running';
+    const regions = (() => {
+      try {
+        const url = new URL(window.location.href);
+        const raw = url.searchParams.get('regions');
+        if (raw) return raw.split(',').map((x) => x.trim()).filter(Boolean);
+        const stored = localStorage.getItem('qs:regions');
+        return stored ? (JSON.parse(stored) as string[]) : [];
+      } catch {
+        return [];
+      }
+    })();
+    if (regions.length > 0) pushLog('info', `region filter: ${regions.join(', ')}`);
     try {
       const report = await startScan(
-        { scanId, session: s, overlays: ['gdpr', 'nis2', 'dora'], mock: s.mock === true },
+        { scanId, session: s, overlays: ['gdpr', 'nis2', 'dora'], regions, mock: s.mock === true },
         handleEvent,
       );
       await finalise(report);
@@ -179,7 +199,7 @@
       severityCounts: report.summary.bySeverity,
       status: 'completed',
     });
-    setTimeout(() => window.location.assign(`/app/report/${scanId}`), 800);
+    setTimeout(() => window.location.assign(`/app/report/?id=${encodeURIComponent(scanId)}`), 800);
   }
 
   function labelForCategory(c: Category): string {

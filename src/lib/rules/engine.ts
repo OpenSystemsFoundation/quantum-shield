@@ -1,7 +1,8 @@
-import type { CryptoAsset, Finding } from '@lib/pdf';
+import type { CryptoAsset, Finding, Jurisdiction } from '@lib/pdf';
+import { GENERATED_CITATIONS } from './regulations.generated.js';
 import { buildRuleCatalog, filterRuleDefinitionsForOverlays } from './catalog.js';
 import { GENERATED_RULE_DEFS } from './rule-catalog.generated.js';
-import type { Rule, RuleContext } from './types.js';
+import type { Rule, RuleContext, RuleDefinition } from './types.js';
 
 export type { Rule, RuleContext, RuleMatchResult } from './types.js';
 
@@ -11,6 +12,7 @@ const HNDL_KINDS = new Set<CryptoAsset['kind']>([
   'saml-sso',
   'oidc-provider',
   'shield-key',
+  'tls-endpoint',
 ]);
 
 function idFor(ruleId: string, asset: CryptoAsset): string {
@@ -69,6 +71,8 @@ export function categoryForKind(kind: CryptoAsset['kind']): Finding['category'] 
       return 'apex-crypto';
     case 'installed-package':
       return 'packages';
+    case 'tls-endpoint':
+      return 'named-credentials';
   }
 }
 
@@ -78,4 +82,35 @@ export function ruleCatalogForOverlays(overlays: string[]): Rule[] {
   }
 
   return buildRuleCatalog(filterRuleDefinitionsForOverlays(GENERATED_RULE_DEFS, overlays));
+}
+
+const CITATION_JURISDICTIONS: Record<string, Jurisdiction> = Object.fromEntries(
+  Object.entries(GENERATED_CITATIONS).map(([key, value]) => [key, value.jurisdiction as Jurisdiction]),
+);
+
+/**
+ * A rule is relevant for a region if any of its citations are tagged with that
+ * jurisdiction, or with INTL (always on). When `regions` is empty the filter
+ * is a no-op.
+ */
+function ruleDefinitionMatchesRegions(def: RuleDefinition, regions: string[]): boolean {
+  if (regions.length === 0) return true;
+  const target = new Set(regions.map((r) => r.toUpperCase()));
+  for (const ruleCase of def.cases) {
+    for (const key of ruleCase.result.citations) {
+      const jurisdiction = CITATION_JURISDICTIONS[key];
+      if (!jurisdiction) continue;
+      if (target.has(jurisdiction) || jurisdiction === 'INTL') return true;
+    }
+  }
+  return false;
+}
+
+export function ruleCatalogFor(overlays: string[], regions: string[] = []): Rule[] {
+  const overlayFiltered = filterRuleDefinitionsForOverlays(GENERATED_RULE_DEFS, overlays);
+  if (regions.length === 0) {
+    return overlays.length === 0 ? BASE_RULES : buildRuleCatalog(overlayFiltered);
+  }
+  const regionFiltered = overlayFiltered.filter((def) => ruleDefinitionMatchesRegions(def, regions));
+  return buildRuleCatalog(regionFiltered);
 }

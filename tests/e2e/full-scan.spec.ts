@@ -15,11 +15,11 @@ test.describe('Full mock scan flow', () => {
     await expect(page.getByTestId('session-org-name')).toHaveText('ACME Europe B.V.');
     await page.getByTestId('start-scan-button').click();
 
-    await page.waitForURL(/\/app\/scan\/.+/);
+    await page.waitForURL(/\/app\/scan\/?\?.*id=.+/);
 
     await expect(page.getByTestId('scanner-row-certificates')).toBeVisible();
     // Wait for redirect to the report view (happens when scan completes)
-    await page.waitForURL(/\/app\/report\/.+/, { timeout: 30_000 });
+    await page.waitForURL(/\/app\/report\/?\?.*id=.+/, { timeout: 30_000 });
 
     await expect(page.getByTestId('findings-list')).toBeVisible();
     const count = await page.getByTestId('findings-list').locator('tbody tr').count();
