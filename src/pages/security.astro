@@ -10,7 +10,7 @@ import BlochShield from '../components/BlochShield.svelte';
         <BlochShield size={24} />
         <span>QuantumShield</span>
       </a>
-      <a href="/connect" style="font-size:12.5px;color:var(--muted);">Connect →</a>
+      <a href="/connect" style="font-size:12.5px;color:var(--muted);">Browser setup →</a>
     </div>
   </div>
 
@@ -20,35 +20,35 @@ import BlochShield from '../components/BlochShield.svelte';
       How QuantumShield keeps your org's data yours.
     </h1>
     <p style="font-size:14.5px;color:var(--ink-3);max-width:680px;">
-      Browser-only architecture, read-only scopes, zero data leaves the tab. Every claim on this page is verifiable from the open-source repository.
+      QuantumShield has two execution paths. Preferred path: the local <span class="mono">qshield</span> CLI reusing the Salesforce CLI session already on your machine. Optional path: a static browser app using an External Client App or Connected App you own. In neither path does QuantumShield proxy your org data.
     </p>
 
     <section style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px;">
       <div class="qs-card qs-card-body">
-        <div class="tiny-caps" style="color:var(--navy-600);">Data transit</div>
-        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Browser ↔ your org</h3>
+        <div class="tiny-caps" style="color:var(--navy-600);">Recommended path</div>
+        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Local qshield CLI</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
-          Every Salesforce API call travels directly from your browser to your Salesforce instance. Our Cloudflare Pages serves static HTML/JS only — it never sees org data or access tokens.
+          Reuses the <span class="mono">sf</span> session you already authorised on macOS, Windows, or Linux. No Connected App, no callback URL, and no CORS allowlist required.
         </p>
       </div>
       <div class="qs-card qs-card-body">
-        <div class="tiny-caps" style="color:var(--navy-600);">Access token lifetime</div>
-        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Dies with the tab</h3>
+        <div class="tiny-caps" style="color:var(--navy-600);">Browser mode</div>
+        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Static site, customer-owned OAuth</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
-          Stored in sessionStorage and nothing else. No refresh token kept. Closing the tab ends the session. Sign-in is one click when you come back.
+          Cloudflare Pages serves static HTML and JS only. The browser talks directly to your Salesforce instance, and the client ID comes from an External Client App or Connected App you created in your own org.
         </p>
       </div>
       <div class="qs-card qs-card-body">
         <div class="tiny-caps" style="color:var(--navy-600);">Write access</div>
         <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">None, ever</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
-          The OAuth scope list contains <span class="mono">api</span>, <span class="mono">refresh_token</span>, <span class="mono">id</span>. We do not request <span class="mono">full</span> or <span class="mono">web</span>.
+          QuantumShield never modifies org configuration. Browser mode requests <span class="mono">api</span>, <span class="mono">refresh_token</span>, and <span class="mono">id</span>; CLI mode reuses the permissions already granted to your local <span class="mono">sf</span> session.
         </p>
       </div>
     </section>
 
     <section class="qs-card" style="margin-top:24px;">
-      <div class="qs-card-head"><h3>OAuth scopes requested</h3></div>
+      <div class="qs-card-head"><h3>Browser OAuth scopes requested</h3></div>
       <div class="qs-card-body">
         <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
           <span class="mono" style="font-weight:600;">api</span>
@@ -57,7 +57,7 @@ import BlochShield from '../components/BlochShield.svelte';
         </div>
         <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
           <span class="mono" style="font-weight:600;">refresh_token</span>
-          <span style="color:var(--ink-3);">Requested for forward compatibility only. We never persist the refresh token — sessions end with the tab.</span>
+          <span style="color:var(--ink-3);">Requested for compatibility with browser-mode OAuth policies. The web app still keeps the active browser session local to the device and ends it on tab close.</span>
           <span class="pill adv">Forward-compat</span>
         </div>
         <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;align-items:start;font-size:12.5px;">
@@ -69,10 +69,10 @@ import BlochShield from '../components/BlochShield.svelte';
     </section>
 
     <section class="qs-card" style="margin-top:16px;">
-      <div class="qs-card-head"><h3>Content Security Policy</h3></div>
+      <div class="qs-card-head"><h3>Browser-mode Content Security Policy</h3></div>
       <div class="qs-card-body">
         <p style="margin-top:0;color:var(--ink-3);font-size:12.5px;">
-          The app ships a strict <span class="mono">connect-src</span> directive that restricts outbound requests to your org's instance URL (added dynamically after OAuth) and the Salesforce OAuth endpoints.
+          Browser mode ships a strict <span class="mono">connect-src</span> directive that restricts outbound requests to your org's instance URL (added dynamically after sign-in) and the Salesforce OAuth endpoints.
         </p>
         <div class="mono-field" style="margin-top:8px;font-family:var(--mono);font-size:11px;white-space:pre;overflow:auto;">
           <code>default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com;

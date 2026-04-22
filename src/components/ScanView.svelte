@@ -231,7 +231,7 @@
             <div class="ico">!</div>
             <div>
               <h4>One-time setup required</h4>
-              <p class="sub">Your Salesforce org has not yet whitelisted QuantumShield's origin.</p>
+              <p class="sub">Browser mode only: this Salesforce org has not yet whitelisted QuantumShield's origin.</p>
             </div>
           </div>
           <p style="margin:12px 0 0;font-size:12.5px;color:var(--ink-2);">
@@ -243,7 +243,7 @@
           </div>
           <div style="margin-top:16px;display:flex;gap:10px;">
             <button type="button" class="qs-btn qs-btn-primary" onclick={() => window.location.reload()}>Test again</button>
-            <a href="/install#cors" class="qs-btn">Full guide</a>
+            <a href="/install#cors" class="qs-btn">Browser guide</a>
           </div>
         </div>
       {:else if status === 'auth'}

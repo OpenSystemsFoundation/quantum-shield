@@ -4,14 +4,14 @@ import ConnectWizardIsland from '../components/ConnectWizard.svelte';
 import BlochShield from '../components/BlochShield.svelte';
 ---
 
-<Shell title="Connect your Salesforce org — QuantumShield">
+<Shell title="Browser setup — QuantumShield">
   <div style="border-bottom:1px solid var(--line);background:var(--surface);">
     <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
       <a href="/" class="brand hstack" style="font-weight:600;color:var(--ink);">
         <BlochShield size={24} />
         <span>QuantumShield</span>
       </a>
-      <a href="/install" style="font-size:12.5px;color:var(--muted);">Setup guide</a>
+      <a href="/install#cli" style="font-size:12.5px;color:var(--muted);">CLI quickstart</a>
     </div>
   </div>
   <ConnectWizardIsland client:load />

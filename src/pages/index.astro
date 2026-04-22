@@ -17,8 +17,8 @@ import BlochShield from '../components/BlochShield.svelte';
         <a href="/install">Install</a>
       </nav>
       <div class="right">
-        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/andelas/quantum-shield">View source</a>
-        <a class="qs-btn qs-btn-primary" href="/connect">Connect org</a>
+        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/elgeffe/quantum-shield">View source</a>
+        <a class="qs-btn qs-btn-primary" href="/connect">Browser setup</a>
       </div>
     </div>
 
@@ -26,36 +26,36 @@ import BlochShield from '../components/BlochShield.svelte';
       <div>
         <div class="hero-badge">
           <span class="swatch">Q</span>
-          <span>v0.1 · rules-engine 2026-Q2 · EU-first sources</span>
+          <span>v0.2 · CLI + browser · rules-engine 2026-Q2</span>
         </div>
         <h1>
-          Post-quantum readiness for your <em>Salesforce</em> org. In a browser tab.
+          Post-quantum readiness for your <em>Salesforce</em> org. Run it locally first.
         </h1>
         <p class="lede">
-          Sign in with your own credentials. QuantumShield scans your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards — and produces an auditor-ready report. Every byte stays in your browser.
+          QuantumShield ships as a local <span class="mono">qshield</span> CLI for admins who already use the Salesforce CLI, plus a static browser app for in-tab scans and demos. Both paths scan your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards — and produce PDF, CBOM, OpenVEX, CSV, and raw JSON artifacts.
         </p>
         <div class="cta-row">
-          <a class="qs-btn qs-btn-primary qs-btn-lg" href="/connect">
-            Connect your Salesforce org
+          <a class="qs-btn qs-btn-primary qs-btn-lg" href="/install#cli">
+            CLI quickstart
           </a>
-          <a class="qs-btn qs-btn-lg" href="/dev/pdf-preview">See a sample report</a>
+          <a class="qs-btn qs-btn-lg" href="/connect">Browser setup</a>
         </div>
         <div class="fineprint">
-          No account · No install · Read-only OAuth · Source on GitHub
+          macOS · Windows · Linux CLI · Browser mode uses your own OAuth app · Source on GitHub
         </div>
 
         <div class="trust-strip">
           <div>
-            <div class="label">Data transit</div>
-            <div class="value">Browser → your org</div>
+            <div class="label">Recommended path</div>
+            <div class="value">Local qshield CLI</div>
           </div>
           <div>
-            <div class="label">Our storage</div>
-            <div class="value">Zero</div>
+            <div class="label">Browser auth</div>
+            <div class="value">Your External Client App</div>
           </div>
           <div>
-            <div class="label">Scopes</div>
-            <div class="value">api · id</div>
+            <div class="label">Cloud proxy</div>
+            <div class="value">None</div>
           </div>
           <div>
             <div class="label">Write access</div>
@@ -127,16 +127,16 @@ import BlochShield from '../components/BlochShield.svelte';
         </div>
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
           <div class="mono tiny-caps" style="color:var(--navy-600)">02</div>
-          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Zero-infrastructure architecture</div>
+          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">CLI first, static browser second</div>
           <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
-            OAuth 2.0 with PKCE. Your browser talks to your org. The access token lives in sessionStorage and dies on tab close. No backend to breach.
+            Use the local CLI for repeatable operational scans. The website remains a static browser UI for demos, in-tab review, and teams that prefer to own the OAuth app themselves.
           </div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
           <div class="mono tiny-caps" style="color:var(--navy-600)">03</div>
-          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Read-only, always</div>
+          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Owned auth surface</div>
           <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
-            QuantumShield never modifies configuration. We request api and id scopes. Write scopes are not just unused — they're not even requested.
+            The CLI reuses the <span class="mono">sf</span> session already on your machine. Browser mode uses an External Client App or Connected App you create in your own org. No shared QuantumShield Connected App.
           </div>
         </div>
       </div>

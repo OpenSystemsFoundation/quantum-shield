@@ -2,8 +2,8 @@
 
 A post-quantum readiness scanner for Salesforce organizations. Ships as **two front-ends sharing one scan engine**:
 
-1. **Browser-only web app** (Astro + Svelte, zero backend). Public demo. Customer signs in via OAuth to our Connected App; the browser queries their org directly.
-2. **Local Node CLI (`qshield`)**. Reuses the Salesforce CLI's own authenticated session — **no external Connected App required**. Targeted at admins who live in a terminal and produce CBOM / VEX / PDF artifacts for their security & privacy teams.
+1. **Local Node CLI (`qshield`)**. Recommended path for day-to-day use. Reuses the Salesforce CLI's own authenticated session on macOS, Windows, and Linux — no Connected App, no CORS, no QuantumShield auth infrastructure in the path.
+2. **Static browser app** (Astro + Svelte, zero backend). Optional UI for demos, in-browser scans, and report review. Uses an External Client App or Connected App the customer owns; the browser queries their org directly.
 
 Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX builder, and PDF renderer, all of which live under `src/lib/` and are pure TypeScript with no browser- or Node-specific globals.
 
@@ -13,13 +13,14 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 - **External website, not a Salesforce-distributed app.** Skips AppExchange Security Review and managed-package release cycle. Trust and discovery become our job, not Salesforce's.
 - **Zero infrastructure beyond Cloudflare Pages.** No Workers, no KV, no D1, no R2, no proxy. Static assets only.
-- **All Salesforce API traffic goes directly browser → customer org.** No middle layer, no data ever touching our infrastructure.
-- **OAuth 2.0 with PKCE, no client secret.** Required because we're a public client with no backend to store secrets.
-- **CORS whitelist as a customer-owned task, not a blocker.** Customers add our domain to their org's CORS allowlist once. We detect the block reactively and guide the admin through the fix inline, not in the signup flow.
-- **Workbench-style onboarding.** No account, no email capture, no tour. Landing page → Connect → Scan. The tool is the welcome.
+- **CLI first for operational scans.** The local terminal flow is the default recommendation. The browser app stays available for demos, in-tab review, and teams that prefer to own the OAuth app themselves.
+- **All scan traffic goes directly client runtime → customer org.** In browser mode that means browser → customer org. In CLI mode that means local Node process → customer org. No middle layer, no org data touching our infrastructure.
+- **No shared QuantumShield Connected App.** Browser mode uses an External Client App or Connected App the customer creates in their own org. CLI mode reuses the local `sf` session already on the machine.
+- **CORS whitelist is browser-only.** Customers add our domain to their org's CORS allowlist for the web flow once. The CLI bypasses this entirely.
+- **Direct onboarding, not account-driven onboarding.** No QuantumShield account, no email capture, no backend tenant model. Landing page points first to the CLI, with browser setup as an explicit secondary path.
 - **Direct-to-government-source rules, not a third-party maturity framework.** We build our own rules engine mapped to the canonical documents rather than inheriting QRAMM or similar. Auditor-credible language; no dependency on a small nonprofit's roadmap.
 - **Svelte + Astro, not React.** Matches existing Andelas stack, smaller bundle, aligns with the static-first philosophy. PDF generation via pure TypeScript library, not a framework-specific renderer.
-- **Read-only scanning.** We never modify any Salesforce configuration. Customer data never leaves the browser tab.
+- **Read-only scanning.** We never modify any Salesforce configuration. Customer data never leaves the local execution environment.
 
 ---
 
@@ -29,14 +30,15 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - **Framework:** Astro for routing and page shell. Svelte islands for interactive surfaces (connect modal, scan progress, findings viewer, report preview).
 - **Styling:** Tailwind.
 - **Content:** Astro content collections (MDX/Markdown) for docs, install guide, and regulatory source files. Each regulation or standards source lives in its own Markdown file under `src/content/regulations/`; structured frontmatter is the canonical source for citation and overlay metadata, and a build-time sync step generates the runtime manifest the app imports.
-- **Salesforce integration:** `jsforce` from npm (bundled, tree-shaken — not the CDN build). Handles OAuth PKCE and the Tooling / Metadata / REST API surface.
+- **Browser Salesforce integration:** Static-site OAuth helpers plus a fetch-based REST and Tooling client that runs inside the browser and the Web Worker. No backend token broker.
+- **CLI auth bridge:** `cli/auth/sfCli.ts` shells out to `sf org display` / `sf org list`, normalizes the result into the shared `Session` type, then hands off to the same scan engine the browser uses.
 - **Scan engine:** Web Worker via Comlink. Main thread stays responsive during large-org scans.
 - **State:** Svelte stores for UI; scan engine state passed back through Comlink.
 - **Local persistence:** IndexedDB via the `idb` library for scan history and draft reports, scoped per org. sessionStorage for the OAuth access token only (dies on tab close, intentional).
 - **Charts:** Layer Cake (D3-based, Svelte-native).
-- **PDF generation:** `pdfme` (template-driven) as the primary choice; `pdf-lib` as the fallback if we need deeper layout control. Pure TypeScript, framework-agnostic, isolated to `src/lib/pdf/`.
+- **PDF generation:** `pdf-lib`. Pure TypeScript, framework-agnostic, isolated to `src/lib/pdf/`.
 - **Rules engine:** A versioned collection of JSON rule files, one per authoritative source, imported at build time.
-- **Testing:** Vitest for unit tests (rules engine, parsers, scoring); Playwright for OAuth + scan end-to-end against a throwaway Salesforce dev org.
+- **Testing:** Vitest for unit tests (rules engine, parsers, scoring, PDF, CLI bridge); Playwright for browser preview and interaction flows; scratch-org smoke tests and fixture capture under `salesforce/`.
 - **Analytics:** Plausible (script-tag, no cookies, GDPR-clean). Optional; single exception to the zero-infra rule, negotiable.
 - **Build & deploy:** GitHub → Cloudflare Pages auto-build. Preview deployments per pull request.
 
@@ -44,47 +46,56 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 ## Site structure
 
-- `/` — Landing. Value proposition, trust strip (open source, browser-only, data-never-leaves-tab, view source), single "Connect your Salesforce org" CTA.
-- `/connect` — Environment picker (Production / Sandbox / Custom Domain), API version selector, launches OAuth flow.
-- `/callback` — OAuth redirect target. Exchanges code for token, hands off to the app shell.
+- `/` — Landing. CLI-first positioning, browser setup entrypoint, sample report, trust strip.
+- `/connect` — Browser-mode setup wizard: environment picker, callback URL helper, Consumer Key paste, then launch OAuth flow.
+- `/callback` — Browser OAuth redirect target. Consumes the returned token payload and hands off to the app shell.
 - `/app` — Authenticated shell. Shows connected org identity, scan CTA, history of prior scans (from IndexedDB).
-- `/app/scan/:id` — Live scan view with progress per category, streaming findings.
-- `/app/report/:id` — Findings viewer, filters, remediation detail, export to PDF.
-- `/install` — CORS setup guide for admins. Step-by-step with screenshots. Linked inline when the app detects a CORS block.
+- `/app/scan` — Live scan view with progress per category, keyed by `?id=`.
+- `/app/report` — Findings viewer, filters, remediation detail, export to PDF, keyed by `?id=`.
+- `/install` — CLI quickstart plus browser-mode setup and CORS guide.
 - `/docs/regulations/*` — Indexed regulation and standards source pages. One document per regulation/source with machine-readable frontmatter used to generate the app's citation and overlay manifest.
 - `/docs/*` — Framework mappings, scanning methodology, data handling, FAQ.
 - `/privacy` and `/terms` — Legally required, explicit about the zero-data-transmission architecture.
-- `/security` — Trust page. Open source links, CSP, OAuth scopes requested, what the scanner does and does not touch.
+- `/security` — Trust page. CLI-vs-browser trust model, browser OAuth scopes, CSP, and what the scanner does and does not touch.
 
 ---
 
-## Authentication flow
+## Browser authentication flow
 
 1. User picks environment on `/connect`. Production uses `login.salesforce.com`; Sandbox uses `test.salesforce.com`; Custom Domain takes a `my.salesforce.com` URL.
-2. We generate a PKCE `code_verifier` (random bytes, base64url) and derive `code_challenge` via SHA-256. Verifier stored in sessionStorage keyed to a short-lived state token.
-3. Redirect to Salesforce `/services/oauth2/authorize` with `response_type=code`, our Connected App's `client_id`, `redirect_uri=https://our-domain/callback`, `code_challenge`, `code_challenge_method=S256`, and `state`.
+2. User creates an External Client App or Connected App in their own org and pastes its Consumer Key into the setup wizard. The client ID can also be preconfigured via environment variable for local development.
+3. Redirect to Salesforce `/services/oauth2/authorize` with the customer-owned `client_id`, `redirect_uri=https://our-domain/callback`, the requested scopes, and a short-lived `state` token.
 4. User authenticates in Salesforce's own UI and approves the requested scopes.
-5. Salesforce redirects to `/callback` with `code` and `state`. We verify state, POST to `/services/oauth2/token` with the code and the original verifier.
-6. Response contains `access_token`, `instance_url`, and identity info. Stored in sessionStorage. No refresh token requested (shorter-lived, safer in browser).
-7. On tab close the session ends. Re-auth is one click; we remember the environment choice in localStorage for convenience.
+5. Salesforce redirects to `/callback` with token payload and state. The browser validates state, normalizes the returned identity information into a `Session`, and stores it locally.
+6. The browser stores the active session in `sessionStorage`; the remembered environment and optional client ID live in `localStorage`.
+7. On tab close the browser session ends. Re-auth is one click. For teams that want no browser OAuth surface at all, the CLI path remains available.
 
-**Scopes requested:** `api`, `refresh_token` (not issued, but requested to avoid future friction if we add opt-in persistence), `id`. We do not request `full` or `web` scopes.
+**Scopes requested (browser mode):** `api`, `refresh_token`, `id`. We do not request `full` or `web` scopes.
 
-**Connected App:** Lives in our own Salesforce developer org. One Connected App serves all customers — PKCE-enabled, no client secret, callback URL pinned to our production domain.
+**Client ownership:** Browser mode uses an External Client App or Connected App the customer owns. QuantumShield does not operate a shared Connected App.
+
+---
+
+## CLI authentication flow
+
+1. Admin runs `sf org login web --alias prod-eu` (or equivalent) once in the local terminal.
+2. `qshield` invokes `sf org display --json --verbose` and `sf org list --json` to lift the local Salesforce CLI session into the shared `Session` type.
+3. From there the same `runScan()` engine under `src/lib/scan/engine.ts` runs unmodified.
+4. No Connected App, no callback URL, no CORS allowlist, and no browser are required.
 
 ---
 
 ## CORS handling
 
-Salesforce requires each customer org to explicitly whitelist our domain in Setup → CORS before the browser can make cross-origin API calls to their instance. OAuth itself works without this because it's a full-page redirect, not an XHR.
+Salesforce requires each customer org to explicitly whitelist our domain in Setup → CORS before the browser can make cross-origin API calls to their instance. This applies to browser mode only; the CLI path bypasses it entirely.
 
 Strategy:
 
-- Do not block signup on CORS. Let OAuth succeed.
+- Do not block browser setup on CORS. Let sign-in succeed.
 - On the first API call, detect CORS failure via the specific error signature.
 - Show an inline panel (not a blocking modal) titled "One-time setup required." Three numbered steps with screenshots matching current Salesforce Setup UI. Copy-paste-friendly domain field.
 - Provide a "Test again" button that retries the same call. Admin adds the entry, clicks test, scan proceeds.
-- Document in `/install` that this is a per-org, one-time admin task. Subsequent users in the same org never see the panel.
+- Document in `/install` that this is a per-org, one-time browser-mode task. Subsequent users in the same org never see the panel.
 
 ---
 
@@ -250,11 +261,11 @@ The CLI exists specifically so admins can run a scan without the customer org ha
 
 ## Privacy and data handling
 
-- No customer data ever leaves the browser tab. No analytics events carry org data.
-- The OAuth access token is the only secret the app holds, stored in sessionStorage, discarded on tab close.
-- Scan results live in IndexedDB on the user's device, scoped per org identity. A "Clear all data" control on the settings page wipes it.
+- No customer data ever leaves the local execution environment. In browser mode data stays in the tab and local browser storage. In CLI mode data stays in the local Node process and the files written to disk.
+- Browser-mode OAuth access tokens are stored in sessionStorage and discarded on tab close.
+- Browser scan results live in IndexedDB on the user's device, scoped per org identity. A "Clear all data" control on the settings page wipes it. CLI runs write artifacts to `./qshield-out/`.
 - Our server logs contain only static-asset requests (Cloudflare Pages standard) and, if enabled, Plausible's page-view pings. Neither includes customer or org identifiers.
-- We never initiate outbound requests to any domain except the customer's Salesforce instance during a session. Content Security Policy restricts `connect-src` accordingly, with the instance origin added dynamically after OAuth.
+- In browser mode, Content Security Policy restricts `connect-src` to the Salesforce OAuth endpoints and the customer's instance URL. In CLI mode, outbound requests go directly to the customer's Salesforce instance, plus explicit TLS probe targets when `--probe-tls` is enabled.
 - Source is published on GitHub. The security page links to the repo, the build reproducibility steps, and the deployed commit SHA.
 
 ---
@@ -276,6 +287,6 @@ The CLI exists specifically so admins can run a scan without the customer org ha
 ## Open questions
 
 - Primary customer profile — US federal (CNSA 2.0 first), US commercial (NIST + vertical overlays), or EU enterprise (BSI first). Decision drives which source files ship in v1.
+- Whether browser mode should remain a first-class scan path or settle into a lighter-weight demo and report-review surface beside the CLI.
 - Whether to enable Plausible analytics or ship fully blind.
 - Whether to save a scan summary back into the customer's org as a custom object, giving them scan history inside Salesforce without us storing anything. Attractive but requires write scope and a managed-package-style object, which complicates the "pure external app" positioning.
-- Connected App distribution — one shared Connected App in our dev org, or give enterprise customers a guide to create their own and paste the client ID into our UI. The latter is more trust-friendly but adds onboarding friction.

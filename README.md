@@ -2,14 +2,14 @@
 
 Post-quantum readiness scanner for Salesforce orgs. One TypeScript scan engine, two front-ends:
 
-- **Web app** — `npm run dev` → browser-only, OAuth via our Connected App, zero backend.
-- **Local CLI (`qshield`)** — reuses the `sf` CLI session you already have. No Connected App, no CORS setup, nothing to configure in the org.
+- **Local CLI (`qshield`)** — recommended for real orgs. Reuses the `sf` CLI session you already have on macOS, Windows, or Linux. No Connected App, no CORS setup, and no QuantumShield auth infrastructure in the path.
+- **Browser app** — optional static UI for in-browser scans, demos, and report review. Uses an External Client App or Connected App you own plus a one-time CORS allowlist entry in the org.
 
 Both produce the same artifacts: a PDF executive report, a CycloneDX v1.6 CBOM, an OpenVEX document, a findings CSV, and a raw report JSON.
 
 ---
 
-## CLI quickstart
+## CLI quickstart (recommended)
 
 ```sh
 # one-time
@@ -17,11 +17,11 @@ git clone <this repo>
 cd quantum-shield
 npm install
 
-# authenticate your org (uses the Salesforce CLI — no QuantumShield Connected App)
+# authenticate your org once with the Salesforce CLI
 sf org login web --alias prod-eu
 
 # scan
-npm run qshield -- scan --target-org prod-eu
+npm run qshield -- scan --target-org prod-eu --probe-tls --region NL,EU
 
 # outputs land in ./qshield-out/
 #   qshield-<org>-<timestamp>.pdf
@@ -49,6 +49,20 @@ qshield help                                                # all flags
 npm install -g .
 qshield scan -o prod-eu --region NL,EU --probe-tls
 ```
+
+---
+
+## Browser mode (optional)
+
+```sh
+npm install
+npm run dev
+# open http://localhost:4321/connect
+```
+
+Browser mode is the static web UI. It never uses a shared QuantumShield Connected App: you create an External Client App or Connected App in your own org, paste the Consumer Key into the setup wizard, and add the site's origin to your org's CORS allowlist.
+
+If you only care about production scans, you can ignore browser mode entirely and use the CLI.
 
 ---
 
@@ -85,8 +99,8 @@ Rules are generated from the Markdown frontmatter at build time (`npm run sync:r
 ```sh
 npm install
 npm run sync:regulations        # regenerate rule + citation tables from MD
-npm run dev                     # Astro dev server (web app)
-npm run qshield -- scan -o <alias>   # CLI against a live org
+npm run dev                     # Astro dev server (browser UI + setup wizard)
+npm run qshield -- scan --target-org <alias>   # local CLI against a live org
 npm test                        # vitest (unit tests for rules, scanners, CBOM, VEX, CLI bridge)
 npm run check                   # astro check (TypeScript + Svelte + Astro diagnostics)
 ```

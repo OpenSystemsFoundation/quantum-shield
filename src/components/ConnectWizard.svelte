@@ -120,8 +120,11 @@
 <div class="narrow">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
     <div>
-      <div class="tiny-caps" style="color:var(--navy-600);margin-bottom:4px;">Connect your org</div>
-      <h2>Set up QuantumShield</h2>
+      <div class="tiny-caps" style="color:var(--navy-600);margin-bottom:4px;">Browser setup</div>
+      <h2>Use QuantumShield in the browser</h2>
+      <p class="sub" style="margin:8px 0 0;max-width:540px;">
+        Recommended for day-to-day scans: the local <span class="mono">qshield</span> CLI. Use this wizard if you want the static browser app and are willing to create an External Client App or Connected App in the org.
+      </p>
     </div>
     <ol style="display:flex;gap:6px;list-style:none;padding:0;margin:0;">
       {#each [1, 2, 3, 4] as n}
@@ -142,7 +145,7 @@
     <div class="qs-card">
       <div class="qs-card-head"><h3>Step 1 · Pick your environment</h3></div>
       <div class="qs-card-body">
-        <p class="sub" style="margin-top:0;">Choose which Salesforce endpoint hosts your org.</p>
+        <p class="sub" style="margin-top:0;">Choose which Salesforce endpoint hosts the org you want to open in browser mode.</p>
         <div class="env-picker">
           <button
             type="button"
@@ -238,10 +241,10 @@
 
   {#if step === 2}
     <div class="qs-card">
-      <div class="qs-card-head"><h3>Step 2 · Create an External Client App in your org</h3></div>
+      <div class="qs-card-head"><h3>Step 2 · Create an External Client App you own</h3></div>
       <div class="qs-card-body">
         <p class="sub" style="margin-top:0;">
-          QuantumShield never lives in our Salesforce org — you create the OAuth app inside yours, keep ownership of the client ID, and can revoke access at any time.
+          Browser mode never uses a shared QuantumShield Connected App. You create the OAuth app inside your org, keep ownership of the client ID, and can revoke access at any time.
         </p>
 
         <ol class="cors-steps" style="list-style:none;padding:0;">
@@ -262,7 +265,7 @@
           <li class="cors-step">
             <div class="num">3</div>
             <div class="body">
-              Under <span class="mono" style="color:var(--ink)">API (Enable OAuth Settings)</span>: enable OAuth; enable <span class="mono" style="color:var(--ink)">Require PKCE</span>; leave Device Flow and Client Credentials off.
+              Under <span class="mono" style="color:var(--ink)">API (Enable OAuth Settings)</span>: enable OAuth; leave Device Flow and Client Credentials off.
             </div>
           </li>
           <li class="cors-step">
@@ -289,7 +292,7 @@
 
   {#if step === 3}
     <div class="qs-card">
-      <div class="qs-card-head"><h3>Step 3 · Whitelist our callback URL</h3></div>
+      <div class="qs-card-head"><h3>Step 3 · Add the browser callback URL</h3></div>
       <div class="qs-card-body">
         <p class="sub" style="margin-top:0;">
           Paste the URL below into your External Client App's
@@ -320,10 +323,10 @@
 
   {#if step === 4}
     <div class="qs-card">
-      <div class="qs-card-head"><h3>Step 4 · Paste Consumer Key and connect</h3></div>
+      <div class="qs-card-head"><h3>Step 4 · Paste Consumer Key and start browser session</h3></div>
       <div class="qs-card-body">
         <p class="sub" style="margin-top:0;">
-          One-time paste — we remember it in your browser so you won't need to do this again for this org.
+          One-time paste on this device. We cache the client ID locally so you will not need to paste it again for this org; the active browser session still lives only in local storage.
         </p>
 
         <label style="display:block;">
