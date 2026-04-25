@@ -9,6 +9,7 @@
   "scripts": {
     "sync:regulations": "node scripts/sync-regulations.mjs",
     "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
+    "design:lint": "node scripts/lint-design-md.mjs DESIGN.md",
     "predev": "npm run sync:regulations",
     "dev": "astro dev --host localhost --port 4321",
     "prebuild": "npm run sync:regulations",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
+    "@google/design.md": "^0.1.1",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
     "gray-matter": "^4.0.3",
