@@ -1,9 +1,13 @@
+import designTokens from './src/styles/tailwind-design.generated.mjs';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,ts,tsx,svelte,md,mdx}'],
   theme: {
     extend: {
+      ...designTokens,
       colors: {
+        ...designTokens.colors,
         bg: {
           DEFAULT: '#f4f6fa',
           alt: '#eaeef4',

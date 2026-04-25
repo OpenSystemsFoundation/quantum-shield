@@ -27,7 +27,10 @@ builder, and OpenVEX/report output code under `src/lib/`.
   - `src/lib/scan/fixtures/liveOrgSnapshot.generated.ts`
 - Treat `DESIGN.md` as the design-system contract for visual work. If changing
   colors, typography, spacing, corner radius, component styling, or UI tone,
-  update `DESIGN.md` and run `npm run design:lint`.
+  update `DESIGN.md` and run `npm run design:lint` plus
+  `npm run design:sync-tailwind`.
+- Do not edit `src/styles/tailwind-design.generated.mjs` directly. It is
+  generated from `DESIGN.md`.
 - Before broad copy or UX changes, check the relevant pages/components:
   - Landing: `src/pages/index.astro`
   - Install guide: `src/pages/install.astro`
@@ -51,6 +54,7 @@ Run these from the repo root.
 npm install
 npm run sync:regulations
 npm run design:lint
+npm run design:sync-tailwind
 npm run check
 npm test
 npm run build
@@ -173,6 +177,11 @@ polish task, or a verification step that has been completed.
     component tokens, and UI usage rules.
   - `npm run design:lint` validates the file through `@google/design.md/linter`
     with 0 errors and 0 warnings.
+- [x] Sync Tailwind tokens from `DESIGN.md`.
+  - `npm run design:sync-tailwind` generates
+    `src/styles/tailwind-design.generated.mjs`.
+  - `tailwind.config.mjs` imports the generated token file and keeps compatibility
+    aliases for current Tailwind classes.
 - [ ] Test desktop and mobile layouts for landing, setup, app overview, scan, and
   report pages.
 - [ ] Replace inline-heavy page styling with reusable classes where it reduces
@@ -230,7 +239,8 @@ Beta is ready when:
 - The published `design.md` CLI hung in this Windows shell, so
   `scripts/lint-design-md.mjs` uses the official `@google/design.md/linter`
   API directly for reliable local validation.
-- `npm run design:lint`, `npm run check`, and `npm test` passed after the
-  Design.md integration. `npm run check` and `npm test` needed elevated command
+- `npm run design:lint`, `npm run design:sync-tailwind`, `npm run check`,
+  `npm test`, and `npm run build` passed after the Design.md integration.
+  `npm run check`, `npm test`, and `npm run build` needed elevated command
   execution because `npm run sync:regulations` rewrites generated files.
 - The repo currently has an untracked root `sfdx-project.json`.

@@ -10,6 +10,7 @@
     "sync:regulations": "node scripts/sync-regulations.mjs",
     "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
     "design:lint": "node scripts/lint-design-md.mjs DESIGN.md",
+    "design:sync-tailwind": "node scripts/sync-design-tailwind.mjs DESIGN.md src/styles/tailwind-design.generated.mjs",
     "predev": "npm run sync:regulations",
     "dev": "astro dev --host localhost --port 4321",
     "prebuild": "npm run sync:regulations",
