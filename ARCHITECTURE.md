@@ -28,7 +28,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 - **Hosting:** Cloudflare Pages (static). Custom domain via Cloudflare DNS.
 - **Framework:** Astro for routing and page shell. Svelte islands for interactive surfaces (connect modal, scan progress, findings viewer, report preview).
-- **Styling:** Tailwind.
+- **Styling:** CSS-first Astro/Svelte styling governed by `DESIGN.md`.
 - **Content:** Astro content collections (MDX/Markdown) for docs, install guide, and regulatory source files. Each regulation or standards source lives in its own Markdown file under `src/content/regulations/`; structured frontmatter is the canonical source for citation and overlay metadata, and a build-time sync step generates the runtime manifest the app imports.
 - **Browser Salesforce integration:** Static-site OAuth helpers plus a fetch-based REST and Tooling client that runs inside the browser and the Web Worker. No backend token broker.
 - **CLI auth bridge:** `cli/auth/sfCli.ts` shells out to `sf org display` / `sf org list`, normalizes the result into the shared `Session` type, then hands off to the same scan engine the browser uses.

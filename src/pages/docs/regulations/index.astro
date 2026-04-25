@@ -9,6 +9,10 @@ const docs = (await getCollection('regulations')).sort(
 const overlays = docs.filter((entry: CollectionEntry<'regulations'>) => entry.data.kind === 'overlay');
 const references = docs.filter((entry: CollectionEntry<'regulations'>) => entry.data.kind === 'reference');
 
+function entrySlug(entry: CollectionEntry<'regulations'>): string {
+  return entry.id.replace(/\.(md|mdx)$/, '');
+}
+
 function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
   switch (status) {
     case 'active': return 'var(--ok)';
@@ -35,7 +39,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
         {overlays.map((entry: CollectionEntry<'regulations'>) => (
-          <a href={`/docs/regulations/${entry.slug}`} class="qs-card" style="padding:18px 18px 16px;display:grid;gap:10px;text-decoration:none;color:inherit;">
+          <a href={`/docs/regulations/${entrySlug(entry)}`} class="qs-card" style="padding:18px 18px 16px;display:grid;gap:10px;text-decoration:none;color:inherit;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
               <strong style="font-size:14px;line-height:1.4;">{entry.data.overlayLabel ?? entry.data.title}</strong>
               <span style={`font:600 10px var(--mono);text-transform:uppercase;color:${badgeColor(entry.data.implementationStatus)};`}>
@@ -60,7 +64,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
       </div>
       <div class="qs-card" style="padding:6px 0;overflow:hidden;">
         {references.map((entry: CollectionEntry<'regulations'>) => (
-          <a href={`/docs/regulations/${entry.slug}`} style="display:grid;grid-template-columns:minmax(0,2fr) auto;gap:14px;padding:14px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
+          <a href={`/docs/regulations/${entrySlug(entry)}`} style="display:grid;grid-template-columns:minmax(0,2fr) auto;gap:14px;padding:14px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
             <div style="display:grid;gap:4px;">
               <strong style="font-size:13.5px;line-height:1.45;">{entry.data.title}</strong>
               <span style="color:var(--ink-3);font-size:12.5px;line-height:1.55;">{entry.data.summary}</span>

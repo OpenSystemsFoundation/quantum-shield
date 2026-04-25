@@ -1,4 +1,6 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
 
 const assetKinds = [
   '*',
@@ -57,7 +59,7 @@ const ruleResult = z.object({
 });
 
 const regulations = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/regulations' }),
   schema: z.object({
     order: z.number().int().nonnegative(),
     title: z.string(),
@@ -72,7 +74,7 @@ const regulations = defineCollection({
     jurisdiction: z.enum(['EU', 'NL', 'DE', 'FR', 'UK', 'US', 'INTL']),
     documentVersion: z.string(),
     section: z.string().optional(),
-    retrievalUrl: z.string().url(),
+    retrievalUrl: z.url(),
     lastReviewed: z.string(),
     updateCadence: z.string(),
     summary: z.string(),
@@ -88,7 +90,7 @@ const regulations = defineCollection({
 });
 
 const rules = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/rules' }),
   schema: z.object({
     order: z.number().int().nonnegative(),
     id: z.string(),

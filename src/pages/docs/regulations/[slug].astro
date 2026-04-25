@@ -5,7 +5,7 @@ import Shell from '../../../layouts/Shell.astro';
 export async function getStaticPaths() {
   const docs = await getCollection('regulations');
   return docs.map((entry: CollectionEntry<'regulations'>) => ({
-    params: { slug: entry.slug },
+    params: { slug: entry.id.replace(/\.(md|mdx)$/, '') },
     props: { entry },
   }));
 }

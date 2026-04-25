@@ -13,6 +13,10 @@ const byStatus = {
   disabled: rules.filter((entry: CollectionEntry<'rules'>) => entry.data.implementationStatus === 'disabled'),
 };
 
+function entrySlug(entry: CollectionEntry<'rules'>): string {
+  return entry.id.replace(/\.(md|mdx)$/, '');
+}
+
 function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
   switch (status) {
     case 'active': return 'var(--ok)';
@@ -53,7 +57,7 @@ function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
       </div>
       <div class="qs-card" style="padding:6px 0;overflow:hidden;">
         {rules.map((entry: CollectionEntry<'rules'>) => (
-          <a href={`/docs/rules/${entry.slug}`} style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
+          <a href={`/docs/rules/${entrySlug(entry)}`} style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;">
             <div style="display:grid;gap:6px;">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <strong style="font-size:13.5px;line-height:1.45;">{entry.data.id}</strong>

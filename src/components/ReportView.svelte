@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { loadSession, type Session } from '@lib/auth';
   import { getReport } from '@lib/persistence/db';
-  import { renderReportPdf, buildCbomJson, buildFindingsCsv } from '@lib/pdf';
+  import { renderReportPdf, buildCbomJson, buildVexJson, buildFindingsCsv } from '@lib/pdf';
   import type { Category, Finding, Report, Severity } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
   import FindingDrawer from './FindingDrawer.svelte';
@@ -148,6 +148,18 @@
     triggerDownload(new Blob([json], { type: 'application/json' }), 'quantum-shield-cbom.json');
   }
 
+  function downloadVex() {
+    if (!report) return;
+    const json = buildVexJson(report);
+    triggerDownload(new Blob([json], { type: 'application/json' }), 'quantum-shield-vex.json');
+  }
+
+  function downloadRawJson() {
+    if (!report) return;
+    const json = JSON.stringify(report, null, 2);
+    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${safeName(report.org.orgName)}.report.json`);
+  }
+
   function downloadCsv() {
     if (!report) return;
     const csv = buildFindingsCsv(report);
@@ -281,6 +293,8 @@
               <div class="spacer"></div>
               <button type="button" class="qs-btn qs-btn-sm" onclick={downloadCsv}>CSV</button>
               <button type="button" class="qs-btn qs-btn-sm" onclick={downloadCbom}>CBOM JSON</button>
+              <button type="button" class="qs-btn qs-btn-sm" onclick={downloadVex}>OpenVEX JSON</button>
+              <button type="button" class="qs-btn qs-btn-sm" onclick={downloadRawJson}>Raw JSON</button>
               <button type="button" class="qs-btn qs-btn-sm qs-btn-primary" onclick={downloadPdf} data-testid="report-download-pdf">
                 Download PDF
               </button>

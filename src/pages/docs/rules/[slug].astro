@@ -6,7 +6,7 @@ import { GENERATED_CITATIONS } from '@lib/rules/regulations.generated.js';
 export async function getStaticPaths() {
   const docs = await getCollection('rules');
   return docs.map((entry: CollectionEntry<'rules'>) => ({
-    params: { slug: entry.slug },
+    params: { slug: entry.id.replace(/\.(md|mdx)$/, '') },
     props: { entry },
   }));
 }

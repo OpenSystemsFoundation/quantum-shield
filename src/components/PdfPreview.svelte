@@ -65,35 +65,35 @@
   });
 </script>
 
-<div class="flex h-[calc(100vh-48px)] flex-col">
-  <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
-    <div class="flex items-baseline gap-4">
-      <h1 class="text-lg font-bold">PDF preview (dev)</h1>
-      <p class="text-sm text-ink-soft" data-testid="render-status">
+<div class="pdf-preview">
+  <header class="pdf-preview__header">
+    <div class="pdf-preview__title-row">
+      <h1>PDF preview (dev)</h1>
+      <p data-testid="render-status">
         {#if status === 'rendering'}Rendering…{/if}
         {#if status === 'ready'}Rendered in {renderMs} ms — {(pdfBytes?.byteLength ?? 0).toLocaleString()} bytes{/if}
         {#if status === 'error'}Error: {errorMessage}{/if}
       </p>
     </div>
-    <div class="flex gap-2">
+    <div class="pdf-preview__actions">
       <button
-        class="rounded border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-white disabled:opacity-40"
+        class="pdf-preview__button"
         onclick={render}
         disabled={status === 'rendering'}
       >Re-render</button>
       <button
-        class="rounded bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:bg-ink-soft disabled:opacity-40"
+        class="pdf-preview__button pdf-preview__button--primary"
         data-testid="download-pdf"
         onclick={downloadPdf}
         disabled={status !== 'ready'}
       >Download PDF</button>
       <button
-        class="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold hover:bg-gray-50"
+        class="pdf-preview__button"
         data-testid="download-cbom"
         onclick={downloadCbom}
       >CBOM JSON</button>
       <button
-        class="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold hover:bg-gray-50"
+        class="pdf-preview__button"
         data-testid="download-csv"
         onclick={downloadCsv}
       >Findings CSV</button>
@@ -105,15 +105,114 @@
       data-testid="pdf-iframe"
       src={pdfUrl}
       title="Generated report preview"
-      class="flex-1 border-0"
+      class="pdf-preview__frame"
     ></iframe>
   {:else if status === 'error'}
-    <div class="flex flex-1 items-center justify-center bg-surface-muted">
-      <pre class="max-w-2xl overflow-auto bg-white p-6 font-mono text-sm text-severity-critical">{errorMessage}</pre>
+    <div class="pdf-preview__empty">
+      <pre class="pdf-preview__error">{errorMessage}</pre>
     </div>
   {:else}
-    <div class="flex flex-1 items-center justify-center bg-surface-muted text-ink-soft">
+    <div class="pdf-preview__empty">
       Preparing PDF…
     </div>
   {/if}
 </div>
+
+<style>
+  .pdf-preview {
+    min-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pdf-preview__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    padding: 12px 24px;
+  }
+
+  .pdf-preview__title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .pdf-preview h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .pdf-preview p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  .pdf-preview__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .pdf-preview__button {
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pdf-preview__button:hover {
+    background: var(--bg-2);
+  }
+
+  .pdf-preview__button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .pdf-preview__button--primary {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
+  }
+
+  .pdf-preview__button--primary:hover {
+    background: var(--ink-2);
+  }
+
+  .pdf-preview__frame {
+    flex: 1;
+    border: 0;
+  }
+
+  .pdf-preview__empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-2);
+    color: var(--ink-2);
+  }
+
+  .pdf-preview__error {
+    max-width: 672px;
+    overflow: auto;
+    background: var(--surface);
+    color: var(--crit);
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+</style>

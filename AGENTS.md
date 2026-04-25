@@ -27,10 +27,7 @@ builder, and OpenVEX/report output code under `src/lib/`.
   - `src/lib/scan/fixtures/liveOrgSnapshot.generated.ts`
 - Treat `DESIGN.md` as the design-system contract for visual work. If changing
   colors, typography, spacing, corner radius, component styling, or UI tone,
-  update `DESIGN.md` and run `npm run design:lint` plus
-  `npm run design:sync-tailwind`.
-- Do not edit `src/styles/tailwind-design.generated.mjs` directly. It is
-  generated from `DESIGN.md`.
+  update `DESIGN.md` and run `npm run design:lint`.
 - Before broad copy or UX changes, check the relevant pages/components:
   - Landing: `src/pages/index.astro`
   - Install guide: `src/pages/install.astro`
@@ -54,7 +51,6 @@ Run these from the repo root.
 npm install
 npm run sync:regulations
 npm run design:lint
-npm run design:sync-tailwind
 npm run check
 npm test
 npm run build
@@ -87,8 +83,8 @@ polish task, or a verification step that has been completed.
 - **Primary product path:** local `qshield` CLI
 - **Secondary product path:** static browser app for setup, scans, and report review
 - **Last reviewed:** 2026-04-25
-- **Current verification state:** `npm run design:lint`, `npm run check`, and
-  `npm test` pass as of 2026-04-25
+- **Current verification state:** `npm run design:lint`, `npm run check`,
+  `npm test`, and `npm run build` pass as of 2026-04-25
 
 ## Immediate Blockers
 
@@ -97,26 +93,30 @@ polish task, or a verification step that has been completed.
   - `npm run check` passes with 0 errors and 0 warnings.
   - `npm test` passes with 6 files and 24 tests.
 - [ ] Track npm audit findings before beta.
-  - `npm install @google/design.md --save-dev` reported 14 moderate
-    vulnerabilities in the dependency tree.
+  - After Astro 6 and Tailwind removal, `npm audit --json` reports 5 moderate
+    vulnerabilities in the dev-only `@astrojs/check` language-server dependency
+    chain.
+  - npm's available fix downgrades `@astrojs/check` to 0.9.2, so this should be
+    tracked as an upstream tooling issue unless a compatible patched release is
+    available.
 - [ ] Decide whether `package.json` should stay `"private": true` for beta.
   - If the beta expects npm-style installation, package metadata and publishing
     posture need to be made explicit.
-- [ ] Add or remove linked legal pages.
-  - Landing footer links to `/privacy` and `/terms`, but those routes are not
-    present in the current app.
+- [x] Add or remove linked legal pages.
+  - Added `/privacy` and `/terms` beta posture pages.
 - [ ] Replace placeholder deployment/domain copy before public launch.
   - Setup docs use runtime origin in the browser, but static placeholders such as
     `https://quantumshield.example` still appear in source and PDF metadata.
 
 ## Copy And Positioning
 
-- [ ] Align all product descriptions around the same beta message.
+- [x] Align all product descriptions around the same beta message.
   - Current top-level docs position CLI as recommended and browser as optional.
-  - `src/layouts/Shell.astro` still describes the product as "browser-only."
-- [ ] Review landing-page navigation labels.
-  - `Methodology` and `Frameworks` both link to `/install`; either add the
-    intended docs pages or rename links to match the destination.
+  - `src/layouts/Shell.astro` now describes the product as CLI-first with an
+    optional browser workflow.
+- [x] Review landing-page navigation labels.
+  - Landing nav now links to `/docs/rules` and `/docs/regulations` instead of
+    sending multiple labels to `/install`.
 - [ ] Make the CLI-first path unmistakable on the landing page, install guide,
   README, and browser setup wizard.
 - [ ] Verify all standards/framework claims are backed by current rule content.
@@ -150,10 +150,10 @@ polish task, or a verification step that has been completed.
 
 ## UX Workflow
 
-- [ ] Landing page
-  - [ ] Fix broken/misleading nav links.
-  - [ ] Ensure the first CTA points to the recommended CLI path.
-  - [ ] Decide whether the report preview numbers should be marked as sample data.
+- [x] Landing page
+  - [x] Fix broken/misleading nav links.
+  - [x] Ensure the first CTA points to the recommended CLI path.
+  - [x] Decide whether the report preview numbers should be marked as sample data.
 - [ ] Browser setup wizard
   - [ ] Confirm step order with a real org.
   - [ ] Add better recovery when OAuth succeeds but the first API call fails.
@@ -168,7 +168,7 @@ polish task, or a verification step that has been completed.
   - [ ] Confirm failed category handling does not imply the whole scan succeeded.
 - [ ] Report flow
   - [ ] Verify finding filters, drawer, exports, and PDF download.
-  - [ ] Add OpenVEX download in browser mode if it is intended to match CLI output.
+  - [x] Add OpenVEX download in browser mode if it is intended to match CLI output.
 
 ## Styling And Accessibility
 
@@ -177,11 +177,14 @@ polish task, or a verification step that has been completed.
     component tokens, and UI usage rules.
   - `npm run design:lint` validates the file through `@google/design.md/linter`
     with 0 errors and 0 warnings.
-- [x] Sync Tailwind tokens from `DESIGN.md`.
-  - `npm run design:sync-tailwind` generates
-    `src/styles/tailwind-design.generated.mjs`.
-  - `tailwind.config.mjs` imports the generated token file and keeps compatibility
-    aliases for current Tailwind classes.
+- [x] Remove Tailwind before Astro 6 migration.
+  - Tailwind and `@astrojs/tailwind` were removed; the app is CSS-first and keeps
+    `DESIGN.md` as the design contract.
+- [x] Upgrade the Astro stack for beta.
+  - `astro`, `@astrojs/mdx`, `@astrojs/svelte`, `@astrojs/check`, and `vitest`
+    were updated.
+  - Content collections were migrated to Astro 6 content-layer loaders.
+  - Docs routes now use content entry IDs instead of legacy slugs.
 - [ ] Test desktop and mobile layouts for landing, setup, app overview, scan, and
   report pages.
 - [ ] Replace inline-heavy page styling with reusable classes where it reduces
@@ -197,10 +200,10 @@ polish task, or a verification step that has been completed.
 
 - [ ] Run `npm install` on a clean clone and verify generated files remain stable.
 - [ ] Run:
-  - [ ] `npm run sync:regulations`
-  - [ ] `npm run check`
-  - [ ] `npm test`
-  - [ ] `npm run build`
+  - [x] `npm run sync:regulations`
+  - [x] `npm run check`
+  - [x] `npm test`
+  - [x] `npm run build`
   - [ ] `npm run test:e2e`
 - [ ] Verify the CLI path:
   - [ ] `npm run qshield -- help`
@@ -210,11 +213,11 @@ polish task, or a verification step that has been completed.
 - [ ] Verify browser mock/demo flow without Salesforce credentials.
 - [ ] Verify browser OAuth flow against production, sandbox, and My Domain.
 - [ ] Confirm generated artifacts:
-  - [ ] PDF
-  - [ ] CycloneDX CBOM JSON
-  - [ ] OpenVEX JSON
-  - [ ] findings CSV
-  - [ ] raw report JSON
+  - [x] PDF
+  - [x] CycloneDX CBOM JSON
+  - [x] OpenVEX JSON
+  - [x] findings CSV
+  - [x] raw report JSON
 
 ## Release Readiness Definition
 
@@ -239,8 +242,16 @@ Beta is ready when:
 - The published `design.md` CLI hung in this Windows shell, so
   `scripts/lint-design-md.mjs` uses the official `@google/design.md/linter`
   API directly for reliable local validation.
-- `npm run design:lint`, `npm run design:sync-tailwind`, `npm run check`,
-  `npm test`, and `npm run build` passed after the Design.md integration.
+- `npm run design:lint`, `npm run check`, `npm test`, and `npm run build` passed
+  after the Design.md integration.
   `npm run check`, `npm test`, and `npm run build` needed elevated command
   execution because `npm run sync:regulations` rewrites generated files.
+- Public-copy pass added `/privacy` and `/terms`, corrected the global meta
+  description, changed landing docs links to real docs routes, marked the hero
+  report preview as sample data, and added browser downloads for OpenVEX JSON and
+  raw report JSON.
+- Tailwind was removed after the Design.md contract was added. The remaining
+  styling path is Astro/Svelte CSS plus `DESIGN.md`.
+- Astro 6 migration completed after replacing legacy content collection slug
+  usage in docs routes and links.
 - The repo currently has an untracked root `sfdx-project.json`.

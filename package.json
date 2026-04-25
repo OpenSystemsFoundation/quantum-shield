@@ -10,7 +10,6 @@
     "sync:regulations": "node scripts/sync-regulations.mjs",
     "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
     "design:lint": "node scripts/lint-design-md.mjs DESIGN.md",
-    "design:sync-tailwind": "node scripts/sync-design-tailwind.mjs DESIGN.md src/styles/tailwind-design.generated.mjs",
     "predev": "npm run sync:regulations",
     "dev": "astro dev --host localhost --port 4321",
     "prebuild": "npm run sync:regulations",
@@ -30,16 +29,14 @@
     "qshield": "tsx cli/index.ts"
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.0.0",
-    "@astrojs/svelte": "^7.0.0",
-    "@astrojs/tailwind": "^6.0.0",
-    "astro": "^5.2.0",
+    "@astrojs/mdx": "^5.0.4",
+    "@astrojs/svelte": "^8.0.5",
+    "astro": "^6.1.9",
     "comlink": "^4.4.2",
     "idb": "^8.0.3",
     "jsforce": "^3.10.14",
     "pdf-lib": "^1.17.1",
-    "svelte": "^5.16.0",
-    "tailwindcss": "^3.4.17"
+    "svelte": "^5.16.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
@@ -49,6 +46,6 @@
     "gray-matter": "^4.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.5"
   }
 }
