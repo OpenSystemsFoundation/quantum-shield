@@ -88,6 +88,42 @@ describe('buildSessionFromSfCli', () => {
     expect(firstCallArgs).toContain('prod-eu');
   });
 
+  it('falls back to show-access-token when org display redacts the token', async () => {
+    execFileMock
+      .mockResolvedValueOnce(
+        displayJson({ accessToken: "[REDACTED] Use 'sf org auth show-access-token' to view" }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({ status: 0, result: { accessToken: '00D...!REAL' } }),
+      )
+      .mockResolvedValueOnce(listJson());
+
+    const session = await buildSessionFromSfCli({ targetOrg: 'prod-eu' });
+    expect(session.accessToken).toBe('00D...!REAL');
+
+    const tokenCallArgs = execFileMock.mock.calls[1][1];
+    expect(tokenCallArgs).toEqual([
+      'org',
+      'auth',
+      'show-access-token',
+      '--json',
+      '--target-org',
+      'prod-eu',
+    ]);
+  });
+
+  it('throws SfCliError when the fallback token is also unusable', async () => {
+    execFileMock
+      .mockResolvedValueOnce(
+        displayJson({ accessToken: "[REDACTED] Use 'sf org auth show-access-token' to view" }),
+      )
+      .mockResolvedValueOnce(JSON.stringify({ status: 0, result: {} }));
+
+    const thrown = await buildSessionFromSfCli({ targetOrg: 'prod-eu' }).catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(SfCliError);
+    expect((thrown as Error).message).toMatch(/access token/i);
+  });
+
   it('classifies sandbox orgs from the list output', async () => {
     execFileMock
       .mockResolvedValueOnce(
