@@ -85,12 +85,12 @@ import BlochShield from '../components/BlochShield.svelte';
             <li class="cors-step">
               <div class="num">4</div>
               <div class="body">
-                Scopes: <span class="mono" style="color:var(--ink)">api</span>, <span class="mono" style="color:var(--ink)">refresh_token</span>, <span class="mono" style="color:var(--ink)">id</span>. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
+                Scopes: <span class="mono" style="color:var(--ink)">api</span> and <span class="mono" style="color:var(--ink)">id</span> only. <span class="mono" style="color:var(--ink)">refresh_token</span> is not needed — the browser session intentionally ends when the tab closes. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
               </div>
             </li>
             <li class="cors-step">
               <div class="num">5</div>
-              <div class="body">Save. Wait 2–10 minutes for policy propagation.</div>
+              <div class="body">Save. OAuth configuration changes can take a few minutes to propagate — if the first sign-in attempt fails, wait briefly and retry.</div>
             </li>
           </ol>
         </div>
@@ -111,7 +111,7 @@ import BlochShield from '../components/BlochShield.svelte';
             </div>
           </div>
           <p style="margin-top:10px;font-size:11.5px;color:var(--muted);font-family:var(--mono);">
-            You can add multiple callback URLs. After saving, the change is live immediately.
+            You can add multiple callback URLs. As with other OAuth settings, saved changes can take a few minutes to propagate.
           </p>
         </div>
       </article>
@@ -164,7 +164,7 @@ import BlochShield from '../components/BlochShield.svelte';
 
     <p style="margin-top:40px;font-size:11.5px;color:var(--muted);font-family:var(--mono);">
       QuantumShield is read-only. We never modify your Salesforce configuration. Source:
-      <a href="https://github.com/elgeffe/quantum-shield" style="color:var(--navy-600);">github.com/elgeffe/quantum-shield</a>.
+      <a href="https://github.com/OpenSystemsFoundation/quantum-shield" style="color:var(--navy-600);">github.com/OpenSystemsFoundation/quantum-shield</a>.
     </p>
   </main>
 

@@ -14,6 +14,32 @@
   const MAX_RATIO = 0.85;
 
   let dragging = $state(false);
+  let drawerEl = $state<HTMLElement | null>(null);
+  let previousFocus: HTMLElement | null = null;
+  let lastFindingId: string | null = null;
+
+  // Move focus into the drawer when it opens; restore it to the invoking
+  // element (e.g. the finding row) when it closes.
+  $effect(() => {
+    const id = finding?.id ?? null;
+    if (id === lastFindingId) return;
+    if (id && lastFindingId === null) {
+      previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      queueMicrotask(() => drawerEl?.focus());
+    } else if (id && lastFindingId) {
+      // Switched to another finding while open: track the newly clicked row
+      // (only if focus is outside the drawer) so close restores correctly.
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && drawerEl && !drawerEl.contains(active)) {
+        previousFocus = active;
+      }
+    } else if (!id && lastFindingId) {
+      const target = previousFocus;
+      previousFocus = null;
+      if (target?.isConnected) target.focus();
+    }
+    lastFindingId = id;
+  });
 
   const SEV_CLASS: Record<Severity, string> = {
     critical: 'crit',
@@ -126,22 +152,26 @@
 
 {#if finding}
   <div
+    bind:this={drawerEl}
     class="qs-drawer"
     style={`height:${height}px;`}
     role="region"
     aria-label="Finding detail"
+    tabindex="-1"
     data-testid="finding-drawer"
   >
-    <button
-      type="button"
+    <!-- Pointer-only resize affordance; keyboard users resize via the
+         Reset/Maximise buttons, so this is hidden from assistive tech. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
       class="qs-drawer-handle"
-      aria-label="Resize detail panel"
+      aria-hidden="true"
       onmousedown={startDrag}
       ontouchstart={startDrag}
       data-testid="drawer-handle"
     >
       <span class="grip"></span>
-    </button>
+    </div>
 
     <div class="qs-drawer-head">
       <div class="title-row" style="flex:1;min-width:0;">
@@ -155,8 +185,8 @@
       </div>
       <div class="qs-drawer-actions">
         <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={reset} title="Reset size">Reset</button>
-        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={maximise} title="Maximise">▲</button>
-        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={onClose} title="Close (Esc)" data-testid="drawer-close">✕</button>
+        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={maximise} title="Maximise" aria-label="Maximise detail panel">▲</button>
+        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={onClose} title="Close (Esc)" aria-label="Close finding detail" data-testid="drawer-close">✕</button>
       </div>
     </div>
 

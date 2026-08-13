@@ -16,6 +16,8 @@ export interface AuthConfig {
 export interface PendingAuth {
   state: string;
   codeVerifier: string;
+  /** Consumer Key used to start the flow; needed again for the PKCE code exchange. */
+  clientId?: string;
   environmentId: EnvironmentId;
   loginUrl: string;
   apiVersion: string;

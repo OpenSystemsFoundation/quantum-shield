@@ -3,8 +3,8 @@
   import { loadSession, type Session } from '@lib/auth';
   import { startScan, disposeWorker } from '@lib/scan/client';
   import type { ScanEvent } from '@lib/scan/types';
-  import { saveScanSummary, saveReport } from '@lib/persistence/db';
-  import type { Category, Finding, Report } from '@lib/pdf';
+  import { saveScanSummary, saveReport, getScan, getScansForOrg } from '@lib/persistence/db';
+  import type { Category, CategoryCoverage, Finding, Report } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
 
   const initialScanId = (() => {
@@ -18,9 +18,11 @@
   const scanId = initialScanId;
 
   let session = $state<Session | null>(null);
-  let status = $state<'booting' | 'running' | 'complete' | 'failed' | 'cors' | 'auth'>('booting');
+  let status = $state<'booting' | 'running' | 'complete' | 'failed' | 'cors' | 'auth' | 'interrupted'>('booting');
   let errorMessage = $state<string | null>(null);
   let startedAt = $state<string>('');
+  let coverageIssues = $state<CategoryCoverage[]>([]);
+  let latestReportScanId = $state<string | null>(null);
 
   interface CatRow {
     category: Category;
@@ -55,6 +57,34 @@
       return;
     }
     session = s;
+
+    try {
+      const prior = await getScansForOrg(s.org.orgId);
+      latestReportScanId = prior.find((x) => x.status === 'completed')?.scanId ?? null;
+    } catch {
+      /* nav aid only; ignore */
+    }
+
+    // Never restart a scan whose id already has a persisted summary: opening
+    // an old scan from history must show its recorded state, not re-run it.
+    const existing = await getScan(scanId);
+    if (existing) {
+      startedAt = existing.startedAt;
+      if (existing.status === 'completed') {
+        window.location.replace(`/app/report/?id=${encodeURIComponent(scanId)}`);
+        return;
+      }
+      if (existing.status === 'failed') {
+        status = 'failed';
+        errorMessage = existing.error ?? 'This scan failed. Start a new scan from the overview.';
+        return;
+      }
+      // Persisted as 'running' but no scan is live in this page — the tab was
+      // closed or reloaded mid-scan. Treat it as interrupted, do not re-run.
+      status = 'interrupted';
+      return;
+    }
+
     startedAt = new Date().toISOString();
     pushLog('info', `scan ${scanId} starting · org ${s.org.orgId}${s.mock ? ' · mock mode' : ''}`);
 
@@ -181,7 +211,12 @@
   async function finalise(report: Report) {
     if (!session) return;
     status = 'complete';
+    const coverage: CategoryCoverage[] | undefined = report.coverage;
+    coverageIssues = (coverage ?? []).filter((c) => c.status !== 'scanned');
     pushLog('ok', `scan complete · ${report.summary.totalFindings} findings`);
+    for (const c of coverageIssues) {
+      pushLog('warn', `${c.label} · ${c.status}${c.detail ? ` — ${c.detail}` : ''}`);
+    }
     await saveReport({
       scanId,
       orgId: session.org.orgId,
@@ -199,7 +234,10 @@
       severityCounts: report.summary.bySeverity,
       status: 'completed',
     });
-    setTimeout(() => window.location.assign(`/app/report/?id=${encodeURIComponent(scanId)}`), 800);
+    latestReportScanId = scanId;
+    // Leave partial-coverage warnings on screen long enough to be read.
+    const delay = coverageIssues.length > 0 ? 2400 : 800;
+    setTimeout(() => window.location.assign(`/app/report/?id=${encodeURIComponent(scanId)}`), delay);
   }
 
   function labelForCategory(c: Category): string {
@@ -222,7 +260,7 @@
 
 {#if session}
   <div class="app-frame">
-    <AppChrome session={session} active="scan" crumb={`Scan ${scanId.slice(0, 14)}…`} />
+    <AppChrome session={session} active="scan" crumb={`Scan ${scanId.slice(0, 14)}…`} latestReportScanId={latestReportScanId} />
 
     <main style="padding:24px 28px 48px;min-width:0;">
       {#if status === 'cors'}
@@ -262,6 +300,18 @@
             <a href="/app" class="qs-btn qs-btn-primary" style="margin-top:14px;">Back to app</a>
           </div>
         </div>
+      {:else if status === 'interrupted'}
+        <div class="qs-card" data-testid="scan-interrupted">
+          <div class="qs-card-body">
+            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Scan interrupted</h2>
+            <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">
+              This scan started{startedAt ? ` at ${startedAt.slice(0, 10)} ${startedAt.slice(11, 19)}` : ''} but never
+              finished — most likely the tab was closed mid-scan. Its results are incomplete and it will not be
+              re-run automatically. Start a new scan from the overview.
+            </p>
+            <a href="/app" class="qs-btn qs-btn-primary" style="margin-top:14px;">Back to app</a>
+          </div>
+        </div>
       {:else}
         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div>
@@ -285,7 +335,18 @@
           </div>
         </div>
 
-        <section style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:22px;">
+        {#if status === 'complete' && coverageIssues.length > 0}
+          <div class="coverage-note" role="status" data-testid="scan-coverage-note" style="margin-top:14px;margin-bottom:0;">
+            <strong>
+              Scan complete — {coverageIssues.length}
+              {coverageIssues.length === 1 ? 'category' : 'categories'} could not be fully scanned.
+            </strong>
+            Zero findings in {coverageIssues.length === 1 ? 'that category' : 'those categories'} does not mean
+            {coverageIssues.length === 1 ? 'it is' : 'they are'} clean. Details follow in the report.
+          </div>
+        {/if}
+
+        <section class="app-cols" style="margin-top:22px;">
           <div style="display:grid;gap:8px;">
             {#each categories as row (row.category)}
               {@const pct = row.state === 'completed' || row.state === 'skipped' ? 100 : row.state === 'running' ? 45 : row.state === 'failed' ? 100 : 0}

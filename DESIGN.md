@@ -242,6 +242,10 @@ Use `Source Serif 4` for hero headings, report headings, and large numeric
 summaries. Use `Inter Tight` for all UI controls, body copy, tables, and panels.
 Use `JetBrains Mono` for technical identifiers and compact metadata.
 
+All three families are self-hosted as woff2 files (latin and latin-ext subsets)
+under `public/fonts/` and loaded via `/fonts/fonts.css`; pages must not load
+fonts from third-party CDNs.
+
 Letter spacing is `0` for normal text. Uppercase metadata may use `0.08em`.
 Do not scale type with viewport width. Compact panels should use panel-scale
 headings, not hero-scale type.

@@ -17,7 +17,7 @@ import BlochShield from '../components/BlochShield.svelte';
         <a href="/install">Install</a>
       </nav>
       <div class="right">
-        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/elgeffe/quantum-shield">View source</a>
+        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/OpenSystemsFoundation/quantum-shield">View source</a>
         <a class="qs-btn qs-btn-primary" href="/connect">Browser setup</a>
       </div>
     </div>
@@ -117,7 +117,7 @@ import BlochShield from '../components/BlochShield.svelte';
     </div>
 
     <div style="max-width:1200px;margin:0 auto;padding:0 32px 72px;">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+      <div class="landing-features">
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
           <div class="mono tiny-caps" style="color:var(--navy-600)">01</div>
           <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Direct-to-source rules</div>
@@ -143,7 +143,7 @@ import BlochShield from '../components/BlochShield.svelte';
     </div>
 
     <footer style="border-top:1px solid var(--line);background:var(--surface);">
-      <div style="max-width:1200px;margin:0 auto;padding:24px 32px;display:flex;align-items:center;gap:20px;font-size:12px;color:var(--muted);">
+      <div style="max-width:1200px;margin:0 auto;padding:24px 32px;display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;font-size:12px;color:var(--muted);">
         <div class="hstack">
           <BlochShield size={20} />
           <span style="font-weight:600;color:var(--ink-2)">QuantumShield</span>

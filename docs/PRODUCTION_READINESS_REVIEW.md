@@ -7,6 +7,23 @@
 
 ---
 
+## Remediation status — 2026-08-13
+
+**Every blocker and every High finding below was fixed on 2026-08-13** (see `CHANGELOG.md` 0.1.0 and the commit history of this branch), along with all Medium items and most Low polish. Headlines:
+
+- **B1–B5 all closed:** sf CLI token fallback; per-category scan **coverage** (`scanned / partial / failed / skipped`) carried through every artifact with broken queries repaired (verified live: Shield reports an honest *skipped*, Connected Apps + External Client Apps inventory correctly); browser OAuth rebuilt on **authorization code + PKCE** with `refresh_token` dropped from scopes; **Apache-2.0 LICENSE** added.
+- **Scan correctness:** region filter no longer drops baseline rules for EU users (verified live: `--region NL,EU` returns full parity), Tooling queries paginate, fabricated crypto facts removed, Apex analysis is comment-aware and catches HMAC-MD5/SHA1 + SHA-1 signatures, `--overlay` actually maps findings into the regulatory appendix (verified in a live PDF).
+- **Artifacts:** CBOM is CycloneDX-1.6 enum-valid (verified: 0 violations on a live scan), OpenVEX field placement is spec-legal, CSV is formula-injection-safe, the PDF renders non-WinAnsi org names without crashing, and the methodology text matches the generator (CLI vs browser).
+- **CLI:** strict flag validation (exit 2 with did-you-mean), **exit 3 on partial coverage** (`--allow-partial` to accept), sf error passthrough, per-format writer isolation — all verified against a live scratch org.
+- **Trust surface:** real CSP + security headers shipped via `public/_headers` with the security page describing exactly what ships; fonts self-hosted (zero third-party requests); repo links fixed; README/ARCHITECTURE reconciled with the implementation; CI added (typecheck × 2, unit, build, version-consistency, e2e).
+- **Verification at close:** `tsc` (app + cli) clean · `astro check` 0 errors · vitest **96/96** · build 46 pages (dev route excluded from prod) · Playwright e2e **18/18** · live scans on a fresh scratch org exercising coverage, region, overlay, probe, and every exit-code path.
+
+Items deliberately left open: browser-mode OAuth still needs one manual round-trip against a real org from a normal workstation (sandbox egress blocked browser TLS here — code + e2e-mocked flows verified); the production domain is still unset (`astro.config.mjs` `site`); 5 npm advisories remain that are all gated on the astro@7 major upgrade. Tracked in `AGENTS.md`.
+
+The review below is preserved unchanged as the audit record of the 2026-08-12 state.
+
+---
+
 ## How this review was done
 
 This was a hands-on review against real infrastructure, not a code read:

@@ -265,13 +265,13 @@
           <li class="cors-step">
             <div class="num">3</div>
             <div class="body">
-              Under <span class="mono" style="color:var(--ink)">API (Enable OAuth Settings)</span>: enable OAuth; leave Device Flow and Client Credentials off.
+              Under <span class="mono" style="color:var(--ink)">API (Enable OAuth Settings)</span>: enable OAuth; leave <span class="mono" style="color:var(--ink)">Require Proof Key for Code Exchange (PKCE)</span> enabled; leave Device Flow and Client Credentials off.
             </div>
           </li>
           <li class="cors-step">
             <div class="num">4</div>
             <div class="body">
-              Scopes: <span class="mono" style="color:var(--ink)">api</span>, <span class="mono" style="color:var(--ink)">refresh_token</span>, <span class="mono" style="color:var(--ink)">id</span>. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
+              Scopes: <span class="mono" style="color:var(--ink)">api</span> and <span class="mono" style="color:var(--ink)">id</span> only. <span class="mono" style="color:var(--ink)">refresh_token</span> is NOT needed — browser sessions are short-lived by design. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
             </div>
           </li>
           <li class="cors-step">

@@ -104,6 +104,7 @@ const findings: Finding[] = [
     rationale:
       'SHA-1 is disallowed under SP 800-131A Rev 3 and BSI TR-02102. Exploitable collision attacks on SHA-1 are practical today; this is not a future risk.',
     citations: [NIST_SP_800_131A, BSI_TR_02102, NIS2],
+    overlayIds: ['nis2'],
     deadline: '2020-12-31',
   }),
   mkFinding({
@@ -127,6 +128,7 @@ const findings: Finding[] = [
     rationale:
       'GDPR Art. 32 and NIS 2 Art. 21 both require state-of-the-art protection of data in transit. Plaintext HTTP is an immediate compliance failure for any processing of personal or operational data.',
     citations: [GDPR, NIS2, BSI_TR_02102],
+    overlayIds: ['gdpr', 'nis2'],
     deadline: '2018-05-25',
   }),
   mkFinding({
@@ -198,6 +200,7 @@ const findings: Finding[] = [
     rationale:
       'Plaintext HTTP callouts leak any data in transit. GDPR Art. 32 and NIS 2 require TLS for any personal or operational data.',
     citations: [GDPR, NIS2],
+    overlayIds: ['gdpr', 'nis2'],
     deadline: '2018-05-25',
   }),
   mkFinding({
@@ -222,6 +225,7 @@ const findings: Finding[] = [
     rationale:
       'Grover’s algorithm halves the effective security of symmetric ciphers. NIST, BSI, and ENISA all recommend migrating symmetric encryption to 256-bit keys in advance of CRQC availability, especially for long-confidentiality data.',
     citations: [BSI_TR_02102, ENISA_PQC, NCSC_NL_PQC, NIST_FIPS_203],
+    overlayIds: ['gdpr'],
     deadline: '2030-12-31',
   }),
   mkFinding({
@@ -291,6 +295,7 @@ const findings: Finding[] = [
     rationale:
       'Hardcoded cryptographic keys violate GDPR Art. 32 "state-of-the-art" requirements and every mainstream secure-coding standard. Apex source is accessible to any user with View All Data or developer access.',
     citations: [GDPR, NIS2],
+    overlayIds: ['gdpr', 'nis2'],
     deadline: '2018-05-25',
   }),
   mkFinding({
@@ -313,6 +318,7 @@ const findings: Finding[] = [
     rationale:
       'Session length is not a cryptographic primitive, but long sessions extend the window for token theft and reduce the practical effectiveness of cryptographic controls upstream.',
     citations: [NCSC_NL_PQC, NIS2],
+    overlayIds: ['nis2'],
   }),
   mkFinding({
     id: 'F-PKG-001',
@@ -334,6 +340,7 @@ const findings: Finding[] = [
     rationale:
       'Managed packages are opaque to QuantumShield scanning. ENISA and NCSC-NL both emphasize supply-chain crypto-agility as a post-quantum migration priority.',
     citations: [ENISA_PQC, NCSC_NL_PQC],
+    overlayIds: ['nis2'],
   }),
   mkFinding({
     id: 'F-CERT-003',
@@ -384,6 +391,7 @@ const findings: Finding[] = [
     rationale:
       'DORA requires financial entities to maintain state-of-the-art cryptographic protection proportional to ICT risk. RSA-2048 remains acceptable through 2030 but treasury-adjacent authentication is a priority migration surface under NIS 2 and DORA.',
     citations: [DORA, NIS2, ENISA_PQC, NIST_FIPS_204],
+    overlayIds: ['dora', 'nis2'],
     deadline: '2030-12-31',
   }),
 ];
@@ -448,7 +456,7 @@ export const demoReport: Report = {
     instanceUrl: 'https://nl-acme.my.salesforce.com',
     orgName: 'ACME Europe B.V.',
     orgType: 'production',
-    apiVersion: 'v63.0',
+    apiVersion: 'v66.0',
     userLicense: 'Salesforce',
   },
   findings,
@@ -475,5 +483,6 @@ export const demoReport: Report = {
     { name: 'SAML signature hash', type: 'algorithm', algorithm: 'SHA-1', location: 'SamlSsoConfig/00F3x000001aBcD', quantumSafe: false },
     { name: 'legacy_billing_api endpoint', type: 'protocol', algorithm: 'HTTP (no TLS)', location: 'NamedCredential/0XA3x000000abCD', quantumSafe: false },
     { name: 'internal_reporting_http endpoint', type: 'protocol', algorithm: 'HTTP (no TLS)', location: 'RemoteSiteSetting/0rp3x000000aa', quantumSafe: false },
+    { name: 'Acme Signing Utilities', type: 'library', algorithm: 'unknown', location: 'InstalledPackage/033xx0000000abc', quantumSafe: false },
   ],
 };

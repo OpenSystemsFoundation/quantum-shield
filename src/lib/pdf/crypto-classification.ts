@@ -51,7 +51,9 @@ const OID_BY_ALGORITHM: Record<string, string> = {
   'AES-128-CBC': '2.16.840.1.101.3.4.1.2',
   'AES-192-CBC': '2.16.840.1.101.3.4.1.22',
   'AES-256-CBC': '2.16.840.1.101.3.4.1.42',
-  // NIST PQC finalists — registered OIDs under 2.16.840.1.101.3.4.3.*
+  // NIST PQC standards — CSOR assignments:
+  //   KEMs under 2.16.840.1.101.3.4.4.* (FIPS 203),
+  //   signatures under 2.16.840.1.101.3.4.3.* (FIPS 204/205).
   'ML-KEM-512': '2.16.840.1.101.3.4.4.1',
   'ML-KEM-768': '2.16.840.1.101.3.4.4.2',
   'ML-KEM-1024': '2.16.840.1.101.3.4.4.3',
@@ -59,7 +61,17 @@ const OID_BY_ALGORITHM: Record<string, string> = {
   'ML-DSA-65': '2.16.840.1.101.3.4.3.18',
   'ML-DSA-87': '2.16.840.1.101.3.4.3.19',
   'SLH-DSA-SHA2-128S': '2.16.840.1.101.3.4.3.20',
+  'SLH-DSA-SHA2-128F': '2.16.840.1.101.3.4.3.21',
+  'SLH-DSA-SHA2-192S': '2.16.840.1.101.3.4.3.22',
+  'SLH-DSA-SHA2-192F': '2.16.840.1.101.3.4.3.23',
   'SLH-DSA-SHA2-256S': '2.16.840.1.101.3.4.3.24',
+  'SLH-DSA-SHA2-256F': '2.16.840.1.101.3.4.3.25',
+  'SLH-DSA-SHAKE-128S': '2.16.840.1.101.3.4.3.26',
+  'SLH-DSA-SHAKE-128F': '2.16.840.1.101.3.4.3.27',
+  'SLH-DSA-SHAKE-192S': '2.16.840.1.101.3.4.3.28',
+  'SLH-DSA-SHAKE-192F': '2.16.840.1.101.3.4.3.29',
+  'SLH-DSA-SHAKE-256S': '2.16.840.1.101.3.4.3.30',
+  'SLH-DSA-SHAKE-256F': '2.16.840.1.101.3.4.3.31',
 };
 
 const LEGAL_NAME_BY_ALGORITHM: Record<string, string> = {
@@ -81,11 +93,64 @@ const LEGAL_NAME_BY_ALGORITHM: Record<string, string> = {
   AES: 'AES',
 };
 
+/**
+ * Parameter set for an ML-KEM/ML-DSA algorithm: taken from the algorithm name
+ * suffix when present ("ML-DSA-44" → 44), otherwise from the reported keySize.
+ */
+function pqcParameterSet(upper: string, keySize: number | undefined): number | undefined {
+  const match = upper.match(/^ML-(?:KEM|DSA)-(\d+)$/);
+  if (match) return Number(match[1]);
+  return keySize;
+}
+
 function pqcFipsName(algorithm: string, keySize: number | undefined): string | undefined {
   const upper = algorithm.toUpperCase();
-  if (upper.startsWith('ML-KEM')) return `ML-KEM-${keySize ?? 768} (FIPS 203)`;
-  if (upper.startsWith('ML-DSA')) return `ML-DSA-${keySize ?? 65} (FIPS 204)`;
+  if (upper.startsWith('ML-KEM')) return `ML-KEM-${pqcParameterSet(upper, keySize) ?? 768} (FIPS 203)`;
+  if (upper.startsWith('ML-DSA')) return `ML-DSA-${pqcParameterSet(upper, keySize) ?? 65} (FIPS 204)`;
   if (upper.startsWith('SLH-DSA') || upper.startsWith('SPHINCS')) return 'SLH-DSA (FIPS 205)';
+  return undefined;
+}
+
+/**
+ * Registered CSOR OID for a PQC algorithm. Resolved strictly within the
+ * algorithm's own family so ML-DSA can never pick up an ML-KEM arc. When the
+ * exact parameter set / variant is unknown we omit the OID rather than emit a
+ * wrong one.
+ */
+function pqcOid(upper: string, keySize: number | undefined): string | undefined {
+  if (upper.startsWith('ML-KEM')) {
+    return OID_BY_ALGORITHM[`ML-KEM-${pqcParameterSet(upper, keySize) ?? 768}`];
+  }
+  if (upper.startsWith('ML-DSA')) {
+    return OID_BY_ALGORITHM[`ML-DSA-${pqcParameterSet(upper, keySize) ?? 65}`];
+  }
+  if (upper.startsWith('SLH-DSA')) {
+    // Only an exact variant name (e.g. SLH-DSA-SHA2-128S) resolves.
+    return OID_BY_ALGORITHM[upper];
+  }
+  return undefined;
+}
+
+/**
+ * NIST PQC security category per FIPS 203/204/205:
+ *   ML-KEM-512 → 1, ML-KEM-768 → 3, ML-KEM-1024 → 5.
+ *   ML-DSA-44 → 2, ML-DSA-65 → 3, ML-DSA-87 → 5.
+ *   SLH-DSA-*-128* → 1, -192* → 3, -256* → 5.
+ */
+function pqcSecurityLevel(upper: string, keySize: number | undefined): number | undefined {
+  if (upper.startsWith('ML-KEM')) {
+    const p = pqcParameterSet(upper, keySize) ?? 768;
+    return p >= 1024 ? 5 : p >= 768 ? 3 : 1;
+  }
+  if (upper.startsWith('ML-DSA')) {
+    const p = pqcParameterSet(upper, keySize) ?? 65;
+    return p >= 87 ? 5 : p >= 65 ? 3 : 2;
+  }
+  if (upper.startsWith('SLH-DSA') || upper.startsWith('SPHINCS')) {
+    const match = upper.match(/(128|192|256)/);
+    if (!match) return undefined;
+    return match[1] === '256' ? 5 : match[1] === '192' ? 3 : 1;
+  }
   return undefined;
 }
 
@@ -125,14 +190,10 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
   // Post-quantum algorithms — quantum-safe.
   const fipsName = pqcFipsName(upper, keySize);
   if (fipsName) {
-    const oid =
-      OID_BY_ALGORITHM[`ML-KEM-${keySize ?? 768}`] ??
-      OID_BY_ALGORITHM[`ML-DSA-${keySize ?? 65}`] ??
-      undefined;
     return {
       legalAlgorithmName: fipsName,
-      oid,
-      nistQuantumSecurityLevel: keySize === 1024 || keySize === 87 || keySize === 256 ? 5 : keySize === 768 || keySize === 65 ? 3 : 1,
+      oid: pqcOid(upper, keySize),
+      nistQuantumSecurityLevel: pqcSecurityLevel(upper, keySize),
       quantumSafe: true,
       primitive: upper.startsWith('ML-KEM') ? 'kem' : 'signature',
     };
@@ -145,7 +206,7 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
       oid: OID_BY_ALGORITHM[upper] ?? OID_BY_ALGORITHM.RSA,
       nistQuantumSecurityLevel: rsaSecurityLevel(keySize),
       quantumSafe: false,
-      primitive: component.type === 'certificate' ? 'public-key' : 'signature',
+      primitive: component.type === 'certificate' ? 'pke' : 'signature',
     };
   }
 
@@ -203,7 +264,9 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
     return {
       legalAlgorithmName: upper,
       oid: OID_BY_ALGORITHM[upper],
-      nistQuantumSecurityLevel: upper === 'SHA-512' ? 5 : 3,
+      // NIST PQC categories peg collision search: SHA-384 → category 4,
+      // SHA-512 → category 5.
+      nistQuantumSecurityLevel: upper === 'SHA-512' ? 5 : 4,
       quantumSafe: true,
       primitive: 'hash',
     };
@@ -236,7 +299,9 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
       oid: undefined,
       nistQuantumSecurityLevel: undefined,
       quantumSafe: false,
-      primitive: 'protocol',
+      // "protocol" is not a CycloneDX 1.6 primitive — protocols are described
+      // via assetType/protocolProperties instead.
+      primitive: 'other',
     };
   }
 
@@ -245,16 +310,25 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
     oid: undefined,
     nistQuantumSecurityLevel: undefined,
     quantumSafe: component.quantumSafe,
-    primitive: component.type === 'protocol' ? 'protocol' : 'other',
+    primitive: 'other',
   };
 }
 
 /**
- * Derives the execution environment string for CycloneDX. Every component the
- * Salesforce scanner produces runs on managed Salesforce infrastructure, so
- * for now this is a constant; we leave it as a function so we can specialise
+ * Human-readable execution-environment detail. CycloneDX 1.6 restricts
+ * algorithmProperties.executionEnvironment to a closed enum, so this detail is
+ * carried in a component property instead.
+ */
+export const EXECUTION_ENVIRONMENT_DETAIL = 'salesforce-hyperforce';
+
+/**
+ * Derives the execution environment for CycloneDX 1.6. The spec only allows
+ * software-plain-ram / software-encrypted-ram / software-tee / hardware /
+ * other / unknown; managed Salesforce infrastructure is opaque to us, so we
+ * report "other" and carry the platform detail in a component property
+ * (EXECUTION_ENVIRONMENT_DETAIL). Kept as a function so we can specialise
  * per-component (e.g. external Mule endpoints) later.
  */
 export function executionEnvironmentFor(_component: CbomComponent): string {
-  return 'salesforce-hyperforce';
+  return 'other';
 }

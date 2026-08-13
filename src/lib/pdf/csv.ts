@@ -43,9 +43,20 @@ function row(f: Finding): string {
   return fields.map(csvEscape).join(',');
 }
 
+/**
+ * Characters that make spreadsheet applications interpret a cell as a formula
+ * (OWASP CSV-injection guidance): = + - @ plus tab and carriage-return
+ * variants that some parsers strip before evaluating.
+ */
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
 function csvEscape(v: string): string {
-  if (v.includes(',') || v.includes('"') || v.includes('\n') || v.includes('\r')) {
-    return `"${v.replace(/"/g, '""')}"`;
+  // Neutralise formula injection by prefixing a single quote inside the
+  // quoted field, per OWASP. The quote is visible in the cell but the payload
+  // is inert.
+  const guarded = FORMULA_TRIGGER.test(v) ? `'${v}` : v;
+  if (guarded !== v || /[",\n\r]/.test(guarded)) {
+    return `"${guarded.replace(/"/g, '""')}"`;
   }
-  return v;
+  return guarded;
 }

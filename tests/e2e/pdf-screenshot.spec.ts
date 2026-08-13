@@ -2,9 +2,12 @@ import { test } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 test('capture PDF bytes and preview screenshot', async ({ page }) => {
+  // First dev-server compile of the page can exceed the 30s default on slow machines.
+  test.setTimeout(120_000);
+
   await page.goto('/dev/pdf-preview');
-  await page.getByTestId('render-status').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => !!window.__quantumShield);
+  await page.getByTestId('render-status').waitFor({ state: 'visible', timeout: 60_000 });
+  await page.waitForFunction(() => !!window.__quantumShield, undefined, { timeout: 60_000 });
 
   await mkdir('test-results/artifacts', { recursive: true });
 

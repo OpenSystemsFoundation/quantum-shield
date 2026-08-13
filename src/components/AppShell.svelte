@@ -59,9 +59,16 @@
   }
 
   function openScan(s: ScanSummary) {
+    // Completed scans open the report; failed/interrupted scans open the scan
+    // page in status mode (ScanView never restarts a scan whose id already
+    // has a persisted summary).
     const base = s.status === 'completed' ? '/app/report/' : '/app/scan/';
     window.location.assign(`${base}?id=${encodeURIComponent(s.scanId)}`);
   }
+
+  const latestReportScanId = $derived(
+    scans.find((s) => s.status === 'completed')?.scanId ?? null,
+  );
 
   function fmtDate(s: string): string {
     return s.slice(0, 10);
@@ -73,7 +80,7 @@
 
 {#if ready && session}
   <div class="app-frame">
-    <AppChrome session={session} active="overview" scanCount={scans.length} findingsCount={scans.reduce((acc, s) => acc + (s.totalFindings ?? 0), 0)} />
+    <AppChrome session={session} active="overview" scanCount={scans.length} findingsCount={scans.reduce((acc, s) => acc + (s.totalFindings ?? 0), 0)} latestReportScanId={latestReportScanId} />
 
     <main style="padding:24px 28px 48px;min-width:0;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
@@ -97,7 +104,7 @@
         </button>
       </div>
 
-      <section style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:28px;">
+      <section class="app-cols" style="margin-top:28px;">
         <div class="qs-card">
           <div class="qs-card-head">
             <h3>Scan history</h3>
@@ -124,7 +131,19 @@
               </thead>
               <tbody>
                 {#each scans as s (s.scanId)}
-                  <tr onclick={() => openScan(s)} style="cursor:pointer;">
+                  <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+                  <tr
+                    role="button"
+                    tabindex="0"
+                    onclick={() => openScan(s)}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openScan(s);
+                      }
+                    }}
+                    style="cursor:pointer;"
+                  >
                     <td>
                       <div style="font-weight:600;">{fmtDate(s.startedAt)}</div>
                       <div class="mono" style="font-size:11px;color:var(--muted);">{fmtTime(s.startedAt)}</div>

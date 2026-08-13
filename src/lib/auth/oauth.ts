@@ -1,5 +1,5 @@
-import { loadAuthConfig, SCOPES } from './config.js';
-import { generateCodeVerifier, generateState } from './pkce.js';
+import { DEFAULT_API_VERSION, loadAuthConfig, SCOPES } from './config.js';
+import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce.js';
 import { savePendingAuth } from './session.js';
 import type {
   EnvironmentId,
@@ -21,12 +21,14 @@ export async function buildAuthorizeUrl(opts: StartAuthOptions): Promise<{ url: 
   const cfg = loadAuthConfig();
   const apiVersion = opts.apiVersion ?? cfg.apiVersion;
   const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await deriveCodeChallenge(codeVerifier);
   const state = generateState();
   const scopes = Array.from(new Set([...SCOPES, ...(opts.extraScopes ?? [])]));
 
   const pending: PendingAuth = {
     state,
     codeVerifier,
+    clientId: opts.clientId,
     environmentId: opts.environmentId,
     loginUrl: opts.loginUrl,
     apiVersion,
@@ -34,11 +36,13 @@ export async function buildAuthorizeUrl(opts: StartAuthOptions): Promise<{ url: 
   };
 
   const authorize = new URL(`${opts.loginUrl.replace(/\/$/, '')}/services/oauth2/authorize`);
-  authorize.searchParams.set('response_type', 'token');
+  authorize.searchParams.set('response_type', 'code');
   authorize.searchParams.set('client_id', opts.clientId);
   authorize.searchParams.set('redirect_uri', cfg.redirectUri);
   authorize.searchParams.set('scope', scopes.join(' '));
   authorize.searchParams.set('state', state);
+  authorize.searchParams.set('code_challenge', codeChallenge);
+  authorize.searchParams.set('code_challenge_method', 'S256');
   authorize.searchParams.set('prompt', 'login consent');
 
   return { url: authorize.toString(), pending };
@@ -131,9 +135,10 @@ export async function exchangeCode(params: {
       body: body.toString(),
     });
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
     throw new OAuthFlowError(
       'cors-blocked',
-      'Token exchange request failed — this usually means a network error or CORS block against the OAuth token endpoint.',
+      `Token exchange request failed (${detail}) — this usually means the browser is offline or the OAuth token endpoint blocked the request (CORS).`,
       err,
     );
   }
@@ -185,22 +190,7 @@ function parseIdentityIds(identityUrl: string): { orgId: string; userId: string 
   }
 }
 
-export function tokenFromCallbackParams(params: CallbackParams): TokenResponse | null {
-  if (!params.accessToken || !params.instanceUrl || !params.identityUrl || !params.tokenType) {
-    return null;
-  }
-  return {
-    access_token: params.accessToken,
-    instance_url: params.instanceUrl,
-    id: params.identityUrl,
-    token_type: params.tokenType,
-    issued_at: params.issuedAt ?? `${Date.now()}`,
-    signature: params.signature ?? '',
-    scope: params.scope ?? SCOPES.join(' '),
-  };
-}
-
-export function sessionFromToken(pending: PendingAuth, token: TokenResponse): Session {
+function sessionFromToken(pending: PendingAuth, token: TokenResponse): Session {
   const identity = parseIdentityIds(token.id);
   return {
     accessToken: token.access_token,
@@ -236,7 +226,7 @@ export function buildMockSession(): Session {
     identityUrl: 'https://login.salesforce.com/id/00D3x0000008cDaEAI/0053x00000ABCDEAA3',
     tokenType: 'Bearer',
     issuedAt: new Date().toISOString(),
-    scope: 'api refresh_token id',
+    scope: SCOPES.join(' '),
     org: {
       orgId: '00D3x0000008cDaEAI',
       userId: '0053x00000ABCDEAA3',
@@ -246,7 +236,7 @@ export function buildMockSession(): Session {
       orgType: 'Production',
     },
     environmentId: 'production',
-    apiVersion: '63.0',
+    apiVersion: DEFAULT_API_VERSION,
     mock: true,
   };
 }

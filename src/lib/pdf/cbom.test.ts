@@ -2,7 +2,69 @@ import { describe, expect, it } from 'vitest';
 import { buildCbomJson } from './cbom.js';
 import { buildVexJson } from './vex.js';
 import { classifyCryptoAsset } from './crypto-classification.js';
+import { demoReport } from './fixtures/demo-report.js';
+import { QSHIELD_HOMEPAGE, QSHIELD_VERSION } from '../version.js';
 import type { CbomComponent, Report } from './types.js';
+
+// CycloneDX 1.6 closed enums (bom-1.6.schema.json). Every emitted value MUST
+// be in these sets or downstream schema validation rejects the CBOM.
+const CDX_ASSET_TYPES = new Set([
+  'algorithm',
+  'certificate',
+  'protocol',
+  'related-crypto-material',
+]);
+
+const CDX_PRIMITIVES = new Set([
+  'drbg',
+  'mac',
+  'block-cipher',
+  'stream-cipher',
+  'signature',
+  'hash',
+  'pke',
+  'xof',
+  'kdf',
+  'key-agree',
+  'kem',
+  'ae',
+  'combiner',
+  'other',
+  'unknown',
+]);
+
+const CDX_EXECUTION_ENVIRONMENTS = new Set([
+  'software-plain-ram',
+  'software-encrypted-ram',
+  'software-tee',
+  'hardware',
+  'other',
+  'unknown',
+]);
+
+const CDX_RELATED_MATERIAL_TYPES = new Set([
+  'private-key',
+  'public-key',
+  'secret-key',
+  'key',
+  'ciphertext',
+  'signature',
+  'digest',
+  'initialization-vector',
+  'nonce',
+  'seed',
+  'salt',
+  'shared-secret',
+  'tag',
+  'additional-data',
+  'password',
+  'credential',
+  'token',
+  'other',
+  'unknown',
+]);
+
+const CDX_PROTOCOL_TYPES = new Set(['tls', 'ssh', 'ipsec', 'ike', 'sstp', 'wpa', 'other', 'unknown']);
 
 function mkReport(partial: Partial<Report> = {}): Report {
   return {
@@ -82,6 +144,11 @@ describe('crypto classification', () => {
     expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'SHA-1', location: '', quantumSafe: false }).nistQuantumSecurityLevel).toBe(0);
   });
 
+  it('rates SHA-384 at level 4 and SHA-512 at level 5', () => {
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'SHA-384', location: '', quantumSafe: false }).nistQuantumSecurityLevel).toBe(4);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'SHA-512', location: '', quantumSafe: false }).nistQuantumSecurityLevel).toBe(5);
+  });
+
   it('recognises ML-KEM / ML-DSA as quantum-safe with FIPS labels', () => {
     const kem = classifyCryptoAsset({ name: 'x', type: 'protocol', algorithm: 'ML-KEM', keySize: 768, location: '', quantumSafe: false });
     expect(kem.quantumSafe).toBe(true);
@@ -89,10 +156,46 @@ describe('crypto classification', () => {
     const dsa = classifyCryptoAsset({ name: 'x', type: 'key', algorithm: 'ML-DSA', keySize: 65, location: '', quantumSafe: false });
     expect(dsa.legalAlgorithmName).toContain('FIPS 204');
   });
+
+  it('resolves NIST CSOR OIDs within the correct family', () => {
+    // ML-KEM lives under 2.16.840.1.101.3.4.4.*
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-KEM-768', location: '', quantumSafe: true }).oid).toBe('2.16.840.1.101.3.4.4.2');
+    // ML-DSA lives under 2.16.840.1.101.3.4.3.* and must never pick up an ML-KEM arc
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA', keySize: 65, location: '', quantumSafe: true }).oid).toBe('2.16.840.1.101.3.4.3.18');
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA-44', location: '', quantumSafe: true }).oid).toBe('2.16.840.1.101.3.4.3.17');
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA-87', location: '', quantumSafe: true }).oid).toBe('2.16.840.1.101.3.4.3.19');
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'SLH-DSA-SHA2-128s', location: '', quantumSafe: true }).oid).toBe('2.16.840.1.101.3.4.3.20');
+    // Unknown SLH-DSA variant: omit the OID rather than emit a wrong one.
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'SLH-DSA', location: '', quantumSafe: true }).oid).toBeUndefined();
+  });
+
+  it('assigns FIPS 204 security categories: ML-DSA-44 → 2, ML-DSA-65 → 3, ML-DSA-87 → 5', () => {
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA-44', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(2);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA-65', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(3);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-DSA-87', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(5);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-KEM-512', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(1);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-KEM-1024', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(5);
+  });
+
+  it('only emits CycloneDX-valid primitives', () => {
+    const inputs: CbomComponent[] = [
+      { name: 'a', type: 'certificate', algorithm: 'RSA', keySize: 2048, location: '', quantumSafe: false },
+      { name: 'b', type: 'key', algorithm: 'ECDSA', keySize: 256, location: '', quantumSafe: false },
+      { name: 'c', type: 'algorithm', algorithm: 'SHA-256', location: '', quantumSafe: true },
+      { name: 'd', type: 'protocol', algorithm: 'HTTP (no TLS)', location: '', quantumSafe: false },
+      { name: 'e', type: 'protocol', algorithm: 'OAuth', location: '', quantumSafe: false },
+      { name: 'f', type: 'library', algorithm: 'unknown', location: '', quantumSafe: false },
+      { name: 'g', type: 'algorithm', algorithm: 'ML-KEM-768', location: '', quantumSafe: true },
+    ];
+    for (const c of inputs) {
+      const cls = classifyCryptoAsset(c);
+      expect(CDX_PRIMITIVES.has(cls.primitive), `primitive "${cls.primitive}" for ${c.name}`).toBe(true);
+    }
+  });
 });
 
 describe('buildCbomJson (CycloneDX 1.6)', () => {
-  it('populates executionEnvironment, nistQuantumSecurityLevel and oid per component', () => {
+  it('populates enum-valid executionEnvironment, nistQuantumSecurityLevel and oid per component', () => {
     const report = mkReport({
       cbom: [
         { name: 'rsa-cert', type: 'certificate', algorithm: 'RSA', keySize: 2048, location: 'Certificate/abc', quantumSafe: false },
@@ -105,19 +208,74 @@ describe('buildCbomJson (CycloneDX 1.6)', () => {
     expect(parsed.components).toHaveLength(2);
 
     const rsa = parsed.components[0];
-    expect(rsa.cryptoProperties.quantumSafe).toBe(false);
+    expect(rsa.cryptoProperties.assetType).toBe('certificate');
     expect(rsa.cryptoProperties.oid).toBe('1.2.840.113549.1.1.1');
-    expect(rsa.cryptoProperties.algorithmProperties.executionEnvironment).toBe('salesforce-hyperforce');
+    expect(rsa.cryptoProperties.algorithmProperties.executionEnvironment).toBe('other');
     expect(rsa.cryptoProperties.algorithmProperties.nistQuantumSecurityLevel).toBe(0);
 
     const aes = parsed.components[1];
-    expect(aes.cryptoProperties.quantumSafe).toBe(true);
+    expect(aes.cryptoProperties.assetType).toBe('related-crypto-material');
+    expect(aes.cryptoProperties.relatedCryptoMaterialProperties.type).toBe('key');
     expect(aes.cryptoProperties.algorithmProperties.nistQuantumSecurityLevel).toBe(5);
+  });
+
+  it('moves quantumSafe out of cryptoProperties into spec-legal name/value properties', () => {
+    const report = mkReport({
+      cbom: [
+        { name: 'rsa-cert', type: 'certificate', algorithm: 'RSA', keySize: 2048, location: 'Certificate/abc', quantumSafe: false },
+        { name: 'aes-key', type: 'key', algorithm: 'AES', keySize: 256, location: 'TenantSecret/xyz', quantumSafe: false },
+      ],
+    });
+    const parsed = JSON.parse(buildCbomJson(report));
+    for (const component of parsed.components) {
+      expect(component.cryptoProperties.quantumSafe).toBeUndefined();
+    }
+    const props = (name: string, comp: { properties: Array<{ name: string; value: string }> }) =>
+      comp.properties.find((p) => p.name === name)?.value;
+    expect(props('quantumshield:quantum-safe', parsed.components[0])).toBe('false');
+    expect(props('quantumshield:quantum-safe', parsed.components[1])).toBe('true');
+    expect(props('quantumshield:execution-environment', parsed.components[0])).toBe('salesforce-hyperforce');
+  });
+
+  it('stamps the shared tool version into metadata', () => {
+    const parsed = JSON.parse(buildCbomJson(mkReport()));
+    expect(parsed.metadata.tools[0].version).toBe(QSHIELD_VERSION);
+  });
+
+  it('emits only schema-valid enum values for every component of the demo report', () => {
+    const parsed = JSON.parse(buildCbomJson(demoReport));
+    expect(parsed.components.length).toBeGreaterThan(0);
+    for (const component of parsed.components) {
+      const cp = component.cryptoProperties;
+      expect(CDX_ASSET_TYPES.has(cp.assetType), `assetType "${cp.assetType}" on ${component.name}`).toBe(true);
+      expect(cp.quantumSafe).toBeUndefined();
+      if (cp.algorithmProperties) {
+        const ap = cp.algorithmProperties;
+        expect(CDX_PRIMITIVES.has(ap.primitive), `primitive "${ap.primitive}" on ${component.name}`).toBe(true);
+        if (ap.executionEnvironment !== undefined) {
+          expect(
+            CDX_EXECUTION_ENVIRONMENTS.has(ap.executionEnvironment),
+            `executionEnvironment "${ap.executionEnvironment}" on ${component.name}`,
+          ).toBe(true);
+        }
+        if (ap.nistQuantumSecurityLevel !== undefined) {
+          expect(ap.nistQuantumSecurityLevel).toBeGreaterThanOrEqual(0);
+          expect(ap.nistQuantumSecurityLevel).toBeLessThanOrEqual(6);
+          expect(Number.isInteger(ap.nistQuantumSecurityLevel)).toBe(true);
+        }
+      }
+      if (cp.relatedCryptoMaterialProperties) {
+        expect(CDX_RELATED_MATERIAL_TYPES.has(cp.relatedCryptoMaterialProperties.type)).toBe(true);
+      }
+      if (cp.protocolProperties) {
+        expect(CDX_PROTOCOL_TYPES.has(cp.protocolProperties.type)).toBe(true);
+      }
+    }
   });
 });
 
 describe('buildVexJson (OpenVEX)', () => {
-  it('emits one affected statement per non-advisory finding with action + HNDL impact', () => {
+  it('emits one affected statement per non-advisory finding with action statement and HNDL notes', () => {
     const report = mkReport({
       findings: [
         {
@@ -144,7 +302,9 @@ describe('buildVexJson (OpenVEX)', () => {
     const stmt = parsed.statements[0];
     expect(stmt.status).toBe('affected');
     expect(stmt.action_statement).toContain('ML-DSA');
-    expect(stmt.impact_statement).toContain('Harvest-now-decrypt-later');
+    // impact prose lives in status_notes — impact_statement is only legal on not_affected
+    expect(stmt.status_notes).toContain('Harvest-now-decrypt-later');
+    expect(stmt.status_notes).toContain('RSA-1024 is disallowed.');
     expect(stmt.products[0].identifiers.purl).toMatch(/pkg:salesforce/);
   });
 
@@ -170,6 +330,27 @@ describe('buildVexJson (OpenVEX)', () => {
     });
     const parsed = JSON.parse(buildVexJson(report));
     expect(parsed.statements[0].status).toBe('under_investigation');
-    expect(parsed.statements[0].impact_statement).toBeUndefined();
+    expect(parsed.statements[0].status_notes).not.toContain('Harvest-now-decrypt-later');
+  });
+
+  it('never emits justification or impact_statement outside not_affected statements', () => {
+    const parsed = JSON.parse(buildVexJson(demoReport));
+    expect(parsed.statements.length).toBeGreaterThan(0);
+    for (const stmt of parsed.statements) {
+      if (stmt.status !== 'not_affected') {
+        expect(stmt.justification, `justification on ${stmt['@id']} (${stmt.status})`).toBeUndefined();
+        expect(stmt.impact_statement, `impact_statement on ${stmt['@id']} (${stmt.status})`).toBeUndefined();
+      }
+    }
+  });
+
+  it('builds document and statement IDs from the real project homepage', () => {
+    const parsed = JSON.parse(buildVexJson(demoReport));
+    expect(parsed['@id'].startsWith(`${QSHIELD_HOMEPAGE}/vex/`)).toBe(true);
+    expect(parsed['@id']).not.toContain('https://quantum-shield/');
+    for (const stmt of parsed.statements) {
+      expect(stmt['@id'].startsWith(`${QSHIELD_HOMEPAGE}/vex/`)).toBe(true);
+    }
+    expect(parsed.tooling).toContain(QSHIELD_VERSION);
   });
 });

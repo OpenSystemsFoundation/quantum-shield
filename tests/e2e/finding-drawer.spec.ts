@@ -1,12 +1,15 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Finding detail drawer', () => {
+  // Mock scan + first dev-server compile can exceed the 30s default on slow machines.
+  test.setTimeout(120_000);
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/connect');
     await page.getByTestId('dev-mock-connect').click();
     await page.waitForURL('**/app');
     await page.getByTestId('start-scan-button').click();
-    await page.waitForURL(/\/app\/report\/.+/, { timeout: 30_000 });
+    await page.waitForURL(/\/app\/report\/.+/, { timeout: 120_000 });
     await expect(page.getByTestId('findings-list')).toBeVisible();
   });
 
@@ -26,6 +29,19 @@ test.describe('Finding detail drawer', () => {
     await expect(page.getByTestId('finding-drawer')).toBeVisible();
     await firstRow.click();
     await expect(page.getByTestId('finding-drawer')).toHaveCount(0);
+  });
+
+  test('keyboard: Enter opens the drawer, closing restores focus to the row', async ({ page }) => {
+    const firstRow = page.getByTestId('findings-list').locator('tbody tr').first();
+    await firstRow.focus();
+    await page.keyboard.press('Enter');
+    const drawer = page.getByTestId('finding-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).toHaveCount(0);
+    await expect(firstRow).toBeFocused();
   });
 
   test('Escape key closes the drawer', async ({ page }) => {

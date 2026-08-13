@@ -63,7 +63,10 @@ export class NodeTlsProbe implements EndpointProbe {
             ok: true,
             tlsVersion: protocol,
             cipher: cipher?.name,
-            peerCertSigAlg: peer?.asn1Curve ?? peer?.sigalg ?? undefined,
+            // @types/node's DetailedPeerCertificate omits sigalg, but Node
+            // populates it at runtime for most certs.
+            peerCertSigAlg:
+              peer?.asn1Curve ?? (peer as { sigalg?: string } | null)?.sigalg ?? undefined,
             peerCertKeyType: peer?.pubkey ? 'RSA-or-EC' : undefined,
             peerCertKeyBits: peer?.bits,
             keyExchangeGroup,

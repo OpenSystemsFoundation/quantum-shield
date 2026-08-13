@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Typecheck, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Version consistency (package.json vs src/lib/version.ts)
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TS_VERSION="$(grep -oP "QSHIELD_VERSION = '\K[^']+" src/lib/version.ts)"
+          echo "package.json: $PKG_VERSION / src/lib/version.ts: $TS_VERSION"
+          if [ "$PKG_VERSION" != "$TS_VERSION" ]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match QSHIELD_VERSION ($TS_VERSION) in src/lib/version.ts"
+            exit 1
+          fi
+
+      - name: Sync generated rule/regulation tables
+        run: npm run sync:regulations
+
+      - name: Typecheck (web + shared engine)
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Typecheck (CLI)
+        run: npx tsc --noEmit -p tsconfig.cli.json
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: Playwright e2e (advisory)
+    runs-on: ubuntu-latest
+    # The e2e suite is advisory while it stabilizes in CI (dev-server cold
+    # starts have been flaky). Graduate this job to required — remove
+    # continue-on-error — once it runs green reliably.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

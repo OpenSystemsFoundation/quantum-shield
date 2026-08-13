@@ -6,10 +6,8 @@
     OAuthFlowError,
     parseCallbackParams,
     saveSession,
-    sessionFromToken,
     sessionFromTokenAndIdentity,
     takePendingAuth,
-    tokenFromCallbackParams,
   } from '@lib/auth';
   import BlochShield from './BlochShield.svelte';
 
@@ -18,7 +16,12 @@
   let errorDetail = $state<string | null>(null);
 
   onMount(async () => {
-    const params = parseCallbackParams(window.location.search, window.location.hash);
+    // Scrub the authorization response from the address bar and history BEFORE
+    // any branching — codes/tokens must never linger, on success or error.
+    const { search, hash } = window.location;
+    history.replaceState(null, '', window.location.pathname);
+
+    const params = parseCallbackParams(search, hash);
 
     if (params.error) {
       status = 'error';
@@ -27,7 +30,17 @@
       return;
     }
 
-    if (!params.state || (!params.code && !params.accessToken)) {
+    if (params.accessToken) {
+      // Legacy implicit-grant response. We only ever request response_type=code
+      // now, so a fragment token means a stale app configuration or bookmark.
+      status = 'error';
+      errorTitle = 'Unexpected implicit-flow response';
+      errorDetail =
+        'Salesforce returned an access token in the URL fragment, but QuantumShield uses the authorization code + PKCE flow. Re-run setup from /connect and check your External Client App configuration.';
+      return;
+    }
+
+    if (!params.state || !params.code) {
       status = 'error';
       errorTitle = 'Missing OAuth response';
       errorDetail = 'The callback URL did not include the expected authorization response.';
@@ -43,37 +56,21 @@
     }
 
     try {
-      let session;
-
-      if (params.accessToken) {
-        const token = tokenFromCallbackParams(params);
-        if (!token) {
-          throw new OAuthFlowError(
-            'invalid-callback',
-            'OAuth callback fragment was missing one or more required token fields.',
-          );
-        }
-        if (params.state !== pending.state) {
-          throw new OAuthFlowError('state-mismatch', 'OAuth state mismatch — aborting for safety.');
-        }
-        session = sessionFromToken(pending, token);
-      } else {
-        const clientId = loadClientId(pending.loginUrl);
-        if (!clientId || !params.code) {
-          status = 'error';
-          errorTitle = 'Client ID not found';
-          errorDetail = 'We could not locate the External Client App ID for this login URL. Reconnect from /connect.';
-          return;
-        }
-
-        const { token, identity } = await exchangeCode({
-          code: params.code,
-          state: params.state,
-          pending,
-          clientId,
-        });
-        session = sessionFromTokenAndIdentity(pending, token, identity);
+      const clientId = pending.clientId ?? loadClientId(pending.loginUrl);
+      if (!clientId) {
+        status = 'error';
+        errorTitle = 'Client ID not found';
+        errorDetail = 'We could not locate the External Client App ID for this login URL. Reconnect from /connect.';
+        return;
       }
+
+      const { token, identity } = await exchangeCode({
+        code: params.code,
+        state: params.state,
+        pending,
+        clientId,
+      });
+      const session = sessionFromTokenAndIdentity(pending, token, identity);
 
       saveSession(session);
       status = 'success';

@@ -150,6 +150,53 @@ describe('buildSessionFromSfCli', () => {
     expect(session.environmentId).toBe('sandbox');
   });
 
+  it('surfaces sf stderr detail when the CLI exits non-zero', async () => {
+    const err = new Error('Command failed: sf org display --json --verbose') as Error & {
+      stderr?: string;
+    };
+    err.stderr = 'Error (NamedOrgNotFoundError): No authorized org found for "badalias".';
+    execFileMock.mockRejectedValueOnce(err);
+
+    const thrown = await buildSessionFromSfCli({ targetOrg: 'badalias' }).catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(SfCliError);
+    expect((thrown as Error).message).toMatch(/NamedOrgNotFoundError/);
+    expect((thrown as Error).message).toMatch(/badalias/);
+  });
+
+  it('extracts the sf error JSON from stdout when the process exits non-zero', async () => {
+    const err = new Error('Command failed: sf org display --json --verbose') as Error & {
+      stdout?: string;
+    };
+    err.stdout = JSON.stringify({
+      status: 1,
+      name: 'ExpiredAccessTokenError',
+      message: 'The access token for user admin@acme.com has expired.',
+    });
+    execFileMock.mockRejectedValueOnce(err);
+
+    const thrown = await buildSessionFromSfCli().catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(SfCliError);
+    expect((thrown as Error).message).toMatch(/ExpiredAccessTokenError/);
+    expect((thrown as Error).message).toMatch(/has expired/);
+  });
+
+  it('includes name/message when sf --json reports a non-zero status', async () => {
+    execFileMock.mockResolvedValueOnce(
+      JSON.stringify({
+        status: 1,
+        name: 'NamedOrgNotFoundError',
+        message: 'No authorized org found for prod-eu.',
+        result: {},
+      }),
+    );
+
+    const thrown = await buildSessionFromSfCli({ targetOrg: 'prod-eu' }).catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(SfCliError);
+    expect((thrown as Error).message).toMatch(/returned status 1/);
+    expect((thrown as Error).message).toMatch(/NamedOrgNotFoundError/);
+    expect((thrown as Error).message).toMatch(/No authorized org found/);
+  });
+
   it('throws SfCliError with a helpful message when sf is not installed', async () => {
     const err = new Error('spawn sf ENOENT') as NodeJS.ErrnoException;
     err.code = 'ENOENT';
