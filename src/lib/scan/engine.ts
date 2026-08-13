@@ -183,28 +183,39 @@ async function runEndpointProbes(
 
   let probed = 0;
   const failures: string[] = [];
-  for (const [origin, source] of endpoints) {
-    const result = await probe.probe(origin);
-    if (!result.ok) {
-      failures.push(`${origin} (${result.error ?? 'unknown'})`);
-      emit({ type: 'log', level: 'warn', message: `probe failed for ${origin}: ${result.error ?? 'unknown'}` });
-      continue;
+  // Probe with bounded concurrency: orgs can reference dozens of endpoints,
+  // some stale — strictly sequential probing with an 8s timeout each would
+  // stall the scan for minutes.
+  const PROBE_CONCURRENCY = 5;
+  const queue = [...endpoints.entries()];
+  const runOne = async () => {
+    for (;;) {
+      const next = queue.shift();
+      if (!next) return;
+      const [origin, source] = next;
+      const result = await probe.probe(origin);
+      if (!result.ok) {
+        failures.push(`${origin} (${result.error ?? 'unknown'})`);
+        emit({ type: 'log', level: 'warn', message: `probe failed for ${origin}: ${result.error ?? 'unknown'}` });
+        continue;
+      }
+      probed += 1;
+      const asset: CryptoAsset = {
+        kind: 'tls-endpoint',
+        name: `${origin} (probed)`,
+        identifier: origin,
+        endpointUrl: origin,
+        algorithm: result.cipher,
+        tlsVersion: result.tlsVersion,
+        kexGroup: result.keyExchangeGroup,
+        hybridKem: result.hybridKemNegotiated,
+        location: `discovered via ${source.kind}:${source.identifier}`,
+      };
+      assets.push(asset);
+      emit({ type: 'asset', category: 'named-credentials', asset });
     }
-    probed += 1;
-    const asset: CryptoAsset = {
-      kind: 'tls-endpoint',
-      name: `${origin} (probed)`,
-      identifier: origin,
-      endpointUrl: origin,
-      algorithm: result.cipher,
-      tlsVersion: result.tlsVersion,
-      kexGroup: result.keyExchangeGroup,
-      hybridKem: result.hybridKemNegotiated,
-      location: `discovered via ${source.kind}:${source.identifier}`,
-    };
-    assets.push(asset);
-    emit({ type: 'asset', category: 'named-credentials', asset });
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(PROBE_CONCURRENCY, queue.length) }, runOne));
 
   const status: CategoryCoverage['status'] =
     failures.length === 0 ? 'scanned' : probed > 0 ? 'partial' : 'failed';
