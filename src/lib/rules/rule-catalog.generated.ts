@@ -12,6 +12,12 @@ export const GENERATED_RULE_DEFS = [
     "appliesTo": [
       "*"
     ],
+    "overlays": [
+      "pci-dss-4",
+      "nis2",
+      "dora",
+      "eidas2"
+    ],
     "cases": [
       {
         "when": [
@@ -55,6 +61,11 @@ export const GENERATED_RULE_DEFS = [
     "implementationStatus": "active",
     "appliesTo": [
       "*"
+    ],
+    "overlays": [
+      "nis2",
+      "dora",
+      "cmmc"
     ],
     "cases": [
       {
@@ -134,6 +145,11 @@ export const GENERATED_RULE_DEFS = [
     "appliesTo": [
       "*"
     ],
+    "overlays": [
+      "nis2",
+      "dora",
+      "cmmc"
+    ],
     "cases": [
       {
         "when": [
@@ -176,6 +192,12 @@ export const GENERATED_RULE_DEFS = [
     "implementationStatus": "active",
     "appliesTo": [
       "*"
+    ],
+    "overlays": [
+      "pci-dss-4",
+      "nis2",
+      "dora",
+      "gdpr"
     ],
     "cases": [
       {
@@ -220,6 +242,13 @@ export const GENERATED_RULE_DEFS = [
     "appliesTo": [
       "*"
     ],
+    "overlays": [
+      "gdpr",
+      "nis2",
+      "dora",
+      "pci-dss-4",
+      "hipaa"
+    ],
     "cases": [
       {
         "when": [
@@ -238,10 +267,12 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": false,
           "currentCrypto": "Plaintext HTTP - no TLS",
           "recommendedReplacement": "Move the endpoint to HTTPS with TLS 1.2 or later, and prefer TLS 1.3 when both sides support it. If the target service lacks TLS, terminate the connection behind a managed proxy before exposing the callout.",
-          "rationale": "NIST SP 800-52 Rev. 2 and SP 800-53 treat protected transport and cryptographic protection as baseline controls. Plaintext HTTP leaves data and credentials exposed in transit and is not an acceptable steady-state configuration.",
+          "rationale": "NIST SP 800-52 Rev. 2 and SP 800-53 treat protected transport and cryptographic protection as baseline controls, and GDPR Art. 32 and NIS 2 Art. 21 require encryption of data in transit as a state-of-the-art measure. Plaintext HTTP leaves data and credentials exposed in transit and is not an acceptable steady-state configuration in any jurisdiction.",
           "citations": [
             "NIST_SP_800_52",
-            "NIST_SP_800_53"
+            "NIST_SP_800_53",
+            "GDPR_ART_32",
+            "NIS2"
           ]
         }
       }
@@ -256,6 +287,11 @@ export const GENERATED_RULE_DEFS = [
     "implementationStatus": "active",
     "appliesTo": [
       "*"
+    ],
+    "overlays": [
+      "pci-dss-4",
+      "hipaa",
+      "cmmc"
     ],
     "cases": [
       {
@@ -283,6 +319,8 @@ export const GENERATED_RULE_DEFS = [
           "rationale": "NIST SP 800-57 key-management guidance and NSA CNSA 2.0 both point high-assurance deployments toward 256-bit symmetric strength. AES-128 remains usable today, but it leaves less long-term margin once quantum search costs are considered.",
           "citations": [
             "NIST_SP_800_57_PT1",
+            "BSI_TR_02102_1",
+            "ENISA_PQC_2024",
             "NSA_CNSA_2_0"
           ],
           "deadline": "2030-12-31"
@@ -299,6 +337,10 @@ export const GENERATED_RULE_DEFS = [
     "implementationStatus": "active",
     "appliesTo": [
       "certificate"
+    ],
+    "overlays": [
+      "pci-dss-4",
+      "eidas2"
     ],
     "cases": [
       {
@@ -322,6 +364,8 @@ export const GENERATED_RULE_DEFS = [
           "rationale": "Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.",
           "citations": [
             "NIST_SP_800_57_PT1",
+            "BSI_TR_02102_1",
+            "EIDAS2",
             "NIST_IR_8547"
           ],
           "deadline": "{{computed.expiresAtDate}}"
@@ -348,6 +392,8 @@ export const GENERATED_RULE_DEFS = [
           "rationale": "Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.",
           "citations": [
             "NIST_SP_800_57_PT1",
+            "BSI_TR_02102_1",
+            "EIDAS2",
             "NIST_IR_8547"
           ],
           "deadline": "{{computed.expiresAtDate}}"
@@ -365,6 +411,12 @@ export const GENERATED_RULE_DEFS = [
     "appliesTo": [
       "apex-call"
     ],
+    "overlays": [
+      "pci-dss-4",
+      "nis2",
+      "dora",
+      "hipaa"
+    ],
     "cases": [
       {
         "when": [
@@ -372,8 +424,66 @@ export const GENERATED_RULE_DEFS = [
             "field": "algorithm",
             "op": "contains-any",
             "values": [
+              "HMAC-MD5",
+              "HMAC-SHA1"
+            ]
+          }
+        ],
+        "result": {
+          "title": "Apex generates {{asset.algorithm}} MACs",
+          "severity": "high",
+          "regulatoryStatus": "deprecated-by-date",
+          "migrationPosture": "replace-now",
+          "effort": "low",
+          "hndlExposure": false,
+          "currentCrypto": "{{asset.algorithm}}",
+          "recommendedReplacement": "Replace with Crypto.generateMac('hmacSHA256', ...) or hmacSHA512.",
+          "rationale": "HMAC constructions over MD5 and SHA-1 are not broken the way the raw digests are, but NIST SP 800-131A Rev 3 retires all SHA-1 and MD5 based mechanisms, and BSI TR-02102 does not include them among recommended MAC mechanisms. Migrate MAC generation to SHA-256 or stronger before the 2030 retirement.",
+          "citations": [
+            "NIST_SP_800_131A",
+            "BSI_TR_02102_1"
+          ],
+          "deadline": "2030-12-31"
+        }
+      },
+      {
+        "when": [
+          {
+            "field": "algorithm",
+            "op": "contains-any",
+            "values": [
+              "RSA-SHA1",
+              "ECDSA-SHA1"
+            ]
+          }
+        ],
+        "result": {
+          "title": "Apex signs with {{asset.algorithm}} — SHA-1 signatures are disallowed",
+          "severity": "critical",
+          "regulatoryStatus": "already-non-compliant",
+          "migrationPosture": "replace-now",
+          "effort": "medium",
+          "hndlExposure": true,
+          "currentCrypto": "{{asset.algorithm}}",
+          "recommendedReplacement": "Re-sign with Crypto.sign('RSA-SHA256', ...) today — SHA-1 signature generation has been disallowed since 2013 — and track the asset for ML-DSA (FIPS 204) migration alongside the rest of the signature inventory.",
+          "rationale": "NIST SP 800-131A disallows SHA-1 for digital signature generation, and the underlying RSA/ECDSA primitive is additionally on the post-quantum transition path under NIST IR 8547 and CNSA 2.0. Note that in Apex, Crypto.sign('RSA', ...) is an alias for RSA-SHA1.",
+          "citations": [
+            "NIST_SP_800_131A",
+            "NIST_IR_8547",
+            "BSI_TR_02102_1"
+          ],
+          "deadline": "2010-12-31"
+        }
+      },
+      {
+        "when": [
+          {
+            "field": "algorithm",
+            "op": "contains-any",
+            "values": [
               "MD5",
-              "SHA-1"
+              "SHA-1",
+              "SHA1"
             ]
           }
         ],
@@ -458,6 +568,10 @@ export const GENERATED_RULE_DEFS = [
     "appliesTo": [
       "*"
     ],
+    "overlays": [
+      "pci-dss-4",
+      "hipaa"
+    ],
     "cases": [
       {
         "when": [
@@ -489,7 +603,8 @@ export const GENERATED_RULE_DEFS = [
           "recommendedReplacement": "Reduce session lifetime to 2 hours with idle timeout at 30 minutes or less. Reauthenticate for privileged or high-risk actions so token theft windows do not persist for most of a workday.",
           "rationale": "NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.",
           "citations": [
-            "NIST_SP_800_53"
+            "NIST_SP_800_53",
+            "NIS2"
           ]
         }
       }
@@ -504,6 +619,11 @@ export const GENERATED_RULE_DEFS = [
     "implementationStatus": "active",
     "appliesTo": [
       "installed-package"
+    ],
+    "overlays": [
+      "nis2",
+      "dora",
+      "swift-csp"
     ],
     "cases": [
       {
@@ -526,6 +646,7 @@ export const GENERATED_RULE_DEFS = [
           "rationale": "Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.",
           "citations": [
             "NIST_SP_800_53",
+            "ENISA_PQC_2024",
             "NIST_IR_8547"
           ]
         }

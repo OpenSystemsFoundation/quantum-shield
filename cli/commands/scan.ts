@@ -93,6 +93,7 @@ export async function scanCommand(args: ParsedArgs): Promise<number> {
         overlays,
         regions: regionsUpper,
         probeTls: probe,
+        generatorMode: 'cli',
       },
       emit,
       probe ? new NodeTlsProbe() : undefined,

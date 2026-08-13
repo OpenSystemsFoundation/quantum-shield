@@ -7,6 +7,10 @@ description: ECDSA and related ECC signing primitives are compliant today but de
 implementationStatus: active
 appliesTo:
   - '*'
+overlays:
+  - nis2
+  - dora
+  - cmmc
 tags:
   - ecdsa
   - ecc

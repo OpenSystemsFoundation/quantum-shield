@@ -1,6 +1,6 @@
 import type { CryptoAsset, Finding, Jurisdiction } from '@lib/pdf';
 import { GENERATED_CITATIONS } from './regulations.generated.js';
-import { buildRuleCatalog, filterRuleDefinitionsForOverlays } from './catalog.js';
+import { buildRuleCatalog } from './catalog.js';
 import { GENERATED_RULE_DEFS } from './rule-catalog.generated.js';
 import type { Rule, RuleContext, RuleDefinition } from './types.js';
 
@@ -19,7 +19,7 @@ function idFor(ruleId: string, asset: CryptoAsset): string {
   return `${ruleId}:${asset.kind}:${asset.identifier}`;
 }
 
-const BASE_RULES = buildRuleCatalog(filterRuleDefinitionsForOverlays(GENERATED_RULE_DEFS, []));
+const BASE_RULES = buildRuleCatalog(GENERATED_RULE_DEFS);
 
 export function evaluate(
   asset: CryptoAsset,
@@ -45,6 +45,7 @@ export function evaluate(
       rationale: match.rationale,
       citations: match.citations,
       deadline: match.deadline,
+      ...(rule.overlays && rule.overlays.length > 0 ? { overlayIds: [...rule.overlays] } : {}),
     });
   }
   return findings;
@@ -71,17 +72,20 @@ export function categoryForKind(kind: CryptoAsset['kind']): Finding['category'] 
       return 'apex-crypto';
     case 'installed-package':
       return 'packages';
+    case 'session-settings':
+      return 'session-login';
     case 'tls-endpoint':
       return 'named-credentials';
   }
 }
 
-export function ruleCatalogForOverlays(overlays: string[]): Rule[] {
-  if (overlays.length === 0) {
-    return BASE_RULES;
-  }
-
-  return buildRuleCatalog(filterRuleDefinitionsForOverlays(GENERATED_RULE_DEFS, overlays));
+/**
+ * Overlay ids on a rule are mapping metadata (which regulatory frameworks a
+ * finding traces to), not a gate: the full base catalog always runs. Overlay
+ * selection controls the regulatory appendix, not which rules fire.
+ */
+export function ruleCatalogForOverlays(_overlays: string[]): Rule[] {
+  return BASE_RULES;
 }
 
 const CITATION_JURISDICTIONS: Record<string, Jurisdiction> = Object.fromEntries(
@@ -89,13 +93,34 @@ const CITATION_JURISDICTIONS: Record<string, Jurisdiction> = Object.fromEntries(
 );
 
 /**
+ * EU member-state selections imply the EU-wide sources: GDPR, NIS 2, DORA and
+ * eIDAS bind Dutch, German and French organisations just as much as their
+ * national guidance does.
+ */
+const REGION_IMPLIES: Record<string, Jurisdiction[]> = {
+  NL: ['EU'],
+  DE: ['EU'],
+  FR: ['EU'],
+};
+
+export function expandRegions(regions: string[]): Set<string> {
+  const target = new Set(regions.map((r) => r.toUpperCase()));
+  for (const region of [...target]) {
+    for (const implied of REGION_IMPLIES[region] ?? []) {
+      target.add(implied);
+    }
+  }
+  return target;
+}
+
+/**
  * A rule is relevant for a region if any of its citations are tagged with that
- * jurisdiction, or with INTL (always on). When `regions` is empty the filter
- * is a no-op.
+ * jurisdiction (or an implied one), or with INTL (always on). When `regions`
+ * is empty the filter is a no-op.
  */
 function ruleDefinitionMatchesRegions(def: RuleDefinition, regions: string[]): boolean {
   if (regions.length === 0) return true;
-  const target = new Set(regions.map((r) => r.toUpperCase()));
+  const target = expandRegions(regions);
   for (const ruleCase of def.cases) {
     for (const key of ruleCase.result.citations) {
       const jurisdiction = CITATION_JURISDICTIONS[key];
@@ -107,10 +132,12 @@ function ruleDefinitionMatchesRegions(def: RuleDefinition, regions: string[]): b
 }
 
 export function ruleCatalogFor(overlays: string[], regions: string[] = []): Rule[] {
-  const overlayFiltered = filterRuleDefinitionsForOverlays(GENERATED_RULE_DEFS, overlays);
+  void overlays; // overlays never gate rule selection — see ruleCatalogForOverlays
   if (regions.length === 0) {
-    return overlays.length === 0 ? BASE_RULES : buildRuleCatalog(overlayFiltered);
+    return BASE_RULES;
   }
-  const regionFiltered = overlayFiltered.filter((def) => ruleDefinitionMatchesRegions(def, regions));
+  const regionFiltered = GENERATED_RULE_DEFS.filter((def) =>
+    ruleDefinitionMatchesRegions(def, regions),
+  );
   return buildRuleCatalog(regionFiltered);
 }

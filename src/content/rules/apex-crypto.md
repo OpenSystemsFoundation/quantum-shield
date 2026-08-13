@@ -7,6 +7,11 @@ description: Apex crypto calls using weak hashes, hardcoded keys, or quantum-vul
 implementationStatus: active
 appliesTo:
   - apex-call
+overlays:
+  - pci-dss-4
+  - nis2
+  - dora
+  - hipaa
 tags:
   - apex
   - crypto
@@ -16,8 +21,53 @@ cases:
       - field: algorithm
         op: contains-any
         values:
+          - HMAC-MD5
+          - HMAC-SHA1
+    result:
+      title: 'Apex generates {{asset.algorithm}} MACs'
+      severity: high
+      regulatoryStatus: deprecated-by-date
+      migrationPosture: replace-now
+      effort: low
+      hndlExposure: false
+      currentCrypto: '{{asset.algorithm}}'
+      recommendedReplacement: Replace with Crypto.generateMac('hmacSHA256', ...) or hmacSHA512.
+      rationale: >-
+        HMAC constructions over MD5 and SHA-1 are not broken the way the raw digests are, but NIST SP 800-131A Rev 3 retires all SHA-1 and MD5 based mechanisms, and BSI TR-02102 does not include them among recommended MAC mechanisms. Migrate MAC generation to SHA-256 or stronger before the 2030 retirement.
+      citations:
+        - NIST_SP_800_131A
+        - BSI_TR_02102_1
+      deadline: '2030-12-31'
+  - when:
+      - field: algorithm
+        op: contains-any
+        values:
+          - RSA-SHA1
+          - ECDSA-SHA1
+    result:
+      title: 'Apex signs with {{asset.algorithm}} — SHA-1 signatures are disallowed'
+      severity: critical
+      regulatoryStatus: already-non-compliant
+      migrationPosture: replace-now
+      effort: medium
+      hndlExposure: true
+      currentCrypto: '{{asset.algorithm}}'
+      recommendedReplacement: >-
+        Re-sign with Crypto.sign('RSA-SHA256', ...) today — SHA-1 signature generation has been disallowed since 2013 — and track the asset for ML-DSA (FIPS 204) migration alongside the rest of the signature inventory.
+      rationale: >-
+        NIST SP 800-131A disallows SHA-1 for digital signature generation, and the underlying RSA/ECDSA primitive is additionally on the post-quantum transition path under NIST IR 8547 and CNSA 2.0. Note that in Apex, Crypto.sign('RSA', ...) is an alias for RSA-SHA1.
+      citations:
+        - NIST_SP_800_131A
+        - NIST_IR_8547
+        - BSI_TR_02102_1
+      deadline: '2010-12-31'
+  - when:
+      - field: algorithm
+        op: contains-any
+        values:
           - MD5
           - SHA-1
+          - SHA1
     result:
       title: 'Apex uses {{asset.algorithm}}'
       severity: critical

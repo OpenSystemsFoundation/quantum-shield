@@ -18,6 +18,12 @@ export interface ScanOptions {
    */
   probeTls?: boolean;
   mock?: boolean;
+  /**
+   * Which front-end is running this scan; stamped into Report.generator so
+   * artifact methodology text matches how the report was actually produced.
+   * Defaults to 'browser'.
+   */
+  generatorMode?: 'cli' | 'browser';
 }
 
 export type ScannerStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'failed';

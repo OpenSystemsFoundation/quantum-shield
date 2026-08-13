@@ -65,6 +65,7 @@ export interface CryptoAsset {
     | 'shield-key'
     | 'apex-call'
     | 'installed-package'
+    | 'session-settings'
     | 'tls-endpoint';
   name: string;
   identifier: string;
@@ -98,6 +99,12 @@ export interface Finding {
   rationale: string;
   citations: Citation[];
   deadline?: string;
+  /**
+   * Regulatory overlay frameworks this finding maps to (rule-declared).
+   * Populated regardless of which overlays were enabled for the scan; the
+   * regulatory appendix filters to the enabled subset.
+   */
+  overlayIds?: string[];
 }
 
 export interface OverlayScope {
@@ -123,13 +130,49 @@ export interface CbomComponent {
   quantumSafe: boolean;
 }
 
+/**
+ * Outcome of one scan category (or the TLS probe pass).
+ *
+ * - `scanned`  — every query for the category completed.
+ * - `partial`  — some data was collected but at least one sub-query failed;
+ *                results for this category are incomplete.
+ * - `failed`   — the category could not be scanned at all.
+ * - `skipped`  — the underlying feature is not available in this org
+ *                (e.g. Shield Platform Encryption not licensed).
+ */
+export type CoverageStatus = 'scanned' | 'partial' | 'failed' | 'skipped';
+
+export interface CategoryCoverage {
+  /** Category id, or 'tls-probe' for the live TLS probing pass. */
+  id: Category | 'tls-probe';
+  label: string;
+  status: CoverageStatus;
+  assetCount: number;
+  findingCount: number;
+  /** Failure detail or skip reason — user-facing, no stack traces. */
+  detail?: string;
+}
+
+export interface ReportGenerator {
+  name: string;
+  version: string;
+  /** Which front-end produced this report. */
+  mode: 'cli' | 'browser';
+}
+
 export interface Report {
   schemaVersion: '1';
   generatedAt: string;
   scanStartedAt: string;
   scanFinishedAt: string;
+  generator: ReportGenerator;
   org: OrgIdentity;
   findings: Finding[];
+  /**
+   * Per-category scan outcome. Consumers MUST treat categories whose status
+   * is not `scanned` as unverified — zero findings there does not mean clean.
+   */
+  coverage: CategoryCoverage[];
   overlays: OverlayScope[];
   sourceVersions: {
     sourceId: string;

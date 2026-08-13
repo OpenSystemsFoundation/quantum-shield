@@ -42,7 +42,12 @@ function hybridKemRule(): Rule {
     matches(asset) {
       if (asset.kind !== 'tls-endpoint') return null;
       if (asset.tlsVersion !== 'TLSv1.3') return null;
-      if (asset.hybridKem) return null;
+      // Only fire when we KNOW no hybrid KEM was negotiated. `undefined`
+      // means the probing client could not offer ML-KEM groups itself
+      // (OpenSSL < 3.5), so the endpoint's capability is unknown — reporting
+      // a finding would state a fact about the server that is actually a
+      // limitation of the client.
+      if (asset.hybridKem !== false) return null;
       return {
         title: `TLS 1.3 without hybrid KEM — still exposed to SNDL harvesting`,
         severity: 'medium',

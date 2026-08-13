@@ -7,6 +7,10 @@ description: Installed managed packages should be tracked as PQC supply-chain ex
 implementationStatus: active
 appliesTo:
   - installed-package
+overlays:
+  - nis2
+  - dora
+  - swift-csp
 tags:
   - packages
   - supply-chain
@@ -30,6 +34,7 @@ cases:
         Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.
       citations:
         - NIST_SP_800_53
+        - ENISA_PQC_2024
         - NIST_IR_8547
 ---
 Opaque dependencies should be reviewed as policy, not hidden behind a hard-coded special case.

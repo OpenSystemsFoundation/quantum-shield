@@ -7,6 +7,10 @@ description: RSA-2048 and RSA-3072 remain usable today but are on the deprecatio
 implementationStatus: active
 appliesTo:
   - '*'
+overlays:
+  - nis2
+  - dora
+  - cmmc
 tags:
   - rsa
   - migration

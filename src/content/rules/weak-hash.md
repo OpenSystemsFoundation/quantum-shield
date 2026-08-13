@@ -7,6 +7,11 @@ description: SHA-1 and MD5 class hashes are disallowed today for security-releva
 implementationStatus: active
 appliesTo:
   - '*'
+overlays:
+  - pci-dss-4
+  - nis2
+  - dora
+  - gdpr
 tags:
   - hash
   - integrity

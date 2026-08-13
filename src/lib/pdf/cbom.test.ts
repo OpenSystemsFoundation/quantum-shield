@@ -10,6 +10,8 @@ function mkReport(partial: Partial<Report> = {}): Report {
     generatedAt: '2026-04-22T10:00:00.000Z',
     scanStartedAt: '2026-04-22T09:59:00.000Z',
     scanFinishedAt: '2026-04-22T10:00:00.000Z',
+    generator: { name: 'QuantumShield', version: '0.1.0', mode: 'cli' },
+    coverage: [],
     org: {
       orgId: '00D000000000001',
       instanceUrl: 'https://acme.my.salesforce.com',
