@@ -21,6 +21,8 @@ const ASSET_KINDS = new Set([
   'shield-key',
   'apex-call',
   'installed-package',
+  'session-settings',
+  'tls-endpoint',
 ]);
 
 const OVERLAY_IDS = new Set(['gdpr', 'dora', 'nis2', 'eidas2', 'pci-dss-4', 'hipaa', 'cmmc', 'swift-csp']);

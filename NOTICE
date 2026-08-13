@@ -1,0 +1,12 @@
+QuantumShield
+Copyright 2026 Open Systems Foundation
+
+This product includes software developed by the Open Systems Foundation
+(https://github.com/OpenSystemsFoundation/quantum-shield).
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file for the
+full license text.
+
+Bundled web fonts (Inter Tight, JetBrains Mono, Source Serif 4) under
+public/fonts/ are licensed under the SIL Open Font License 1.1 by their
+respective authors and are redistributed unmodified as woff2 subsets.

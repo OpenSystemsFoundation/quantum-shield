@@ -5,7 +5,9 @@ export { buildFindingsCsv } from './csv.js';
 export { classifyCryptoAsset, executionEnvironmentFor } from './crypto-classification.js';
 export type {
   Category,
+  CategoryCoverage,
   Citation,
+  CoverageStatus,
   CryptoAsset,
   CbomComponent,
   EffortLevel,
@@ -16,5 +18,6 @@ export type {
   OverlayScope,
   RegulatoryStatus,
   Report,
+  ReportGenerator,
   Severity,
 } from './types.js';

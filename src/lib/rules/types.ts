@@ -31,6 +31,8 @@ export interface RuleMatchResult {
 export interface Rule {
   id: string;
   description: string;
+  /** Regulatory overlay frameworks findings from this rule map to. */
+  overlays?: ReadonlyArray<OverlayScope['id']>;
   matches(asset: CryptoAsset, ctx: RuleContext): RuleMatchResult | null;
 }
 

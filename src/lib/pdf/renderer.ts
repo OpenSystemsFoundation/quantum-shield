@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { COLORS, FONT, PAGE } from './theme.js';
-import type { Cursor } from './layout.js';
+import { toWinAnsi, type Cursor } from './layout.js';
 import {
   drawCbomAppendix,
   drawCoverSection,
@@ -9,15 +9,16 @@ import {
   drawMethodology,
   drawRegulatoryAppendix,
 } from './sections.js';
+import { QSHIELD_HOMEPAGE, QSHIELD_NAME } from '../version.js';
 import type { Report } from './types.js';
 
 export async function renderReportPdf(report: Report): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  doc.setTitle(`QuantumShield Report — ${report.org.orgName}`);
-  doc.setAuthor('QuantumShield');
+  doc.setTitle(`${QSHIELD_NAME} Report — ${report.org.orgName}`);
+  doc.setAuthor(QSHIELD_NAME);
   doc.setSubject('Post-Quantum Readiness Report');
-  doc.setCreator('QuantumShield (quantumshield.example)');
-  doc.setProducer('QuantumShield pdf-lib renderer');
+  doc.setCreator(`${QSHIELD_NAME} (${QSHIELD_HOMEPAGE})`);
+  doc.setProducer(`${QSHIELD_NAME} pdf-lib renderer`);
   doc.setCreationDate(new Date(report.generatedAt));
   doc.setModificationDate(new Date(report.generatedAt));
 
@@ -52,7 +53,9 @@ export async function renderReportPdf(report: Report): Promise<Uint8Array> {
   const total = pageRefs.length;
   pageRefs.forEach((page, idx) => {
     const pageNum = idx + 1;
-    const footer = `QuantumShield  ·  ${report.org.orgName}  ·  ${report.scanFinishedAt.slice(0, 10)}`;
+    const footer = toWinAnsi(
+      `${QSHIELD_NAME}  ·  ${report.org.orgName}  ·  ${report.scanFinishedAt.slice(0, 10)}`,
+    );
     page.drawLine({
       start: { x: PAGE.marginX, y: PAGE.marginBottom - 8 },
       end: { x: PAGE.width - PAGE.marginX, y: PAGE.marginBottom - 8 },

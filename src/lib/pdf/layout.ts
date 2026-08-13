@@ -35,6 +35,78 @@ export function ensureSpace(cursor: Cursor, needed: number): void {
   }
 }
 
+/**
+ * pdf-lib's StandardFonts use WinAnsi (CP1252) encoding and throw on any
+ * character outside it (e.g. Turkish "Ş", CJK). Characters beyond Latin-1
+ * that WinAnsi does encode (€ Š š Œ œ Ž ž Ÿ ƒ, curly quotes, dashes, …).
+ */
+const WINANSI_EXTRAS = new Set(
+  '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ',
+);
+
+/**
+ * Latin Extended-A characters that do not NFD-decompose to a WinAnsi base
+ * letter, mapped to a pragmatic ASCII equivalent.
+ */
+const WINANSI_SUBSTITUTES: Record<string, string> = {
+  'Đ': 'D', // Đ
+  'đ': 'd', // đ
+  'Ħ': 'H', // Ħ
+  'ħ': 'h', // ħ
+  'ı': 'i', // ı (dotless i)
+  'ĸ': 'k', // ĸ
+  'Ł': 'L', // Ł
+  'ł': 'l', // ł
+  'ŉ': "'n", // ŉ
+  'Ŋ': 'N', // Ŋ
+  'ŋ': 'n', // ŋ
+  'Ŧ': 'T', // Ŧ
+  'ŧ': 't', // ŧ
+  '\t': ' ',
+};
+
+function isWinAnsiChar(ch: string): boolean {
+  const code = ch.codePointAt(0) ?? 0;
+  if (code === 0x0a) return true; // newline — handled by wrapText, never drawn
+  if (code >= 0x20 && code <= 0x7e) return true;
+  if (code >= 0xa0 && code <= 0xff) return true;
+  return WINANSI_EXTRAS.has(ch);
+}
+
+/**
+ * Makes text safe for pdf-lib StandardFonts: keeps WinAnsi-encodable
+ * characters, maps Latin-extended letters to their closest WinAnsi equivalent
+ * (Ş→S, ğ→g, ł→l, …), and replaces anything still unencodable with "?" so
+ * rendering never throws on org- or asset-supplied text.
+ */
+export function toWinAnsi(text: string): string {
+  let out = '';
+  for (const ch of text) {
+    if (isWinAnsiChar(ch)) {
+      out += ch;
+      continue;
+    }
+    const mapped = WINANSI_SUBSTITUTES[ch];
+    if (mapped !== undefined) {
+      out += mapped;
+      continue;
+    }
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x0300 && code <= 0x036f) continue; // stray combining mark
+    const decomposed = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (
+      decomposed.length > 0 &&
+      decomposed !== ch &&
+      Array.from(decomposed).every((c) => isWinAnsiChar(c) || WINANSI_SUBSTITUTES[c] !== undefined)
+    ) {
+      out += Array.from(decomposed, (c) => (isWinAnsiChar(c) ? c : WINANSI_SUBSTITUTES[c])).join('');
+      continue;
+    }
+    out += '?';
+  }
+  return out;
+}
+
 export function contentWidth(): number {
   return PAGE.width - PAGE.marginX * 2;
 }
@@ -53,7 +125,7 @@ export function drawText(
   const size = opts.size ?? FONT.body;
   const color = opts.color ?? COLORS.ink;
   const x = opts.x ?? cursor.x;
-  cursor.page.drawText(text, { x, y: cursor.y, size, font, color });
+  cursor.page.drawText(toWinAnsi(text), { x, y: cursor.y, size, font, color });
 }
 
 export function measureText(
@@ -61,7 +133,7 @@ export function measureText(
   font: PDFFont,
   size: number,
 ): number {
-  return font.widthOfTextAtSize(text, size);
+  return font.widthOfTextAtSize(toWinAnsi(text), size);
 }
 
 export function wrapText(
@@ -71,7 +143,7 @@ export function wrapText(
   maxWidth: number,
 ): string[] {
   const out: string[] = [];
-  for (const paragraph of text.split('\n')) {
+  for (const paragraph of toWinAnsi(text).split('\n')) {
     if (paragraph.length === 0) {
       out.push('');
       continue;
@@ -142,7 +214,7 @@ export function drawHeading(
   const size = opts.size ?? FONT.h2;
   const color = opts.color ?? COLORS.ink;
   ensureSpace(cursor, size * 1.4 + (opts.spaceAfter ?? 0));
-  cursor.page.drawText(text, {
+  cursor.page.drawText(toWinAnsi(text), {
     x: cursor.x,
     y: cursor.y,
     size,
@@ -193,7 +265,8 @@ export function drawPill(
   const padX = 6;
   const padY = 3;
   const font = cursor.fonts.bold;
-  const textWidth = measureText(text, font, size);
+  const safeText = toWinAnsi(text);
+  const textWidth = measureText(safeText, font, size);
   const width = textWidth + padX * 2;
   const height = size + padY * 2;
   cursor.page.drawRectangle({
@@ -205,7 +278,7 @@ export function drawPill(
     borderColor: fill,
     borderWidth: 0,
   });
-  cursor.page.drawText(text, {
+  cursor.page.drawText(safeText, {
     x: x + padX,
     y: y - size + 2,
     size,

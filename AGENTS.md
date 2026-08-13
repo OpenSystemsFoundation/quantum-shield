@@ -43,6 +43,22 @@ builder, and OpenVEX/report output code under `src/lib/`.
   scopes, or writes back to Salesforce must be called out as a product decision.
 - Keep edits scoped. Avoid unrelated refactors during release-prep work.
 
+## Repo Layout Notes
+
+- `sfdx-project.json` exists **twice on purpose**: the root copy points repo-level
+  `sf` tooling at `salesforce/force-app` so `sf` commands work from the repo
+  root, while `salesforce/sfdx-project.json` serves the self-contained scratch-org
+  workspace under `salesforce/`. Keep both; keep their `packageDirectories`
+  consistent.
+- `public/fonts/` holds the self-hosted woff2 fonts and `fonts.css`; pages load
+  fonts only from there (no font CDNs — see `DESIGN.md`).
+- `public/_headers` is the Cloudflare Pages security-header config (CSP etc.).
+  The `/security` page describes that policy verbatim — change them together.
+- `src/lib/version.ts` is the single source of truth for the tool version; CI
+  fails if it disagrees with `package.json`'s `version`.
+- `cli/` is excluded from `tsconfig.json`; typecheck it with
+  `npx tsc --noEmit -p tsconfig.cli.json`.
+
 ## Common Commands
 
 Run these from the repo root.
@@ -52,6 +68,7 @@ npm install
 npm run sync:regulations
 npm run design:lint
 npm run check
+npx tsc --noEmit -p tsconfig.cli.json
 npm test
 npm run build
 npm run test:e2e
@@ -79,145 +96,69 @@ polish task, or a verification step that has been completed.
 
 ## Current Status
 
-- **Release stage:** pre-beta audit
+- **Release stage:** beta candidate
 - **Primary product path:** local `qshield` CLI
 - **Secondary product path:** static browser app for setup, scans, and report review
-- **Last reviewed:** 2026-04-25
-- **Current verification state:** `npm run design:lint`, `npm run check`,
-  `npm test`, and `npm run build` pass as of 2026-04-25
+- **Last reviewed:** 2026-08-13 (production-readiness wave; audit trail in
+  [docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md))
+- **Version:** 0.1.0 (`package.json` ↔ `src/lib/version.ts`, enforced by CI)
 
-## Immediate Blockers
+## Fixed In The 2026-08 Production-Readiness Wave
 
-- [x] Install project dependencies and rerun baseline verification.
-  - Installed `@google/design.md` and restored missing project dependencies.
-  - `npm run check` passes with 0 errors and 0 warnings.
-  - `npm test` passes with 6 files and 24 tests.
-- [ ] Track npm audit findings before beta.
-  - After Astro 6 and Tailwind removal, `npm audit --json` reports 5 moderate
-    vulnerabilities in the dev-only `@astrojs/check` language-server dependency
-    chain.
-  - npm's available fix downgrades `@astrojs/check` to 0.9.2, so this should be
-    tracked as an upstream tooling issue unless a compatible patched release is
-    available.
-- [ ] Decide whether `package.json` should stay `"private": true` for beta.
-  - If the beta expects npm-style installation, package metadata and publishing
-    posture need to be made explicit.
-- [x] Add or remove linked legal pages.
-  - Added `/privacy` and `/terms` beta posture pages.
-- [ ] Replace placeholder deployment/domain copy before public launch.
-  - Setup docs use runtime origin in the browser, but static placeholders such as
-    `https://quantumshield.example` still appear in source and PDF metadata.
+Findings and full verification detail:
+[docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md).
+Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 
-## Copy And Positioning
+- [x] **Trustworthy answers.** Per-category coverage model
+  (`scanned` / `partial` / `failed` / `skipped`) recorded in `report.coverage`
+  and surfaced in every artifact; failed scanner categories no longer render as
+  "clean". Scanners no longer fabricate crypto facts the API does not expose
+  (Connected Apps are inventory-only; SSO derives only from
+  `RequestSignatureMethod`; Shield records a skip note when not licensed).
+- [x] **CLI correctness.** `sf` 2.x redacted-token fallback; Tooling API
+  pagination; unknown-flag rejection; documented exit codes (0/2/3/10/20) and
+  `--allow-partial`; per-format writer isolation.
+- [x] **Rule scoping.** `--region` no longer drops universally applicable rules;
+  rules declare overlay mappings and findings carry `overlayIds`, so
+  `--overlay` scopes the regulatory appendix (never which rules fire).
+- [x] **Artifacts.** Schema-valid CycloneDX 1.6 CBOM; spec-conformant OpenVEX
+  (no illegal `justification`/`impact_statement`); CSV formula-injection
+  escaping; Unicode-safe PDF rendering; version stamped from
+  `src/lib/version.ts`.
+- [x] **Browser auth.** Authorization code + PKCE (`response_type=code`),
+  scopes reduced to `api` + `id`, callback URL scrubbing, dev-mock hard-gated
+  to dev builds.
+- [x] **Legal & trust surface.** Apache-2.0 `LICENSE` + `NOTICE`;
+  `public/_headers` with a real CSP (described verbatim on `/security`);
+  repository links corrected to `OpenSystemsFoundation/quantum-shield`;
+  self-hosted fonts (zero third-party requests).
+- [x] **Release engineering.** GitHub Actions CI (typecheck web + CLI, unit
+  tests, build, version-consistency check, advisory Playwright job);
+  `npm audit fix` applied (16 → 5 advisories; the remainder need an Astro 7
+  major bump — tracked below); `jsforce` removed; `tsx` moved to runtime
+  dependencies; `engines` requires Node ≥ 22.12; `/dev/*` pages stripped from
+  production builds; `CHANGELOG.md` started at 0.1.0.
 
-- [x] Align all product descriptions around the same beta message.
-  - Current top-level docs position CLI as recommended and browser as optional.
-  - `src/layouts/Shell.astro` now describes the product as CLI-first with an
-    optional browser workflow.
-- [x] Review landing-page navigation labels.
-  - Landing nav now links to `/docs/rules` and `/docs/regulations` instead of
-    sending multiple labels to `/install`.
-- [ ] Make the CLI-first path unmistakable on the landing page, install guide,
-  README, and browser setup wizard.
-- [ ] Verify all standards/framework claims are backed by current rule content.
-  - README claims 23 regulatory sources.
-  - Architecture mentions sources and capabilities that should match
-    `src/content/regulations/` and generated manifests.
-- [ ] Tighten beta language around advisory output.
-  - Avoid implying legal attestation or exhaustive compliance coverage.
+## Open Items Toward Public Beta
 
-## Documentation
-
-- [ ] README
-  - [ ] Confirm quickstart commands work on a clean clone.
-  - [ ] Add beta caveats: supported Salesforce surfaces, known gaps, and support
-    expectations.
-  - [ ] Add clear prerequisites: Node version, Salesforce CLI, required org
-    permissions, and browser-mode requirements.
-- [ ] Architecture
-  - [ ] Remove or mark non-implemented features as planned.
-  - [ ] Reconcile claims about charts, analytics, privacy/terms pages, and docs
-    routes with the actual app.
-  - [ ] Add a concise threat model for browser mode and CLI mode.
-- [ ] Install guide
-  - [ ] Verify External Client App and Connected App instructions against the
-    current Salesforce setup UI.
-  - [ ] Add troubleshooting for CORS, OAuth policy propagation, expired sessions,
-    and insufficient API permissions.
-- [ ] Security page
-  - [ ] Clarify token storage behavior.
-  - [ ] Confirm the stated CSP is actually enforced by the deployed host.
-
-## UX Workflow
-
-- [x] Landing page
-  - [x] Fix broken/misleading nav links.
-  - [x] Ensure the first CTA points to the recommended CLI path.
-  - [x] Decide whether the report preview numbers should be marked as sample data.
-- [ ] Browser setup wizard
-  - [ ] Confirm step order with a real org.
-  - [ ] Add better recovery when OAuth succeeds but the first API call fails.
-  - [ ] Clarify that the active browser session is in `sessionStorage`, while the
-    remembered client ID and region preference are in `localStorage`.
-- [ ] App overview
-  - [ ] Confirm empty state, scan history, region selector, and clear-data flow.
-  - [ ] Consider making region selection required or explicitly "Full catalog."
-- [ ] Scan flow
-  - [ ] Verify progress states for successful, partial, CORS-failed, and
-    auth-expired scans.
-  - [ ] Confirm failed category handling does not imply the whole scan succeeded.
-- [ ] Report flow
-  - [ ] Verify finding filters, drawer, exports, and PDF download.
-  - [x] Add OpenVEX download in browser mode if it is intended to match CLI output.
-
-## Styling And Accessibility
-
-- [x] Add a machine-readable design-system contract.
-  - `DESIGN.md` now captures QuantumShield colors, typography, spacing, radius,
-    component tokens, and UI usage rules.
-  - `npm run design:lint` validates the file through `@google/design.md/linter`
-    with 0 errors and 0 warnings.
-- [x] Remove Tailwind before Astro 6 migration.
-  - Tailwind and `@astrojs/tailwind` were removed; the app is CSS-first and keeps
-    `DESIGN.md` as the design contract.
-- [x] Upgrade the Astro stack for beta.
-  - `astro`, `@astrojs/mdx`, `@astrojs/svelte`, `@astrojs/check`, and `vitest`
-    were updated.
-  - Content collections were migrated to Astro 6 content-layer loaders.
-  - Docs routes now use content entry IDs instead of legacy slugs.
-- [ ] Test desktop and mobile layouts for landing, setup, app overview, scan, and
-  report pages.
-- [ ] Replace inline-heavy page styling with reusable classes where it reduces
-  maintenance risk.
-- [ ] Check keyboard navigation for wizard choices, filters, table rows, drawer,
-  and export buttons.
-- [ ] Check color contrast for severity pills, muted text, nav states, and warning
-  panels.
-- [ ] Ensure long org names, usernames, scan IDs, and finding titles wrap without
-  breaking layout.
-
-## Engineering And Packaging
-
-- [ ] Run `npm install` on a clean clone and verify generated files remain stable.
-- [ ] Run:
-  - [x] `npm run sync:regulations`
-  - [x] `npm run check`
-  - [x] `npm test`
-  - [x] `npm run build`
-  - [ ] `npm run test:e2e`
-- [ ] Verify the CLI path:
-  - [ ] `npm run qshield -- help`
-  - [ ] `npm run qshield -- orgs`
-  - [ ] `npm run qshield -- scan --target-org <alias>`
-  - [ ] `npm run qshield -- scan --target-org <alias> --probe-tls`
-- [ ] Verify browser mock/demo flow without Salesforce credentials.
-- [ ] Verify browser OAuth flow against production, sandbox, and My Domain.
-- [ ] Confirm generated artifacts:
-  - [x] PDF
-  - [x] CycloneDX CBOM JSON
-  - [x] OpenVEX JSON
-  - [x] findings CSV
-  - [x] raw report JSON
+- [ ] Re-verify a full CLI scan (`--probe-tls`, `--region`, `--overlay`) against
+  a live org after this wave, on a clean clone.
+- [ ] Verify browser OAuth (code + PKCE) against production, sandbox, and
+  My Domain orgs — the review sandbox could not complete a live round-trip.
+- [ ] Stabilize the Playwright e2e job in CI, then graduate it to required
+  (remove `continue-on-error` in `.github/workflows/ci.yml`).
+- [ ] Remaining npm advisories (5: 1 low, 2 moderate, 2 high as of 2026-08-13)
+  all require the Astro 7 major upgrade; schedule it deliberately, not via
+  `npm audit fix --force`.
+- [ ] Replace placeholder deployment/domain copy (`https://quantumshield.example`)
+  in `astro.config.mjs` `site` and PDF metadata once the production domain
+  exists.
+- [ ] Keyboard accessibility for the findings table and drawer; mobile layout
+  for landing/app/report pages.
+- [ ] Decide whether the beta ever publishes to npm; until then the repo stays
+  `"private": true` and installs from source (documented in README).
+- [ ] Rotate the committed scratch-org ECA consumer key under `salesforce/`
+  and keep seed metadata credential-free.
 
 ## Release Readiness Definition
 
@@ -227,31 +168,9 @@ Beta is ready when:
 - [ ] CLI scan works against at least one real Salesforce org.
 - [ ] Browser setup and scan work against at least one real Salesforce org.
 - [ ] All public links resolve.
-- [ ] README, architecture, install, and security docs match the implemented app.
-- [ ] Legal/privacy posture is explicit.
-- [ ] Unit, type/check, build, and key e2e tests pass.
-- [ ] Known limitations are documented in user-facing language.
-
-## Notes From 2026-04-25 Audit Start
-
-- `npm run check` and `npm test` were attempted and both stopped during
-  `npm run sync:regulations` because `gray-matter` was missing from installed
-  dependencies.
-- Later on 2026-04-25, `npm install @google/design.md --save-dev` restored
-  dependencies and installed the Design.md CLI package.
-- The published `design.md` CLI hung in this Windows shell, so
-  `scripts/lint-design-md.mjs` uses the official `@google/design.md/linter`
-  API directly for reliable local validation.
-- `npm run design:lint`, `npm run check`, `npm test`, and `npm run build` passed
-  after the Design.md integration.
-  `npm run check`, `npm test`, and `npm run build` needed elevated command
-  execution because `npm run sync:regulations` rewrites generated files.
-- Public-copy pass added `/privacy` and `/terms`, corrected the global meta
-  description, changed landing docs links to real docs routes, marked the hero
-  report preview as sample data, and added browser downloads for OpenVEX JSON and
-  raw report JSON.
-- Tailwind was removed after the Design.md contract was added. The remaining
-  styling path is Astro/Svelte CSS plus `DESIGN.md`.
-- Astro 6 migration completed after replacing legacy content collection slug
-  usage in docs routes and links.
-- The repo currently has an untracked root `sfdx-project.json`.
+- [x] README, architecture, install, and security docs match the implemented app
+  (reconciled 2026-08-13).
+- [x] Legal/privacy posture is explicit (LICENSE, NOTICE, /privacy, /terms).
+- [ ] Unit, type/check, build, and key e2e tests pass in CI.
+- [x] Known limitations are documented in user-facing language (README beta
+  caveats, /terms).

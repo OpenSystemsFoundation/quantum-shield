@@ -1,4 +1,4 @@
-import { argv, exit, stderr } from 'node:process';
+import { argv, env, exit, stderr } from 'node:process';
 import { parseArgs } from './args.js';
 import { scanCommand } from './commands/scan.js';
 import { orgsCommand } from './commands/orgs.js';
@@ -11,7 +11,7 @@ async function main(): Promise<number> {
     case 'scan':
       return scanCommand(parsed);
     case 'orgs':
-      return orgsCommand();
+      return orgsCommand(parsed);
     case 'help':
     case '--help':
     case '-h':
@@ -26,6 +26,12 @@ async function main(): Promise<number> {
 main()
   .then((code) => exit(code))
   .catch((err) => {
-    stderr.write(`fatal: ${(err as Error).stack ?? (err as Error).message ?? String(err)}\n`);
+    const e = err as Error;
+    stderr.write(`fatal: ${e?.message ?? String(err)}\n`);
+    if (env.QSHIELD_DEBUG === '1' && e?.stack) {
+      stderr.write(`${e.stack}\n`);
+    } else {
+      stderr.write('set QSHIELD_DEBUG=1 for a stack trace\n');
+    }
     exit(1);
   });

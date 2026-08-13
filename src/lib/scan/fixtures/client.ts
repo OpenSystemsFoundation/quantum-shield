@@ -1,4 +1,4 @@
-import type { QueryResult, ScanClient } from '../sfClient.js';
+import { SalesforceApiError, type QueryResult, type ScanClient } from '../sfClient.js';
 import type { ScanSnapshot, SnapshotQueryKind, SnapshotResponse } from './types.js';
 
 function cloneResult<T>(result: QueryResult<unknown>): QueryResult<T> {
@@ -21,7 +21,15 @@ export class SnapshotSfClient implements ScanClient {
   private resolve<T>(kind: SnapshotQueryKind, soql: string): QueryResult<T> {
     const response = this.lookup(kind, soql);
     if (response.outcome === 'error') {
-      throw new Error(response.error);
+      // Replay recorded API errors with the same type the live client throws
+      // so scanners' skip/partial handling behaves identically in mock mode.
+      const statusMatch = /Salesforce API (\d{3})/.exec(response.error);
+      throw new SalesforceApiError(
+        response.error,
+        statusMatch ? Number(statusMatch[1]) : 400,
+        response.error,
+        `snapshot:${kind}`,
+      );
     }
     return cloneResult<T>(response.result);
   }

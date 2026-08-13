@@ -210,6 +210,7 @@ function buildRule(definition: RuleDefinition): Rule {
   return {
     id: definition.id,
     description: definition.description,
+    ...(definition.overlays?.length ? { overlays: definition.overlays } : {}),
     matches(asset, ctx) {
       const appliesUniversally = definition.appliesTo.includes('*');
       if (!appliesUniversally && !definition.appliesTo.includes(asset.kind)) {
@@ -228,18 +229,17 @@ function buildRule(definition: RuleDefinition): Rule {
   };
 }
 
+/**
+ * Overlay ids declared on a rule are mapping metadata — they say which
+ * regulatory frameworks (PCI DSS, NIS 2, DORA, …) a finding traces to. They
+ * never gate whether a rule runs: the base catalog always applies, and the
+ * regulatory appendix filters findings to the overlays the user enabled.
+ */
 export function filterRuleDefinitionsForOverlays(
   definitions: ReadonlyArray<RuleDefinition>,
-  selectedOverlays: string[],
+  _selectedOverlays: string[],
 ): RuleDefinition[] {
-  if (selectedOverlays.length === 0) {
-    return definitions.filter((definition) => !definition.overlays || definition.overlays.length === 0);
-  }
-
-  return definitions.filter(
-    (definition) =>
-      !definition.overlays || definition.overlays.some((overlay) => selectedOverlays.includes(overlay)),
-  );
+  return [...definitions];
 }
 
 export function buildRuleCatalog(definitions: ReadonlyArray<RuleDefinition>): Rule[] {

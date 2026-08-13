@@ -42,7 +42,7 @@ import BlochShield from '../components/BlochShield.svelte';
         <div class="tiny-caps" style="color:var(--navy-600);">Write access</div>
         <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">None, ever</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
-          QuantumShield never modifies org configuration. Browser mode requests <span class="mono">api</span>, <span class="mono">refresh_token</span>, and <span class="mono">id</span>; CLI mode reuses the permissions already granted to your local <span class="mono">sf</span> session.
+          QuantumShield never modifies org configuration. Browser mode requests only <span class="mono">api</span> and <span class="mono">id</span>; CLI mode reuses the permissions already granted to your local <span class="mono">sf</span> session.
         </p>
       </div>
     </section>
@@ -55,29 +55,32 @@ import BlochShield from '../components/BlochShield.svelte';
           <span style="color:var(--ink-3);">Access the REST, Tooling, and Metadata APIs to read configuration and metadata.</span>
           <span class="pill ok">Required</span>
         </div>
-        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
-          <span class="mono" style="font-weight:600;">refresh_token</span>
-          <span style="color:var(--ink-3);">Requested for compatibility with browser-mode OAuth policies. The web app still keeps the active browser session local to the device and ends it on tab close.</span>
-          <span class="pill adv">Forward-compat</span>
-        </div>
         <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;align-items:start;font-size:12.5px;">
           <span class="mono" style="font-weight:600;">id</span>
           <span style="color:var(--ink-3);">Identify the user and org for display purposes. No profile or directory data queried.</span>
           <span class="pill ok">Required</span>
         </div>
+        <p style="margin:10px 0 0;color:var(--muted);font-size:11.5px;font-family:var(--mono);">
+          No refresh_token scope: the browser session lives in sessionStorage and ends when the tab closes. Sign-in uses OAuth 2.0 authorization code with PKCE.
+        </p>
       </div>
     </section>
 
     <section class="qs-card" style="margin-top:16px;">
-      <div class="qs-card-head"><h3>Browser-mode Content Security Policy</h3></div>
+      <div class="qs-card-head"><h3>Content Security Policy</h3></div>
       <div class="qs-card-body">
         <p style="margin-top:0;color:var(--ink-3);font-size:12.5px;">
-          Browser mode ships a strict <span class="mono">connect-src</span> directive that restricts outbound requests to your org's instance URL (added dynamically after sign-in) and the Salesforce OAuth endpoints.
+          The deployed site serves the following CSP as an HTTP response header on every page, via the Cloudflare Pages <span class="mono">_headers</span> file in this repository (<span class="mono">public/_headers</span>). <span class="mono">connect-src</span> limits outbound requests to this origin plus Salesforce-owned domains (<span class="mono">*.salesforce.com</span>, <span class="mono">*.force.com</span>, <span class="mono">*.my.site.com</span>) — the scanner talks to your org directly and nowhere else. Fonts and images are served from this origin only; the page cannot be framed.
         </p>
         <div class="mono-field" style="margin-top:8px;font-family:var(--mono);font-size:11px;white-space:pre;overflow:auto;">
-          <code>default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com;
-font-src fonts.gstatic.com; connect-src 'self' https://login.salesforce.com https://test.salesforce.com {'<'}instance-url{'>'}</code>
+          <code>default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';
+img-src 'self' data:; font-src 'self';
+connect-src 'self' https://*.salesforce.com https://*.force.com https://*.my.site.com;
+worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</code>
         </div>
+        <p style="margin:10px 0 0;color:var(--muted);font-size:11.5px;font-family:var(--mono);">
+          Also served: X-Content-Type-Options: nosniff · Referrer-Policy: strict-origin-when-cross-origin · Permissions-Policy: camera=(), microphone=(), geolocation=(). Local dev servers (astro dev/preview) do not apply these headers.
+        </p>
       </div>
     </section>
   </main>

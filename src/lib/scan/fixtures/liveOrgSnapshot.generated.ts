@@ -2,13 +2,13 @@
 import type { ScanSnapshot } from './types.js';
 
 export const LIVE_ORG_SCAN_SNAPSHOT = {
-  "capturedAt": "2026-04-22T09:49:11.184Z",
+  "capturedAt": "2026-08-13T12:04:03.385Z",
   "source": {
-    "targetOrg": "qs-scan",
-    "orgId": "00DJW00000J2nph2AB",
-    "orgName": "QuantumShield Scan Target",
-    "instanceUrl": "https://innovation-business-7521.scratch.my.salesforce.com",
-    "apiVersion": "66.0"
+    "targetOrg": "qs-seed",
+    "orgId": "00DJX00000QQLY52AP",
+    "orgName": "OpenSF",
+    "instanceUrl": "https://momentum-connect-3297-dev-ed.scratch.my.salesforce.com",
+    "apiVersion": "67.0"
   },
   "responses": [
     {
@@ -26,13 +26,7 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
     },
     {
       "kind": "toolingQuery",
-      "soql": "SELECT Id, Name, ContactEmail, OauthConfig.ConsumerKey, OauthConfig.CertificateId FROM ConnectedApplication",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"\\nSELECT Id, Name, ContactEmail, OauthConfig.ConsumerKey, OauthConfig.CertificateId\\n                               ^\\nERROR at Row:1:Column:32\\nDidn't understand relationship 'OauthConfig' in field path. If you are attempting to use a custom relationship, be sure to append the '__r' after the custom relationship name. Please reference your WSDL or the describe call for the appropriat"
-    },
-    {
-      "kind": "toolingQuery",
-      "soql": "SELECT Id, MasterLabel, KeySize FROM Certificate",
+      "soql": "SELECT Id, Name, DeveloperName, ContactEmail, RefreshTokenValidityPeriod FROM ConnectedApplication",
       "outcome": "success",
       "result": {
         "size": 0,
@@ -44,22 +38,89 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       }
     },
     {
+      "kind": "toolingQuery",
+      "soql": "SELECT Id, DeveloperName, MasterLabel FROM ExternalClientApplication",
+      "outcome": "success",
+      "result": {
+        "size": 1,
+        "totalSize": 1,
+        "done": true,
+        "queryLocator": null,
+        "entityTypeName": "ExternalClientApplication",
+        "records": [
+          {
+            "attributes": {
+              "type": "ExternalClientApplication",
+              "url": "/services/data/v67.0/tooling/sobjects/ExternalClientApplication/0xIJX0000004q1d2AA"
+            },
+            "Id": "0xIJX0000004q1d2AA",
+            "DeveloperName": "QuantumShield_Scanner",
+            "MasterLabel": "QuantumShield Scanner"
+          }
+        ]
+      }
+    },
+    {
       "kind": "query",
       "soql": "SELECT Id, DeveloperName, MasterLabel, Endpoint, PrincipalType FROM NamedCredential",
       "outcome": "success",
       "result": {
-        "totalSize": 1,
+        "totalSize": 5,
         "done": true,
         "records": [
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v66.0/sobjects/NamedCredential/0XAJW000000bMET4A2"
+              "url": "/services/data/v67.0/sobjects/NamedCredential/0XAJX000001E5aL4AS"
             },
-            "Id": "0XAJW000000bMET4A2",
+            "Id": "0XAJX000001E5aL4AS",
+            "DeveloperName": "EU_Payments_TLS13",
+            "MasterLabel": "EU Payments (TLS 1.3 probe target)",
+            "Endpoint": "https://www.cloudflare.com/",
+            "PrincipalType": "Anonymous"
+          },
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v67.0/sobjects/NamedCredential/0XAJX000001E5aM4AS"
+            },
+            "Id": "0XAJX000001E5aM4AS",
+            "DeveloperName": "Legacy_Billing_API",
+            "MasterLabel": "Legacy Billing API",
+            "Endpoint": "http://billing-legacy.internal.example/api",
+            "PrincipalType": "Anonymous"
+          },
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v67.0/sobjects/NamedCredential/0XAJX000001E5aN4AS"
+            },
+            "Id": "0XAJX000001E5aN4AS",
+            "DeveloperName": "NL_Tax_TLS12",
+            "MasterLabel": "NL Tax Filing (legacy TLS 1.2 probe target)",
+            "Endpoint": "https://tls-v1-2.badssl.com:1012/",
+            "PrincipalType": "Anonymous"
+          },
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v67.0/sobjects/NamedCredential/0XAJX000001E5aO4AS"
+            },
+            "Id": "0XAJX000001E5aO4AS",
             "DeveloperName": "Partner_OAuth_API",
             "MasterLabel": "Partner OAuth API",
             "Endpoint": "https://api.partner.example/v1",
+            "PrincipalType": "Anonymous"
+          },
+          {
+            "attributes": {
+              "type": "NamedCredential",
+              "url": "/services/data/v67.0/sobjects/NamedCredential/0XAJX000001E5aP4AS"
+            },
+            "Id": "0XAJX000001E5aP4AS",
+            "DeveloperName": "US_Medicare_Claims_API",
+            "MasterLabel": "US Medicare Claims API",
+            "Endpoint": "http://medicare-claims.legacy.us.example/api",
             "PrincipalType": "Anonymous"
           }
         ]
@@ -76,8 +137,8 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting",
       "outcome": "success",
       "result": {
-        "size": 3,
-        "totalSize": 3,
+        "size": 5,
+        "totalSize": 5,
         "done": true,
         "queryLocator": null,
         "entityTypeName": "RemoteProxy",
@@ -85,9 +146,19 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FZYAY"
+              "url": "/services/data/v67.0/tooling/sobjects/RemoteProxy/0rpJX000003BoB3YAK"
             },
-            "Id": "0rpJW000001q1FZYAY",
+            "Id": "0rpJX000003BoB3YAK",
+            "FullName": "ApexDevNet",
+            "EndpointUrl": "http://www.apexdevnet.com",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v67.0/tooling/sobjects/RemoteProxy/0rpJX000003CbZxYAK"
+            },
+            "Id": "0rpJX000003CbZxYAK",
             "FullName": "Internal_Reporting_HTTP",
             "EndpointUrl": "http://reporting.internal.example",
             "IsActive": true
@@ -95,9 +166,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FaYAI"
+              "url": "/services/data/v67.0/tooling/sobjects/RemoteProxy/0rpJX000003CbZyYAK"
             },
-            "Id": "0rpJW000001q1FaYAI",
+            "Id": "0rpJX000003CbZyYAK",
             "FullName": "Legacy_Billing_HTTP",
             "EndpointUrl": "http://billing-legacy.internal.example",
             "IsActive": true
@@ -105,30 +176,48 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v66.0/tooling/sobjects/RemoteProxy/0rpJW000001q1FbYAI"
+              "url": "/services/data/v67.0/tooling/sobjects/RemoteProxy/0rpJX000003CbZzYAK"
             },
-            "Id": "0rpJW000001q1FbYAI",
+            "Id": "0rpJX000003CbZzYAK",
             "FullName": "Partner_API_HTTPS",
             "EndpointUrl": "https://api.partner.example",
+            "IsActive": true
+          },
+          {
+            "attributes": {
+              "type": "RemoteProxy",
+              "url": "/services/data/v67.0/tooling/sobjects/RemoteProxy/0rpJX000003Cba0YAC"
+            },
+            "Id": "0rpJX000003Cba0YAC",
+            "FullName": "US_Federal_Reporting_HTTP",
+            "EndpointUrl": "http://reporting.federal-legacy.us.example",
             "IsActive": true
           }
         ]
       }
     },
     {
-      "kind": "toolingQuery",
+      "kind": "query",
       "soql": "SELECT Id, DeveloperName, MasterLabel, RequestSignatureMethod FROM SamlSsoConfig",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"sObject type 'SamlSsoConfig' is not supported.\",\"errorCode\":\"INVALID_TYPE\"}]"
+      "outcome": "success",
+      "result": {
+        "totalSize": 0,
+        "done": true,
+        "records": []
+      }
     },
     {
-      "kind": "toolingQuery",
+      "kind": "query",
       "soql": "SELECT Id, DeveloperName, ProviderType, FriendlyName FROM AuthProvider",
-      "outcome": "error",
-      "error": "Salesforce API 400: [{\"message\":\"sObject type 'AuthProvider' is not supported.\",\"errorCode\":\"INVALID_TYPE\"}]"
+      "outcome": "success",
+      "result": {
+        "totalSize": 0,
+        "done": true,
+        "records": []
+      }
     },
     {
-      "kind": "toolingQuery",
+      "kind": "query",
       "soql": "SELECT Id, Type, Status, Version, Source, RemoteKeyIdentifier, CreatedDate FROM TenantSecret",
       "outcome": "error",
       "error": "Salesforce API 400: [{\"message\":\"sObject type 'TenantSecret' is not supported.\",\"errorCode\":\"INVALID_TYPE\"}]"
@@ -138,8 +227,8 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
       "soql": "SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexClass WHERE NamespacePrefix = null",
       "outcome": "success",
       "result": {
-        "size": 4,
-        "totalSize": 4,
+        "size": 6,
+        "totalSize": 6,
         "done": true,
         "queryLocator": null,
         "entityTypeName": "ApexClass",
@@ -147,45 +236,67 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6rYAB"
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFtYAP"
             },
-            "Id": "01pJW00000G7f6rYAB",
-            "Name": "LegacyCipher",
-            "Body": "/**\n * Legacy AES cipher with a HARDCODED key baked into source.\n * Flagged by R-APEX-CRYPTO for hardcoded key material and\n * separately by R-APEX-CRYPTO for AES-128 encryption.\n */\npublic with sharing class LegacyCipher {\n\n    // HARDCODED 128-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob HARDCODED_KEY =\n        Blob.valueOf('ThisIsA16ByteKey');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES128', HARDCODED_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES128', HARDCODED_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
-            "ApiVersion": 63,
+            "Id": "01pJX00000TEKFtYAP",
+            "Name": "DutchVaultCipher",
+            "Body": "/**\n * Dutch regional vault — wraps AES encryption with a HARDCODED 32-byte key.\n * This exercises the scanner's 256-bit hardcoded-key detection path\n * alongside an AES-256 algorithm that on its own is compliant.\n * R-APEX-CRYPTO (critical, hardcoded key) must still fire.\n */\npublic with sharing class DutchVaultCipher {\n\n    // HARDCODED 256-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob DUTCH_VAULT_KEY =\n        Blob.valueOf('RijksVaultKeyMaterial_32_BYTES!!');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES256', DUTCH_VAULT_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES256', DUTCH_VAULT_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
+            "ApiVersion": 62,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6sYAB"
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFuYAP"
             },
-            "Id": "01pJW00000G7f6sYAB",
+            "Id": "01pJX00000TEKFuYAP",
+            "Name": "EuBankingSigner",
+            "Body": "/**\n * Hits multiple quantum-vulnerable primitives in one class so the scanner\n * must report distinct findings at distinct line numbers:\n *   - RSA-SHA512 signature (high, HNDL)\n *   - SHA-1 digest             (critical)\n *   - MD5 digest               (critical)\n */\npublic with sharing class EuBankingSigner {\n\n    private static final String CERT_NAME = 'eu_banking_signer_2026';\n\n    public static String signIsoPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA512', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    public static String weakHashSha1(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-1', Blob.valueOf(input))\n        );\n    }\n\n    public static String weakHashMd5(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('MD5', Blob.valueOf(input))\n        );\n    }\n}",
+            "ApiVersion": 62,
+            "NamespacePrefix": null
+          },
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFvYAP"
+            },
+            "Id": "01pJX00000TEKFvYAP",
+            "Name": "LegacyCipher",
+            "Body": "/**\n * Legacy AES cipher with a HARDCODED key baked into source.\n * Flagged by R-APEX-CRYPTO for hardcoded key material and\n * separately by QuantumShield's Apex pattern matcher.\n */\npublic with sharing class LegacyCipher {\n\n    // HARDCODED 128-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob HARDCODED_KEY =\n        Blob.valueOf('ThisIsA16ByteKey');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES128', HARDCODED_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES128', HARDCODED_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
+            "ApiVersion": 66,
+            "NamespacePrefix": null
+          },
+          {
+            "attributes": {
+              "type": "ApexClass",
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFwYAP"
+            },
+            "Id": "01pJX00000TEKFwYAP",
             "Name": "LegacyHashUtil",
             "Body": "/**\n * Legacy hash utility. Deliberately uses MD5 and SHA-1 to\n * exercise the QuantumShield apex-crypto weak-hash rule.\n * DO NOT use these methods for anything security-relevant.\n */\npublic with sharing class LegacyHashUtil {\n\n    /** MD5 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String md5(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('MD5', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-1 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String sha1(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-1', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-256 digest — compliant, scanner should NOT flag. */\n    public static String sha256(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-256', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n}",
-            "ApiVersion": 63,
+            "ApiVersion": 66,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6tYAB"
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFxYAP"
             },
-            "Id": "01pJW00000G7f6tYAB",
+            "Id": "01pJX00000TEKFxYAP",
             "Name": "ModernCrypto",
             "Body": "/**\n * Compliant crypto helpers. QuantumShield should NOT flag this class\n * — it's the negative control.\n */\npublic with sharing class ModernCrypto {\n\n    public static String sha256(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-256', Blob.valueOf(input))\n        );\n    }\n\n    public static String sha3(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA3-256', Blob.valueOf(input))\n        );\n    }\n\n    public static Blob encryptAes256(Blob key, Blob data) {\n        return Crypto.encryptWithManagedIV('AES256', key, data);\n    }\n}",
-            "ApiVersion": 63,
+            "ApiVersion": 66,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v66.0/tooling/sobjects/ApexClass/01pJW00000G7f6uYAB"
+              "url": "/services/data/v67.0/tooling/sobjects/ApexClass/01pJX00000TEKFyYAP"
             },
-            "Id": "01pJW00000G7f6uYAB",
+            "Id": "01pJX00000TEKFyYAP",
             "Name": "PartnerWebhookSigner",
             "Body": "/**\n * Signs outbound webhook payloads with RSA-SHA256.\n * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high, HNDL).\n */\npublic with sharing class PartnerWebhookSigner {\n\n    private static final String CERT_NAME = 'partner_signing_2026';\n\n    public static String signPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    /** ECDSA signing — also flagged by R-APEX-CRYPTO (high). */\n    public static String signPayloadEcdsa(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('ECDSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n}",
-            "ApiVersion": 63,
+            "ApiVersion": 66,
             "NamespacePrefix": null
           }
         ]
@@ -205,7 +316,7 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "SessionSettings",
-              "url": "/services/data/v66.0/tooling/sobjects/SessionSettings/bWRjLzBIRS9TZXNzaW9uU2V0dGluZ3M%3D"
+              "url": "/services/data/v67.0/tooling/sobjects/SessionSettings/bWRjLzBIRS9TZXNzaW9uU2V0dGluZ3M%3D"
             },
             "Id": "000000000000000AAA",
             "SessionTimeout": "TwoHours"

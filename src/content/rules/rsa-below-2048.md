@@ -7,6 +7,11 @@ description: RSA with key size below 2048 bits is already non-compliant today.
 implementationStatus: active
 appliesTo:
   - '*'
+overlays:
+  - pci-dss-4
+  - nis2
+  - dora
+  - eidas2
 tags:
   - rsa
   - key-size

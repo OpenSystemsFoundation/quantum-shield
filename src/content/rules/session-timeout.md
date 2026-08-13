@@ -7,6 +7,9 @@ description: Session lifetime exceeding guidance should be flagged as a supporti
 implementationStatus: active
 appliesTo:
   - '*'
+overlays:
+  - pci-dss-4
+  - hipaa
 tags:
   - session
   - token
@@ -37,5 +40,6 @@ cases:
         NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.
       citations:
         - NIST_SP_800_53
+        - NIS2
 ---
 This rule shows how operational settings can still be encoded declaratively, including small captured values like the hour count parsed from the scanned location string.

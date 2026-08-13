@@ -7,6 +7,8 @@ const execAsync = promisify(exec);
 const rootDir = process.cwd();
 const outputFile = path.join(rootDir, 'src', 'lib', 'scan', 'fixtures', 'liveOrgSnapshot.generated.ts');
 
+// Keep in exact sync with the SOQL strings in src/lib/scan/scanners.ts —
+// SnapshotSfClient resolves fixtures by exact query text.
 const QUERY_PLAN = [
   {
     kind: 'toolingQuery',
@@ -14,11 +16,11 @@ const QUERY_PLAN = [
   },
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, Name, ContactEmail, OauthConfig.ConsumerKey, OauthConfig.CertificateId FROM ConnectedApplication',
+    soql: 'SELECT Id, Name, DeveloperName, ContactEmail, RefreshTokenValidityPeriod FROM ConnectedApplication',
   },
   {
     kind: 'toolingQuery',
-    soql: 'SELECT Id, MasterLabel, KeySize FROM Certificate',
+    soql: 'SELECT Id, DeveloperName, MasterLabel FROM ExternalClientApplication',
   },
   {
     kind: 'query',
@@ -33,15 +35,15 @@ const QUERY_PLAN = [
     soql: 'SELECT Id, FullName, EndpointUrl, IsActive FROM RemoteSiteSetting',
   },
   {
-    kind: 'toolingQuery',
+    kind: 'query',
     soql: 'SELECT Id, DeveloperName, MasterLabel, RequestSignatureMethod FROM SamlSsoConfig',
   },
   {
-    kind: 'toolingQuery',
+    kind: 'query',
     soql: 'SELECT Id, DeveloperName, ProviderType, FriendlyName FROM AuthProvider',
   },
   {
-    kind: 'toolingQuery',
+    kind: 'query',
     soql: 'SELECT Id, Type, Status, Version, Source, RemoteKeyIdentifier, CreatedDate FROM TenantSecret',
   },
   {
@@ -79,7 +81,20 @@ async function getOrgSession(targetOrg) {
   if (payload.status !== 0 || !payload.result) {
     throw new Error(`Unable to read org session for ${targetOrg}`);
   }
-  return payload.result;
+  const session = payload.result;
+  // Modern sf CLI redacts the token in `org display`; fetch it explicitly.
+  if (!session.accessToken || session.accessToken.startsWith('[REDACTED')) {
+    const { stdout: tokenOut } = await execAsync(
+      `sf org auth show-access-token --target-org ${targetOrg} --json`,
+      { cwd: rootDir, maxBuffer: 1024 * 1024 },
+    );
+    const tokenPayload = JSON.parse(tokenOut);
+    session.accessToken = tokenPayload?.result?.accessToken;
+  }
+  if (!session.accessToken || session.accessToken.startsWith('[REDACTED')) {
+    throw new Error(`Unable to obtain an access token for ${targetOrg}`);
+  }
+  return session;
 }
 
 async function runRestQuery(session, kind, soql) {

@@ -1,4 +1,9 @@
-import { classifyCryptoAsset, executionEnvironmentFor } from './crypto-classification.js';
+import {
+  EXECUTION_ENVIRONMENT_DETAIL,
+  classifyCryptoAsset,
+  executionEnvironmentFor,
+} from './crypto-classification.js';
+import { QSHIELD_NAME, QSHIELD_VERSION } from '../version.js';
 import type { CbomComponent, Report } from './types.js';
 
 interface CycloneDxAlgorithmProperties {
@@ -9,10 +14,12 @@ interface CycloneDxAlgorithmProperties {
 }
 
 interface CycloneDxCryptoProperties {
+  /** CycloneDX 1.6 enum: algorithm | certificate | protocol | related-crypto-material */
   assetType: string;
   algorithmProperties?: CycloneDxAlgorithmProperties;
+  relatedCryptoMaterialProperties?: { type: string };
+  protocolProperties?: { type: string };
   oid?: string;
-  quantumSafe: boolean;
 }
 
 interface CycloneDxComponent {
@@ -21,30 +28,71 @@ interface CycloneDxComponent {
   name: string;
   description?: string;
   cryptoProperties: CycloneDxCryptoProperties;
+  /** Spec-legal name/value extension point for non-schema facts. */
+  properties?: Array<{ name: string; value: string }>;
   evidence?: {
     occurrences: Array<{ location: string }>;
   };
 }
 
+/**
+ * Maps the scanner's component type onto CycloneDX 1.6's closed assetType
+ * enum. Keys/libraries (and any future kind such as session-settings-derived
+ * material) are "related-crypto-material" — "key" and "library" are not valid
+ * assetType values.
+ */
+const ASSET_TYPE_BY_COMPONENT_TYPE: Record<string, string> = {
+  certificate: 'certificate',
+  key: 'related-crypto-material',
+  algorithm: 'algorithm',
+  protocol: 'protocol',
+  library: 'related-crypto-material',
+};
+
+function assetTypeFor(c: CbomComponent): string {
+  return ASSET_TYPE_BY_COMPONENT_TYPE[c.type] ?? 'related-crypto-material';
+}
+
+/** CycloneDX 1.6 relatedCryptoMaterialProperties.type enum values we emit. */
+function relatedMaterialTypeFor(c: CbomComponent): string {
+  return c.type === 'key' ? 'key' : 'other';
+}
+
 function componentFor(c: CbomComponent, idx: number): CycloneDxComponent {
   const cls = classifyCryptoAsset(c);
+  const assetType = assetTypeFor(c);
   const algorithmProperties: CycloneDxAlgorithmProperties = {
     primitive: cls.primitive,
     parameterSetIdentifier: c.keySize ? `${c.keySize}` : undefined,
     executionEnvironment: executionEnvironmentFor(c),
     nistQuantumSecurityLevel: cls.nistQuantumSecurityLevel,
   };
+  const cryptoProperties: CycloneDxCryptoProperties = {
+    assetType,
+    algorithmProperties,
+    oid: cls.oid,
+  };
+  if (assetType === 'related-crypto-material') {
+    cryptoProperties.relatedCryptoMaterialProperties = { type: relatedMaterialTypeFor(c) };
+  }
+  if (assetType === 'protocol') {
+    cryptoProperties.protocolProperties = {
+      type: /\bTLS\b/i.test(c.algorithm) ? 'tls' : 'other',
+    };
+  }
   return {
     type: 'cryptographic-asset',
     'bom-ref': `quantum-shield:cbom:${idx}`,
     name: c.name,
     description: cls.legalAlgorithmName,
-    cryptoProperties: {
-      assetType: c.type,
-      algorithmProperties,
-      oid: cls.oid,
-      quantumSafe: cls.quantumSafe,
-    },
+    cryptoProperties,
+    // "quantumSafe" is not part of the CycloneDX cryptoProperties schema —
+    // carry it (and the execution-environment detail) as spec-legal
+    // name/value properties instead.
+    properties: [
+      { name: 'quantumshield:quantum-safe', value: String(cls.quantumSafe) },
+      { name: 'quantumshield:execution-environment', value: EXECUTION_ENVIRONMENT_DETAIL },
+    ],
     evidence: { occurrences: [{ location: c.location }] },
   };
 }
@@ -61,9 +109,9 @@ export function buildCbomJson(report: Report): string {
       timestamp: report.generatedAt,
       tools: [
         {
-          vendor: 'QuantumShield',
+          vendor: QSHIELD_NAME,
           name: 'quantum-shield-scanner',
-          version: '0.0.1',
+          version: QSHIELD_VERSION,
         },
       ],
       component: {

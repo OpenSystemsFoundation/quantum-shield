@@ -3,7 +3,7 @@
   import { loadSession, type Session } from '@lib/auth';
   import { getReport } from '@lib/persistence/db';
   import { renderReportPdf, buildCbomJson, buildVexJson, buildFindingsCsv } from '@lib/pdf';
-  import type { Category, Finding, Report, Severity } from '@lib/pdf';
+  import type { Category, CategoryCoverage, CoverageStatus, Finding, Report, Severity } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
   import FindingDrawer from './FindingDrawer.svelte';
 
@@ -60,6 +60,13 @@
     packages: 'Packages',
   };
 
+  const COVERAGE_STATUS_LABELS: Record<CoverageStatus, string> = {
+    scanned: 'scanned',
+    partial: 'partially scanned',
+    failed: 'not scanned',
+    skipped: 'skipped',
+  };
+
   onMount(async () => {
     const s = loadSession();
     if (!s) {
@@ -81,6 +88,37 @@
   function toggleSelect(id: string) {
     selectedId = selectedId === id ? null : id;
   }
+
+  // The drawer is fixed to the bottom of the viewport; a row that sits
+  // behind it can neither be read nor clicked again to toggle. Whenever the
+  // selection changes, scroll the selected row up into the uncovered area.
+  $effect(() => {
+    if (!selectedId) return;
+    requestAnimationFrame(() => {
+      const row = document.querySelector('tr.selected');
+      if (!row) return;
+      const rect = row.getBoundingClientRect();
+      const uncovered = window.innerHeight - drawerHeight - 24;
+      if (rect.bottom > uncovered || rect.top < 0) {
+        // Centre the row in the area the drawer does not cover.
+        window.scrollBy({ top: rect.top - Math.max(uncovered - rect.height, 0) / 2, behavior: 'instant' as ScrollBehavior });
+      }
+    });
+  });
+
+  function onRowKeydown(e: KeyboardEvent, id: string) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleSelect(id);
+    }
+  }
+
+  const coverageIssues = $derived.by<CategoryCoverage[]>(() => {
+    if (!report) return [];
+    // Reports persisted before the coverage contract may lack the field.
+    const coverage: CategoryCoverage[] | undefined = report.coverage;
+    return (coverage ?? []).filter((c) => c.status !== 'scanned');
+  });
 
   const filteredFindings = $derived.by<Finding[]>(() => {
     if (!report) return [];
@@ -182,6 +220,21 @@
   function resetSev() {
     sevFilter = { critical: true, high: true, medium: true, low: true };
   }
+
+  function resetAllFilters() {
+    resetSev();
+    postureFilter = {
+      'replace-now': true,
+      'plan-2030': true,
+      'prepare-2033': true,
+      advisory: true,
+    };
+    hndlOnly = false;
+    query = '';
+    const init: Record<string, boolean> = {};
+    for (const key of Object.keys(categoryFilter)) init[key] = true;
+    categoryFilter = init;
+  }
 </script>
 
 {#if session && loaded}
@@ -191,6 +244,7 @@
       active="findings"
       crumb="Findings"
       findingsCount={report?.findings.length ?? 0}
+      latestReportScanId={report ? scanId : null}
     />
 
     <main style="min-width:0;">
@@ -202,7 +256,7 @@
         </div>
       {:else}
         <div class="findings-layout">
-          <aside class="qs-card" style="align-self:start;position:sticky;top:68px;">
+          <aside class="qs-card findings-filters">
             <div class="filter-group">
               <h5>
                 Severity
@@ -252,6 +306,27 @@
           </aside>
 
           <div class="findings-main">
+            {#if coverageIssues.length > 0}
+              <div class="coverage-note" role="status" data-testid="coverage-banner">
+                <strong>
+                  Partial scan coverage — {coverageIssues.length}
+                  {coverageIssues.length === 1 ? 'category was' : 'categories were'} not fully scanned.
+                </strong>
+                <ul>
+                  {#each coverageIssues as c (c.id)}
+                    <li>
+                      <strong>{c.label}</strong>
+                      · <span class="status-word">{COVERAGE_STATUS_LABELS[c.status]}</span>{c.detail ? ` — ${c.detail}` : ''}
+                    </li>
+                  {/each}
+                </ul>
+                <p>
+                  Zero findings in these categories does not mean they are clean — they were not (fully)
+                  scanned, so their state is unverified.
+                </p>
+              </div>
+            {/if}
+
             <div class="finding-summary">
               <div>
                 <div class="n crit-n">{sevCount('critical')}</div>
@@ -301,6 +376,30 @@
             </div>
 
             <div class="findings-table">
+              {#if report.findings.length === 0}
+                <div class="empty-state" data-testid="empty-no-findings">
+                  <div class="empty-title">No findings</div>
+                  <p>
+                    This scan raised no findings{coverageIssues.length > 0
+                      ? ' in the categories that were scanned'
+                      : ''} — the cryptographic configuration we inspected meets the current recommendations.
+                  </p>
+                  {#if coverageIssues.length > 0}
+                    <p>
+                      Caveat: {coverageIssues.length}
+                      {coverageIssues.length === 1 ? 'category was' : 'categories were'} not fully scanned
+                      (see the coverage notice above), so this is not a complete all-clear.
+                    </p>
+                  {/if}
+                </div>
+              {:else if filteredFindings.length === 0}
+                <div class="empty-state" data-testid="empty-filtered">
+                  <p>No findings match the current filters.</p>
+                  <button type="button" class="qs-btn qs-btn-sm" onclick={resetAllFilters} data-testid="reset-filters">
+                    Reset filters
+                  </button>
+                </div>
+              {:else}
               <table class="tbl" data-testid="findings-list">
                 <thead>
                   <tr>
@@ -314,9 +413,14 @@
                 </thead>
                 <tbody>
                   {#each filteredFindings as f (f.id)}
+                    <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                     <tr
                       class:selected={selected?.id === f.id}
+                      role="button"
+                      tabindex="0"
+                      aria-expanded={selected?.id === f.id}
                       onclick={() => toggleSelect(f.id)}
+                      onkeydown={(e) => onRowKeydown(e, f.id)}
                       style="cursor:pointer;"
                     >
                       <td class="mono" style="color:var(--muted);font-size:11px;">{f.id.slice(0, 18)}</td>
@@ -341,6 +445,7 @@
                   {/each}
                 </tbody>
               </table>
+              {/if}
             </div>
 
           </div>

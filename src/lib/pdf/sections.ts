@@ -14,7 +14,7 @@ import {
   spacer,
   wrapText,
 } from './layout.js';
-import type { Finding, Report, Severity } from './types.js';
+import type { CoverageStatus, Finding, Report, Severity } from './types.js';
 
 const CATEGORY_LABELS: Record<string, string> = {
   certificates: 'Certificates & keys',
@@ -150,7 +150,8 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
   spacer(cursor, 10);
 
   if (report.summary.hndlFindings > 0) {
-    const msg = `${report.summary.hndlFindings} asset${report.summary.hndlFindings === 1 ? '' : 's'} carry long-confidentiality data and are exposed to Harvest-Now-Decrypt-Later attacks today.`;
+    const n = report.summary.hndlFindings;
+    const msg = `${n} asset${n === 1 ? '' : 's'} ${n === 1 ? 'carries' : 'carry'} long-confidentiality data and ${n === 1 ? 'is' : 'are'} exposed to Harvest-Now-Decrypt-Later attacks today.`;
     drawPill(cursor, 'HNDL exposure', COLORS.critical, COLORS.white);
     const pillHeight = FONT.small + 6;
     cursor.y -= pillHeight + 8;
@@ -223,16 +224,7 @@ export function drawExecutiveSummary(cursor: Cursor, report: Report): void {
   });
 
   drawHeading(cursor, 'What we scanned', { size: FONT.h3, spaceAfter: 6 });
-  const cats = (Object.keys(report.summary.byCategory) as Array<keyof typeof report.summary.byCategory>).filter(
-    (c) => (report.summary.byCategory[c] ?? 0) > 0,
-  );
-  for (const c of cats) {
-    const count = report.summary.byCategory[c];
-    drawParagraph(cursor, `• ${CATEGORY_LABELS[c] ?? c} — ${count} finding${count === 1 ? '' : 's'}`, {
-      x: PAGE.marginX + 6,
-      color: COLORS.inkSoft,
-    });
-  }
+  drawCoverageList(cursor, report);
   spacer(cursor, 12);
 
   drawHeading(cursor, 'Posture overview', { size: FONT.h3, spaceAfter: 6 });
@@ -265,6 +257,113 @@ export function drawExecutiveSummary(cursor: Cursor, report: Report): void {
       });
     }
   }
+}
+
+const COVERAGE_STATUS_LABELS: Record<CoverageStatus, string> = {
+  scanned: 'Scanned',
+  partial: 'PARTIAL',
+  failed: 'FAILED',
+  skipped: 'SKIPPED',
+};
+
+function coverageStatusColor(status: CoverageStatus) {
+  switch (status) {
+    case 'failed':
+      return COLORS.critical;
+    case 'partial':
+      return COLORS.high;
+    case 'skipped':
+      return COLORS.medium;
+    default:
+      return COLORS.inkSoft;
+  }
+}
+
+function drawCoverageList(cursor: Cursor, report: Report): void {
+  const coverage = report.coverage ?? [];
+  if (coverage.length === 0) {
+    // Legacy reports without coverage data: fall back to finding counts.
+    const cats = (Object.keys(report.summary.byCategory) as Array<keyof typeof report.summary.byCategory>).filter(
+      (c) => (report.summary.byCategory[c] ?? 0) > 0,
+    );
+    for (const c of cats) {
+      const count = report.summary.byCategory[c];
+      drawParagraph(cursor, `• ${CATEGORY_LABELS[c] ?? c} — ${count} finding${count === 1 ? '' : 's'}`, {
+        x: PAGE.marginX + 6,
+        color: COLORS.inkSoft,
+      });
+    }
+    return;
+  }
+
+  const indent = 6;
+  const detailIndent = 18;
+  for (const cov of coverage) {
+    const counts = `${cov.assetCount} asset${cov.assetCount === 1 ? '' : 's'}, ${cov.findingCount} finding${cov.findingCount === 1 ? '' : 's'}`;
+    if (cov.status === 'scanned') {
+      drawParagraph(cursor, `• ${cov.label} — ${counts}`, {
+        x: PAGE.marginX + indent,
+        maxWidth: contentWidth() - indent,
+        color: COLORS.inkSoft,
+      });
+      continue;
+    }
+    drawParagraph(
+      cursor,
+      `• ${cov.label} — ${COVERAGE_STATUS_LABELS[cov.status]} — ${counts}`,
+      {
+        x: PAGE.marginX + indent,
+        maxWidth: contentWidth() - indent,
+        color: coverageStatusColor(cov.status),
+        font: cursor.fonts.bold,
+      },
+    );
+    if (cov.detail) {
+      drawParagraph(cursor, cov.detail, {
+        x: PAGE.marginX + detailIndent,
+        maxWidth: contentWidth() - detailIndent,
+        size: FONT.small,
+        color: COLORS.muted,
+      });
+    }
+  }
+
+  const unverified = coverage.filter((c) => c.status !== 'scanned');
+  if (unverified.length > 0) {
+    spacer(cursor, 8);
+    drawCoverageWarning(
+      cursor,
+      `${unverified.length} categor${unverified.length === 1 ? 'y was' : 'ies were'} not fully verified. Zero findings in a category marked FAILED, PARTIAL, or SKIPPED does not mean it is clean — it means the category was not (fully) scanned.`,
+    );
+  }
+}
+
+function drawCoverageWarning(cursor: Cursor, note: string): void {
+  const noteFont = cursor.fonts.bold;
+  const noteSize = FONT.small;
+  const pad = 10;
+  const lineHeight = noteSize * 1.4;
+  const lines = wrapText(note, noteFont, noteSize, contentWidth() - pad * 2);
+  const boxHeight = pad * 2 + lines.length * lineHeight;
+  ensureSpace(cursor, boxHeight + 8);
+  drawRect(cursor, contentWidth(), boxHeight, {
+    x: PAGE.marginX,
+    color: COLORS.accentSoft,
+    borderColor: COLORS.accent,
+    borderWidth: 0.75,
+  });
+  let lineY = cursor.y - pad - noteSize;
+  for (const line of lines) {
+    cursor.page.drawText(line, {
+      x: PAGE.marginX + pad,
+      y: lineY,
+      size: noteSize,
+      font: noteFont,
+      color: COLORS.critical,
+    });
+    lineY -= lineHeight;
+  }
+  cursor.y -= boxHeight + 8;
 }
 
 export function drawFindingsRegister(cursor: Cursor, report: Report): void {
@@ -328,21 +427,25 @@ function drawFindingCard(cursor: Cursor, f: Finding): void {
   }
   cursor.y -= 30;
 
-  drawText(cursor, f.title, {
-    font: cursor.fonts.bold,
-    size: FONT.h3,
-    color: COLORS.ink,
-    x: innerX,
-  });
-  cursor.y -= FONT.h3 * 1.3;
+  for (const line of wrapText(f.title, cursor.fonts.bold, FONT.h3, innerWidth)) {
+    drawText(cursor, line, {
+      font: cursor.fonts.bold,
+      size: FONT.h3,
+      color: COLORS.ink,
+      x: innerX,
+    });
+    cursor.y -= FONT.h3 * 1.3;
+  }
 
-  drawText(cursor, `${f.asset.name} — ${f.asset.identifier}`, {
-    font: cursor.fonts.regular,
-    size: FONT.small,
-    color: COLORS.muted,
-    x: innerX,
-  });
-  cursor.y -= FONT.small * 1.5;
+  for (const line of wrapText(`${f.asset.name} — ${f.asset.identifier}`, cursor.fonts.regular, FONT.small, innerWidth)) {
+    drawText(cursor, line, {
+      font: cursor.fonts.regular,
+      size: FONT.small,
+      color: COLORS.muted,
+      x: innerX,
+    });
+    cursor.y -= FONT.small * 1.5;
+  }
 
   drawKeyValue(cursor, innerX, innerWidth, 'Current', f.currentCrypto);
   drawKeyValue(cursor, innerX, innerWidth, 'Replace with', f.recommendedReplacement);
@@ -420,8 +523,8 @@ function measureFindingHeight(cursor: Cursor, f: Finding, cardWidth: number): nu
   const innerWidth = cardWidth - 13;
   const labelWidth = 72;
   let h = 4 + 30; // top padding + pills (with bottom spacing)
-  h += FONT.h3 * 1.3;
-  h += FONT.small * 1.5;
+  h += wrapText(f.title, cursor.fonts.bold, FONT.h3, innerWidth).length * FONT.h3 * 1.3;
+  h += wrapText(`${f.asset.name} — ${f.asset.identifier}`, cursor.fonts.regular, FONT.small, innerWidth).length * FONT.small * 1.5;
   const kvValues = [f.currentCrypto, f.recommendedReplacement, `${REG_STATUS_LABELS[f.regulatoryStatus]}`, capitalize(f.effort)];
   for (const v of kvValues) {
     const lines = wrapText(v, cursor.fonts.regular, FONT.small, innerWidth - labelWidth);
@@ -453,9 +556,7 @@ export function drawRegulatoryAppendix(cursor: Cursor, report: Report): void {
 
   for (const overlay of enabled) {
     drawHeading(cursor, overlay.label, { size: FONT.h3, spaceAfter: 6 });
-    const matched = report.findings.filter((f) =>
-      f.citations.some((c) => c.sourceId.toLowerCase().includes(overlay.id)),
-    );
+    const matched = report.findings.filter((f) => f.overlayIds?.includes(overlay.id));
     if (matched.length === 0) {
       drawParagraph(cursor, 'No findings mapped to this overlay.', {
         color: COLORS.muted,
@@ -469,6 +570,7 @@ export function drawRegulatoryAppendix(cursor: Cursor, report: Report): void {
         color: COLORS.inkSoft,
         size: FONT.small,
         x: PAGE.marginX + 6,
+        maxWidth: contentWidth() - 6,
       });
     }
     spacer(cursor, 10);
@@ -480,11 +582,12 @@ export function drawMethodology(cursor: Cursor, report: Report): void {
   drawHeading(cursor, 'Methodology', { size: FONT.h2, spaceAfter: 8 });
 
   drawHeading(cursor, 'Scan approach', { size: FONT.h3, spaceAfter: 4 });
-  drawParagraph(
-    cursor,
-    'QuantumShield executes entirely in the browser. The customer authenticates to their Salesforce organization via OAuth 2.0 with PKCE; all subsequent API calls travel directly from the browser to the customer instance. No organizational data is transmitted to QuantumShield servers or any third party.',
-    { color: COLORS.inkSoft, spaceAfter: 10 },
-  );
+  const gen = report.generator;
+  const approach =
+    gen.mode === 'cli'
+      ? `This report was generated by ${gen.name} v${gen.version} running as the qshield command-line tool on the operator's machine, reusing the operator's locally authenticated Salesforce CLI (sf) session. All API calls travel directly from that machine to the customer's Salesforce instance. No organizational data is transmitted to ${gen.name} servers or any third party.`
+      : `This report was generated by ${gen.name} v${gen.version} executing entirely in the browser. The customer authenticates to their Salesforce organization via the OAuth 2.0 authorization-code flow with PKCE; all subsequent API calls travel directly from the browser to the customer's Salesforce instance. No organizational data is transmitted to ${gen.name} servers or any third party.`;
+  drawParagraph(cursor, approach, { color: COLORS.inkSoft, spaceAfter: 10 });
 
   drawHeading(cursor, 'Scope', { size: FONT.h3, spaceAfter: 4 });
   drawParagraph(

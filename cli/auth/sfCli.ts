@@ -19,6 +19,9 @@ export class SfCliError extends Error {
 interface SfCliBaseResult<R> {
   status: number;
   result: R;
+  /** Populated by sf on failures (status !== 0). */
+  name?: string;
+  message?: string;
 }
 
 interface OrgDisplayResult {
@@ -33,7 +36,7 @@ interface OrgDisplayResult {
   instanceApiVersion?: string;
 }
 
-interface OrgListEntry {
+export interface OrgListEntry {
   username: string;
   orgId: string;
   instanceUrl: string;
@@ -53,6 +56,16 @@ interface OrgListResult {
   other?: OrgListEntry[];
 }
 
+interface ShowAccessTokenResult {
+  accessToken: string;
+}
+
+// Newer sf CLI releases replace the token in `org display` output with a
+// "[REDACTED] …" placeholder and only expose it via `org auth show-access-token`.
+function isRedactedToken(token: string | undefined): boolean {
+  return !token || token.startsWith('[REDACTED');
+}
+
 function notFoundError(cause: unknown): SfCliError {
   return new SfCliError(
     'Salesforce CLI (`sf`) was not found on PATH. Install it from https://developer.salesforce.com/tools/salesforcecli and run `sf org login web` before using qshield.',
@@ -67,6 +80,38 @@ function quoteForShell(value: string): string {
 
 function shellLookupFailed(message: string): boolean {
   return /not recognized as an internal or external command|could not be found/i.test(message);
+}
+
+function truncateDetail(text: string, max = 500): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/**
+ * Pulls the useful part out of a failed child-process error: sf writes
+ * human-readable failures (unknown alias, expired org, …) to stderr, and with
+ * --json also emits an error JSON body on stdout before exiting non-zero.
+ */
+function extractProcessErrorDetail(err: unknown): string | undefined {
+  const proc = err as { stderr?: string | Buffer; stdout?: string | Buffer };
+  const asText = (value?: string | Buffer): string | undefined => {
+    const raw = typeof value === 'string' ? value : value?.toString('utf8');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : undefined;
+  };
+  const stderrText = asText(proc.stderr);
+  if (stderrText) return truncateDetail(stderrText);
+  const stdoutText = asText(proc.stdout);
+  if (stdoutText) {
+    try {
+      const parsed = JSON.parse(stdoutText) as { name?: string; message?: string };
+      const detail = [parsed.name, parsed.message].filter(Boolean).join(': ');
+      if (detail) return detail;
+    } catch {
+      /* not JSON — fall through to the raw text */
+    }
+    return truncateDetail(stdoutText);
+  }
+  return undefined;
 }
 
 async function invokeSfStdout(args: string[]): Promise<string> {
@@ -106,7 +151,10 @@ async function invokeSf<R>(args: string[]): Promise<R> {
     const stdout = await invokeSfStdout(args);
     const parsed = JSON.parse(stdout) as SfCliBaseResult<R>;
     if (parsed.status !== 0) {
-      throw new SfCliError(`sf ${args.join(' ')} returned status ${parsed.status}`);
+      const detail = [parsed.name, parsed.message].filter(Boolean).join(': ');
+      throw new SfCliError(
+        `sf ${args.join(' ')} returned status ${parsed.status}${detail ? ` — ${detail}` : ''}`,
+      );
     }
     return parsed.result;
   } catch (err) {
@@ -115,7 +163,8 @@ async function invokeSf<R>(args: string[]): Promise<R> {
     if (nodeErr?.code === 'ENOENT') {
       throw notFoundError(err);
     }
-    throw new SfCliError(`Failed to invoke sf CLI: ${(err as Error).message ?? String(err)}`, err);
+    const detail = extractProcessErrorDetail(err) ?? ((err as Error).message ?? String(err));
+    throw new SfCliError(`Failed to invoke sf CLI (sf ${args.join(' ')}): ${detail}`, err);
   }
 }
 
@@ -147,6 +196,19 @@ export async function buildSessionFromSfCli(
   if (opts.targetOrg) args.push('--target-org', opts.targetOrg);
   const display = await invokeSf<OrgDisplayResult>(args);
 
+  let accessToken = display.accessToken;
+  if (isRedactedToken(accessToken)) {
+    const tokenArgs = ['org', 'auth', 'show-access-token', '--json'];
+    if (opts.targetOrg) tokenArgs.push('--target-org', opts.targetOrg);
+    const shown = await invokeSf<ShowAccessTokenResult>(tokenArgs);
+    accessToken = shown.accessToken;
+    if (isRedactedToken(accessToken)) {
+      throw new SfCliError(
+        'sf CLI did not return a usable access token for this org. Re-authenticate with `sf org login web` and try again.',
+      );
+    }
+  }
+
   let entry: OrgListEntry | undefined;
   try {
     const list = await invokeSf<OrgListResult>(['org', 'list', '--json']);
@@ -173,7 +235,7 @@ export async function buildSessionFromSfCli(
     orgType === 'sandbox' ? 'sandbox' : orgType === 'production' ? 'production' : 'custom';
 
   return {
-    accessToken: display.accessToken,
+    accessToken,
     instanceUrl: display.instanceUrl.replace(/\/$/, ''),
     identityUrl: `${display.instanceUrl.replace(/\/$/, '')}/id/${orgId}/${display.username}`,
     tokenType: 'Bearer',

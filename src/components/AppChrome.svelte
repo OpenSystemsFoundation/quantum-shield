@@ -8,8 +8,14 @@
     crumb?: string;
     scanCount?: number;
     findingsCount?: number;
+    /** Scan id of the most recent completed scan; null when no report exists yet. */
+    latestReportScanId?: string | null;
   }
-  const { session, active, crumb, scanCount = 0, findingsCount = 0 }: Props = $props();
+  const { session, active, crumb, scanCount = 0, findingsCount = 0, latestReportScanId = null }: Props = $props();
+
+  const reportHref = $derived(
+    latestReportScanId ? `/app/report/?id=${encodeURIComponent(latestReportScanId)}` : null,
+  );
 
   function signOut() {
     clearSession();
@@ -48,13 +54,22 @@
     Scans
     <span class="count">{scanCount}</span>
   </a>
-  <a class="sidenav-item" class:active={active === 'findings'} href="/app">
-    Findings
-    <span class="count">{findingsCount > 0 ? findingsCount : ''}</span>
-  </a>
-  <a class="sidenav-item" class:active={active === 'report'} href="/app">
-    Report
-  </a>
+  {#if reportHref}
+    <a class="sidenav-item" class:active={active === 'findings'} href={reportHref}>
+      Findings
+      <span class="count">{findingsCount > 0 ? findingsCount : ''}</span>
+    </a>
+    <a class="sidenav-item" class:active={active === 'report'} href={reportHref}>
+      Report
+    </a>
+  {:else}
+    <span class="sidenav-item" aria-disabled="true" title="Run a scan first to see findings">
+      Findings
+    </span>
+    <span class="sidenav-item" aria-disabled="true" title="Run a scan first to see the report">
+      Report
+    </span>
+  {/if}
 
   <div class="sidenav-section">Trust</div>
   <a class="sidenav-item" class:active={active === 'security'} href="/security">

@@ -1,0 +1,13 @@
+# Security headers for Cloudflare Pages.
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# The CSP below is described verbatim on /security — keep the two in sync.
+# connect-src allows only this origin plus Salesforce-owned hosts (login,
+# instance, and Experience Cloud domains) so the browser scanner can talk
+# directly to the user's org and nowhere else.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.my.site.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

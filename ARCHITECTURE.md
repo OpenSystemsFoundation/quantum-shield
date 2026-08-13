@@ -35,12 +35,12 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - **Scan engine:** Web Worker via Comlink. Main thread stays responsive during large-org scans.
 - **State:** Svelte stores for UI; scan engine state passed back through Comlink.
 - **Local persistence:** IndexedDB via the `idb` library for scan history and draft reports, scoped per org. sessionStorage for the OAuth access token only (dies on tab close, intentional).
-- **Charts:** Layer Cake (D3-based, Svelte-native).
 - **PDF generation:** `pdf-lib`. Pure TypeScript, framework-agnostic, isolated to `src/lib/pdf/`.
-- **Rules engine:** A versioned collection of JSON rule files, one per authoritative source, imported at build time.
+- **Rules engine:** A versioned collection of Markdown source files with structured frontmatter under `src/content/regulations/` and `src/content/rules/`, synced into generated TypeScript tables at build time.
+- **Fonts:** self-hosted woff2 subsets under `public/fonts/` — no third-party font CDN requests.
 - **Testing:** Vitest for unit tests (rules engine, parsers, scoring, PDF, CLI bridge); Playwright for browser preview and interaction flows; scratch-org smoke tests and fixture capture under `salesforce/`.
-- **Analytics:** Plausible (script-tag, no cookies, GDPR-clean). Optional; single exception to the zero-infra rule, negotiable.
-- **Build & deploy:** GitHub → Cloudflare Pages auto-build. Preview deployments per pull request.
+- **Analytics:** none. The site ships no analytics, no tracking scripts, and no third-party requests of any kind.
+- **Build & deploy:** GitHub → Cloudflare Pages auto-build. Preview deployments per pull request. Security headers (CSP and friends) ship via `public/_headers`.
 
 ---
 
@@ -54,9 +54,10 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - `/app/report` — Findings viewer, filters, remediation detail, export to PDF, keyed by `?id=`.
 - `/install` — CLI quickstart plus browser-mode setup and CORS guide.
 - `/docs/regulations/*` — Indexed regulation and standards source pages. One document per regulation/source with machine-readable frontmatter used to generate the app's citation and overlay manifest.
-- `/docs/*` — Framework mappings, scanning methodology, data handling, FAQ.
+- `/docs/rules/*` — Indexed rule catalog pages generated from the same content pipeline. (A broader methodology/FAQ docs area is planned, not implemented.)
 - `/privacy` and `/terms` — Legally required, explicit about the zero-data-transmission architecture.
 - `/security` — Trust page. CLI-vs-browser trust model, browser OAuth scopes, CSP, and what the scanner does and does not touch.
+- `/dev/*` — Development-only previews (e.g. `/dev/pdf-preview`); served by `astro dev` but stripped from production builds by a build hook in `astro.config.mjs`.
 
 ---
 
@@ -64,13 +65,13 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 1. User picks environment on `/connect`. Production uses `login.salesforce.com`; Sandbox uses `test.salesforce.com`; Custom Domain takes a `my.salesforce.com` URL.
 2. User creates an External Client App or Connected App in their own org and pastes its Consumer Key into the setup wizard. The client ID can also be preconfigured via environment variable for local development.
-3. Redirect to Salesforce `/services/oauth2/authorize` with the customer-owned `client_id`, `redirect_uri=https://our-domain/callback`, the requested scopes, and a short-lived `state` token.
+3. The app generates a PKCE code verifier and a short-lived `state` token, then redirects to Salesforce `/services/oauth2/authorize` with `response_type=code`, the customer-owned `client_id`, `redirect_uri=https://our-domain/callback`, the requested scopes, and the S256 `code_challenge` (**authorization code + PKCE** — no implicit grant; External Client Apps require PKCE and offer no implicit flow).
 4. User authenticates in Salesforce's own UI and approves the requested scopes.
-5. Salesforce redirects to `/callback` with token payload and state. The browser validates state, normalizes the returned identity information into a `Session`, and stores it locally.
+5. Salesforce redirects to `/callback` with an authorization code and state. The browser validates state, exchanges the code (plus the PKCE verifier) at `/services/oauth2/token` directly from the browser, normalizes the returned identity information into a `Session`, and stores it locally.
 6. The browser stores the active session in `sessionStorage`; the remembered environment and optional client ID live in `localStorage`.
 7. On tab close the browser session ends. Re-auth is one click. For teams that want no browser OAuth surface at all, the CLI path remains available.
 
-**Scopes requested (browser mode):** `api`, `refresh_token`, `id`. We do not request `full` or `web` scopes.
+**Scopes requested (browser mode):** `api`, `id`. We do not request `refresh_token` (nothing consumes it — sessions intentionally die with the tab), `full`, or `web`.
 
 **Client ownership:** Browser mode uses an External Client App or Connected App the customer owns. QuantumShield does not operate a shared Connected App.
 
@@ -92,8 +93,8 @@ Salesforce requires each customer org to explicitly whitelist our domain in Setu
 Strategy:
 
 - Do not block browser setup on CORS. Let sign-in succeed.
-- On the first API call, detect CORS failure via the specific error signature.
-- Show an inline panel (not a blocking modal) titled "One-time setup required." Three numbered steps with screenshots matching current Salesforce Setup UI. Copy-paste-friendly domain field.
+- On the first API call, detect CORS failure via the specific error signature (browser builds only — in Node, transport failures surface as `NetworkError`, never as a CORS diagnosis).
+- Show an inline panel (not a blocking modal) titled "One-time setup required," with numbered steps and a copy-paste-friendly domain field.
 - Provide a "Test again" button that retries the same call. Admin adds the entry, clicks test, scan proceeds.
 - Document in `/install` that this is a per-org, one-time browser-mode task. Subsequent users in the same org never see the panel.
 
@@ -101,52 +102,80 @@ Strategy:
 
 ## What we scan
 
-All read-only. All queries are scoped to metadata and configuration; we never read record data, field values, attachments, or file bodies.
+All read-only. All queries are scoped to metadata and configuration; we never read record data, field values, attachments, or file bodies. A hard rule of the engine: **scanners never fabricate crypto facts.** If the Salesforce API does not expose a key size or algorithm, the asset is inventoried without one and no rule that needs it fires.
 
 **Certificates and keys**
-- Source: `Certificate` sObject via REST, `CertificateSettings` via Metadata API.
-- Crypto elements: key algorithm (RSA, ECDSA), key size, signature hash, issuer, expiration.
-- Risk: all current asymmetric algorithms are quantum-vulnerable.
+- Source: `Certificate` via the Tooling API.
+- Crypto elements: RSA key size (`KeySize` as reported by the API), expiration.
+- Risk: quantum-vulnerable asymmetric keys; undersized RSA.
 
-**Connected Apps**
-- Source: `ConnectedApplication` via Tooling API, `ConnectedApp` metadata.
-- Crypto elements: OAuth grant types, JWT signing keys and algorithms, certificate references for SAML consumers.
-- Risk: RSA/ECDSA JWT signing; legacy OAuth flows; short key sizes.
+**Connected Apps and External Client Apps**
+- Source: `ConnectedApplication` and `ExternalClientApplication` via the Tooling API.
+- Crypto elements: **none — inventory only.** The API exposes no OAuth signing-key configuration, so no JWT key-size or algorithm claims are made; reports direct admins to review JWT certificates manually in Setup.
+- Risk: surfaced as inventory for manual review, not as findings with invented parameters.
 
 **Named Credentials and External Credentials**
-- Source: `NamedCredential`, `ExternalCredential` via Metadata API and REST.
-- Crypto elements: authentication protocol, client certificate reference, endpoint URL (TLS version of remote side inferred by probing, not scanned directly).
-- Risk: weak auth protocols, RSA client certs, HTTP (non-TLS) endpoints.
+- Source: `NamedCredential`, `ExternalCredential` via the REST API.
+- Crypto elements: endpoint URL, configured authentication protocol as reported.
+- Risk: plaintext HTTP endpoints; weak authentication protocols where the API states them.
 
-**Remote Site Settings and External Data Sources**
-- Source: `RemoteSiteSetting`, `ExternalDataSource` via Metadata API.
+**Remote Site Settings**
+- Source: `RemoteSiteSetting` via the Tooling API (active sites only).
 - Crypto elements: endpoint URLs, whether TLS is enforced.
-- Risk: plaintext HTTP endpoints, TLS version of remote side.
+- Risk: plaintext HTTP endpoints. Remote-side TLS quality is only assessed by the CLI's explicit `--probe-tls` handshake, never inferred.
 
-**Single Sign-On (SAML and OIDC)**
-- Source: `SamlSsoConfig` via Metadata API, auth provider configs.
-- Crypto elements: IdP signing certificate, assertion signing algorithm, encryption certificate.
-- Risk: SHA-1 signed assertions, RSA-1024 certs, weak XML canonicalization.
+**Single Sign-On (SAML and Auth Providers)**
+- Source: `SamlSsoConfig` and `AuthProvider` via the REST API (they are standard objects, not Tooling objects).
+- Crypto elements: SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by provider type. IdP certificate key sizes are not exposed by the API and are not guessed.
+- Risk: SHA-1 request signing; legacy providers surfaced for review.
 
 **Shield Platform Encryption**
-- Source: `EncryptionKeySettings`, `TenantSecret` history via Tooling API (limited), encryption policy via Metadata API.
-- Crypto elements: AES key size, tenant secret rotation cadence, BYOK vs Salesforce-managed.
-- Risk: AES-128 halves against Grover; long-rotation keys extend HNDL exposure.
+- Source: `TenantSecret` via the REST API.
+- Crypto elements: tenant secret type, BYOK/EKM vs Salesforce-derived key material, rotation history. Data-encryption keys derived from tenant secrets are AES-256 per platform documentation.
+- Risk: missing BYOK, stale rotation extending HNDL exposure. Orgs without Shield licensed record the category as `skipped` with an explicit reason.
 
-**Apex code (static analysis)**
-- Source: `ApexClass`, `ApexTrigger` bodies via Tooling API. Source parsed with a lightweight tokenizer in the Web Worker.
-- Crypto elements: calls to `Crypto.sign`, `Crypto.encrypt`, `Crypto.decrypt`, `Crypto.generateMac`, `Crypto.generateDigest`, and the algorithm string passed in. Also detect `EncodingUtil` calls and hardcoded secrets via pattern heuristics.
-- Risk: RSA/ECDSA signing, AES-128 usage, SHA-1/MD5 digests, hardcoded keys.
+**Apex code (pattern analysis)**
+- Source: `ApexClass` bodies via the Tooling API (unmanaged classes), analyzed with regex patterns after comment stripping (line numbers preserved; commented-out code never matches).
+- Crypto elements: `Crypto.generateDigest` with MD5/SHA-1; `Crypto.sign`/`signWithCertificate` including the `'RSA'` → RSA-SHA1 alias; `Crypto.generateMac` with HMAC-MD5/HMAC-SHA1; `Crypto.encrypt`/`decrypt`(`WithManagedIV`) with AES-128/AES-192; hardcoded AES key literals passed to `Crypto.encrypt`/`decrypt`.
+- Risk: legacy digests and MACs, weak AES, RSA-SHA1 signing, hardcoded keys. Pattern-based analysis has known false-negative modes (string-built algorithm names); this is documented, not hidden.
 
-**Session and login settings**
-- Source: `SecuritySettings`, `SessionSettings`, `PasswordPolicies` via Metadata API.
-- Crypto elements: session timeout, MFA requirements, hashing configuration where exposed.
-- Risk: weak MFA, long sessions, policy drift.
+**Session settings**
+- Source: `SessionSettings` via the Tooling API.
+- Crypto elements: session timeout configuration.
+- Risk: long session lifetimes.
 
 **Managed packages**
-- Source: `InstalledPackage`, `SubscriberPackage` via Tooling API.
-- Crypto elements: none directly, but flag packages known to contain cryptographic dependencies for supply-chain visibility.
+- Source: `InstalledSubscriberPackage` via the Tooling API.
+- Crypto elements: none directly — inventory for supply-chain visibility.
 - Risk: third-party crypto we can't inspect.
+
+**TLS endpoints (CLI only, `--probe-tls`)**
+- Source: live `node:tls` handshakes against HTTPS endpoints referenced by Named Credentials and Remote Sites.
+- Crypto elements: negotiated TLS version, cipher, key-exchange group.
+- Risk: TLS 1.2 (HNDL-exposed); TLS 1.3 without a hybrid PQC KEM. The hybrid verdict is only asserted when the local OpenSSL (≥ 3.5) could itself have negotiated a hybrid group — otherwise it is recorded as unknown rather than as a false negative.
+
+### Coverage model
+
+Every category (plus the TLS probe pass) ends a scan with an explicit status recorded in `report.coverage` and carried into all five artifacts:
+
+- `scanned` — every query for the category completed.
+- `partial` — some data was collected but at least one sub-query failed; results are incomplete.
+- `failed` — the category could not be scanned at all.
+- `skipped` — the underlying feature is not available in the org (e.g. Shield not licensed), with the reason stated.
+
+Consumers must treat anything other than `scanned` as *unverified*: zero findings in a `failed` category does not mean clean. This exists precisely so "we couldn't check" can never render as "you're fine." The CLI exits `3` on partial coverage unless `--allow-partial` is passed.
+
+### Overlay mapping
+
+Rules declare which regulatory overlays (NIS 2, DORA, PCI DSS 4, HIPAA, …) they map to, and every finding carries the union of its rules' overlay IDs regardless of scan options. Enabling overlays (`--overlay`, or the browser toggles) only scopes the report's **regulatory appendix** — it never changes which rules fire or which findings appear. Region selection (`--region`) similarly scopes regulatory framing to the cited jurisdictions without dropping universally applicable baseline rules.
+
+---
+
+## Threat model (CLI vs browser)
+
+**CLI mode.** Trust boundary is the admin's machine. The scanner inherits the `sf` CLI's stored session — QuantumShield adds no credentials, no network listener, and no telemetry. Threats considered: malicious org metadata flowing into artifacts (CSV formula injection is escaped; PDF text is rendered with a Unicode-capable font, not executed), and the TLS probe touching third-party endpoints (it performs handshakes only, with certificate validation on, and never sends the org token to probed hosts). The org token never leaves the machine except toward the org itself.
+
+**Browser mode.** Trust boundary is the browser tab plus the static host. The access token lives in `sessionStorage` (XSS-readable by design trade-off, dies with the tab; no `refresh_token` scope is requested so there is no long-lived credential to steal). Defenses: a strict CSP served via `public/_headers` whose `connect-src` is limited to Salesforce-owned domains — exfiltration targets are constrained even under script injection — plus `frame-ancestors 'none'`, self-hosted fonts, and no third-party scripts. OAuth uses authorization code + PKCE with `state` validation; the callback scrubs sensitive parameters from the URL. The static host (Cloudflare Pages) sees page requests only — never org data or tokens.
 
 ---
 
@@ -159,9 +188,8 @@ Every finding in the report cites at least one primary source below. The rules e
 - **NIST IR 8547 — Transition to Post-Quantum Cryptography Standards.** Deprecation and disallowed dates per algorithm. This is the canonical US transition timeline. Everything with a "deprecated after YYYY" or "disallowed after YYYY" finding traces here.
 - **NIST SP 800-131A Rev 3 — Transitioning the Use of Cryptographic Algorithms and Key Lengths.** Already-live transitions. SHA-1 disallowed, 1024-bit RSA disallowed, legacy modes retired. Catches compliance gaps that exist today, independent of PQC.
 - **NIST SP 800-57 Part 1 — Recommendation for Key Management.** Key length recommendations, crypto period guidance. Used for key-rotation findings.
-- **NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA), FIPS 206 draft (FN-DSA).** The approved replacements. Cited in every migration recommendation.
+- **NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA).** The approved replacements. Cited in every migration recommendation.
 - **NSA CNSA 2.0 — Commercial National Security Algorithm Suite 2.0.** Binding deadlines for US federal and defense. Pre-2027 prepare, 2027 start deploying PQC, 2030 deprecate classical, 2033 prohibit. Cited whenever a customer's output needs federal-grade language.
-- **CISA PQC Initiative guidance and the Jan 2026 hardware/software categories list.** Sector-specific priorities. Cited in the executive summary context, not individual findings.
 
 **Europe — secondary, enabled per-customer**
 
@@ -184,7 +212,7 @@ Sources are revisioned quarterly. Each source file in `src/content/regulations/`
 
 Each finding includes the specific replacement algorithm and its source document. Summary of the mapping:
 
-- **RSA (any key size) signing** → **ML-DSA (FIPS 204)** for general-purpose signatures; **SLH-DSA (FIPS 205)** when stateless hash-based assurance is preferred; **FN-DSA (FIPS 206 draft)** when compact signatures matter. CNSA 2.0 deprecates classical signatures after 2030, prohibits after 2033.
+- **RSA (any key size) signing** → **ML-DSA (FIPS 204)** for general-purpose signatures; **SLH-DSA (FIPS 205)** when stateless hash-based assurance is preferred. CNSA 2.0 deprecates classical signatures after 2030, prohibits after 2033.
 - **RSA key transport / ECDH key exchange** → **ML-KEM (FIPS 203)**. HQC added in 2025 as a second-source KEM; still in draft standardization as of the current cutoff. Same CNSA 2.0 timeline.
 - **ECDSA signing** → **ML-DSA** or **SLH-DSA**. Same timeline.
 - **AES-128** → **AES-256**. Grover's algorithm reduces symmetric security by half in theory; AES-256 retains 128-bit security margin post-quantum. Recommended now, no hard deadline.
@@ -195,7 +223,7 @@ Each finding includes the specific replacement algorithm and its source document
 
 For each finding, the report includes: current algorithm and parameters, recommended replacement, citation to the authoritative source, and one of three migration postures — **replace now** (already non-compliant), **plan for 2030** (CNSA 2.0 deprecate), **prepare for 2033** (CNSA 2.0 prohibit).
 
-Hybrid deployments (classical + PQC in parallel) are called out in the recommendation where NIST and CISA explicitly endorse them as the transition strategy.
+Hybrid deployments (classical + PQC in parallel) are called out in the recommendation where NIST guidance explicitly endorses them as the transition strategy.
 
 ---
 
@@ -218,10 +246,11 @@ Generated entirely client-side by the PDF module. Produces:
 
 - **Executive summary** (1–2 pages). Org identity, scan date, total findings by category, earliest regulatory deadline the org faces, posture in one sentence.
 - **Findings register** (variable). Every finding with asset, current crypto, replacement, citation, migration posture, effort.
-- **Regulatory appendix.** For each enabled overlay (PCI, HIPAA, CMMC, etc.), the findings that map to each requirement.
+- **Regulatory appendix.** For each enabled overlay (PCI, HIPAA, CMMC, etc.), the findings that map to each requirement via rule-declared overlay IDs.
+- **Coverage section.** Per-category scan status (`scanned` / `partial` / `failed` / `skipped`) with reasons, so partial scans are visibly partial in the auditor-facing artifact.
 - **Methodology** (1 page). What was scanned, what was not, how severity is computed, source document versions.
-- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, in CycloneDX v1.6 format with `cryptoProperties` populated (`oid`, `nistQuantumSecurityLevel`, `executionEnvironment`, `quantumSafe`), so customers can feed it into Dependency-Track, ServiceNow, or any CycloneDX-aware GRC tooling.
-- **OpenVEX document.** One statement per finding (`affected` / `under_investigation`) with action statement and HNDL impact statement, consumable by Grype / Trivy / Dependency-Track without parsing the PDF.
+- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, as a schema-valid CycloneDX v1.6 BOM: `assetType` drawn from the spec's closed enum, `cryptoProperties` populated where known (`primitive`, `oid`, `nistQuantumSecurityLevel`, `executionEnvironment`), so customers can feed it into Dependency-Track, ServiceNow, or any CycloneDX-aware GRC tooling. Fields the spec does not define (e.g. a bare `quantumSafe` boolean) are not emitted.
+- **OpenVEX document.** Spec-conformant OpenVEX v0.2.0: one statement per finding (`affected` / `under_investigation`) with the remediation in `action_statement` and rationale/HNDL context in `status_notes`. `justification` and `impact_statement` are never emitted (they are only valid on `not_affected` statements, which the scanner does not produce). Consumable by Grype / Trivy / Dependency-Track without parsing the PDF.
 
 Export options: PDF (primary), CBOM JSON (CycloneDX 1.6), OpenVEX JSON, findings CSV, raw report JSON. The web app streams these directly from the browser to the user's disk; the CLI writes them all to `./qshield-out/`. Neither path uploads anywhere.
 
@@ -263,10 +292,10 @@ The CLI exists specifically so admins can run a scan without the customer org ha
 
 - No customer data ever leaves the local execution environment. In browser mode data stays in the tab and local browser storage. In CLI mode data stays in the local Node process and the files written to disk.
 - Browser-mode OAuth access tokens are stored in sessionStorage and discarded on tab close.
-- Browser scan results live in IndexedDB on the user's device, scoped per org identity. A "Clear all data" control on the settings page wipes it. CLI runs write artifacts to `./qshield-out/`.
-- Our server logs contain only static-asset requests (Cloudflare Pages standard) and, if enabled, Plausible's page-view pings. Neither includes customer or org identifiers.
+- Browser scan results live in IndexedDB on the user's device, scoped per org identity, and can be cleared from the app overview. CLI runs write artifacts to `./qshield-out/`.
+- Our server logs contain only static-asset requests (Cloudflare Pages standard). There is no analytics of any kind, and fonts are self-hosted — a page load makes zero third-party requests.
 - In browser mode, Content Security Policy restricts `connect-src` to the Salesforce OAuth endpoints and the customer's instance URL. In CLI mode, outbound requests go directly to the customer's Salesforce instance, plus explicit TLS probe targets when `--probe-tls` is enabled.
-- Source is published on GitHub. The security page links to the repo, the build reproducibility steps, and the deployed commit SHA.
+- Source is published on GitHub (`OpenSystemsFoundation/quantum-shield`); public pages link to the repository. (Publishing the deployed commit SHA on the security page is planned, not implemented.)
 
 ---
 
@@ -288,5 +317,5 @@ The CLI exists specifically so admins can run a scan without the customer org ha
 
 - Primary customer profile — US federal (CNSA 2.0 first), US commercial (NIST + vertical overlays), or EU enterprise (BSI first). Decision drives which source files ship in v1.
 - Whether browser mode should remain a first-class scan path or settle into a lighter-weight demo and report-review surface beside the CLI.
-- Whether to enable Plausible analytics or ship fully blind.
+- Whether to ever add privacy-preserving analytics. The current answer is no — the site ships fully blind with zero third-party requests, and any change would be a documented product decision.
 - Whether to save a scan summary back into the customer's org as a custom object, giving them scan history inside Salesforce without us storing anything. Attractive but requires write scope and a managed-package-style object, which complicates the "pure external app" positioning.

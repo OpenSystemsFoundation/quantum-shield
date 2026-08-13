@@ -7,6 +7,9 @@ description: Certificates inside the 90-day window should be rotated and expired
 implementationStatus: active
 appliesTo:
   - certificate
+overlays:
+  - pci-dss-4
+  - eidas2
 tags:
   - certificate
   - rotation
@@ -31,6 +34,8 @@ cases:
         Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.
       citations:
         - NIST_SP_800_57_PT1
+        - BSI_TR_02102_1
+        - EIDAS2
         - NIST_IR_8547
       deadline: '{{computed.expiresAtDate}}'
   - when:
@@ -52,6 +57,8 @@ cases:
         Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.
       citations:
         - NIST_SP_800_57_PT1
+        - BSI_TR_02102_1
+        - EIDAS2
         - NIST_IR_8547
       deadline: '{{computed.expiresAtDate}}'
 ---

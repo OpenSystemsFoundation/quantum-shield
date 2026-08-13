@@ -8,6 +8,21 @@ function isHybridGroup(group: string | undefined): boolean {
   return HYBRID_GROUP_PATTERNS.some((p) => p.test(group));
 }
 
+/**
+ * Whether the local TLS stack can offer ML-KEM hybrid groups at all.
+ * OpenSSL gained ML-KEM (X25519MLKEM768 etc.) in 3.5; on older builds a
+ * classical negotiation tells us nothing about the server's hybrid support,
+ * so `hybridKemNegotiated` must stay undefined instead of a false negative.
+ */
+export function localStackSupportsMlKem(): boolean {
+  const raw = process.versions.openssl ?? '';
+  const match = /^(\d+)\.(\d+)/.exec(raw);
+  if (!match) return false;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return major > 3 || (major === 3 && minor >= 5);
+}
+
 export class NodeTlsProbe implements EndpointProbe {
   async probe(endpoint: string, timeoutMs = 8000): Promise<TlsProbeResult> {
     let url: URL;
@@ -42,16 +57,26 @@ export class NodeTlsProbe implements EndpointProbe {
             keyExchangeGroup = eph.name ?? eph.type;
           }
 
+          const sawHybrid = isHybridGroup(keyExchangeGroup ?? cipher?.name);
           const result: TlsProbeResult = {
             endpoint,
             ok: true,
             tlsVersion: protocol,
             cipher: cipher?.name,
-            peerCertSigAlg: peer?.asn1Curve ?? peer?.sigalg ?? undefined,
+            // @types/node's DetailedPeerCertificate omits sigalg, but Node
+            // populates it at runtime for most certs.
+            peerCertSigAlg:
+              peer?.asn1Curve ?? (peer as { sigalg?: string } | null)?.sigalg ?? undefined,
             peerCertKeyType: peer?.pubkey ? 'RSA-or-EC' : undefined,
             peerCertKeyBits: peer?.bits,
             keyExchangeGroup,
-            hybridKemNegotiated: isHybridGroup(keyExchangeGroup ?? cipher?.name),
+            // Only assert "no hybrid" when this client could have negotiated
+            // one; otherwise leave the capability unknown (undefined).
+            hybridKemNegotiated: sawHybrid
+              ? true
+              : localStackSupportsMlKem()
+                ? false
+                : undefined,
           };
           socket.end();
           resolve(result);

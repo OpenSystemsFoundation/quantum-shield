@@ -26,6 +26,44 @@ export class AuthError extends Error {
   }
 }
 
+/**
+ * Transport-level failure (DNS, connection refused, offline, proxy) in an
+ * environment where CORS cannot be the cause — i.e. the CLI. Aborts the
+ * scan rather than failing category-by-category.
+ */
+export class NetworkError extends Error {
+  constructor(
+    message: string,
+    public readonly target: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+/**
+ * Non-2xx Salesforce API response. `status` and the raw `body` excerpt let
+ * scanners distinguish "sObject not available in this org" (skip the
+ * category) from genuine failures.
+ */
+export class SalesforceApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: string,
+    public readonly url: string,
+  ) {
+    super(message);
+    this.name = 'SalesforceApiError';
+  }
+
+  /** True when the queried sObject does not exist in this org/edition. */
+  get sobjectUnavailable(): boolean {
+    return /sObject type '[^']+' is not supported|INVALID_TYPE/i.test(this.body);
+  }
+}
+
 export interface QueryResult<T> {
   totalSize: number;
   done: boolean;
@@ -63,17 +101,33 @@ export class SfClient implements ScanClient {
         headers: this.headers(init?.headers),
       });
     } catch (err) {
-      throw new CorsBlockedError(
-        `Browser blocked the request to ${url}. This usually means the customer's Salesforce org has not whitelisted the QuantumShield domain in Setup → CORS.`,
-        url,
-      );
+      // In a browser a rejected cross-origin fetch is most commonly a CORS
+      // block (the allowlist step in Setup → CORS). In Node there is no CORS
+      // — a rejected fetch is a transport problem, and telling a CLI user to
+      // reconfigure CORS would be misleading.
+      if (typeof document !== 'undefined') {
+        throw new CorsBlockedError(
+          `The browser blocked or could not complete the request to ${url}. ` +
+            `This usually means the org has not added this site's origin in Setup → CORS — ` +
+            `but it can also be a dropped network connection.`,
+          url,
+        );
+      }
+      const cause = err instanceof Error ? err.cause ?? err : err;
+      const causeMessage = cause instanceof Error ? cause.message : String(cause);
+      throw new NetworkError(`Network error reaching ${url}: ${causeMessage}`, url, err);
     }
     if (resp.status === 401) {
       throw new AuthError('Session expired or invalid. Sign in again.');
     }
     if (!resp.ok) {
       const text = await resp.text();
-      throw new Error(`Salesforce API ${resp.status} on ${url}: ${text.slice(0, 400)}`);
+      throw new SalesforceApiError(
+        `Salesforce API ${resp.status} on ${url}: ${text.slice(0, 400)}`,
+        resp.status,
+        text.slice(0, 1000),
+        url,
+      );
     }
     if (resp.status === 204) return undefined as unknown as T;
     return (await resp.json()) as T;
@@ -81,7 +135,21 @@ export class SfClient implements ScanClient {
 
   async query<T>(soql: string): Promise<QueryResult<T>> {
     const encoded = encodeURIComponent(soql);
-    let next: string | undefined = `/query?q=${encoded}`;
+    return this.runPaginated<T>(`/query?q=${encoded}`);
+  }
+
+  async toolingQuery<T>(soql: string): Promise<QueryResult<T>> {
+    const encoded = encodeURIComponent(soql);
+    return this.runPaginated<T>(`/tooling/query?q=${encoded}`);
+  }
+
+  /**
+   * Follows `nextRecordsUrl` until done. Applies to both REST and Tooling
+   * queries — Tooling also pages at 2000 records, and a large org's
+   * ApexClass list will not fit one page.
+   */
+  private async runPaginated<T>(firstPath: string): Promise<QueryResult<T>> {
+    let next: string | undefined = firstPath;
     const records: T[] = [];
     let totalSize = 0;
     while (next) {
@@ -91,11 +159,6 @@ export class SfClient implements ScanClient {
       next = chunk.done ? undefined : chunk.nextRecordsUrl;
     }
     return { totalSize, done: true, records };
-  }
-
-  async toolingQuery<T>(soql: string): Promise<QueryResult<T>> {
-    const encoded = encodeURIComponent(soql);
-    return this.run(`/tooling/query?q=${encoded}`);
   }
 
   async sobject<T>(name: string, id: string): Promise<T> {

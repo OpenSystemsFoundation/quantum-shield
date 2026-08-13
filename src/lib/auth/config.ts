@@ -1,8 +1,10 @@
 import type { AuthConfig, EnvironmentChoice, EnvironmentId } from './types.js';
 
-export const DEFAULT_API_VERSION = '63.0';
+export const DEFAULT_API_VERSION = '66.0';
 
-export const SCOPES = ['api', 'refresh_token', 'id'];
+// Browser mode is short-lived by design: no refresh_token, so no long-lived
+// credentials ever land in the browser.
+export const SCOPES = ['api', 'id'];
 
 export const ENVIRONMENTS: Record<Exclude<EnvironmentId, 'custom'>, EnvironmentChoice> = {
   production: {
@@ -59,6 +61,9 @@ export function loadAuthConfig(): AuthConfig {
 }
 
 export function isDevMock(): boolean {
+  // Hard production guard: the mock shortcut is dev-server only, regardless of
+  // what PUBLIC_DEV_MOCK is baked into the build.
+  if (!import.meta.env.DEV) return false;
   return (import.meta.env.PUBLIC_DEV_MOCK as string | undefined) === '1';
 }
 
