@@ -12,14 +12,14 @@ public with sharing class LegacyHashUtil {
         return EncodingUtil.convertToHex(digest);
     }
 
-    /** SHA-1 digest — flagged by R-APEX-CRYPTO (critical). */
+    /** SHA-1 digest — flagged by R-APEX-CRYPTO (high, deprecated). */
     public static String sha1(String input) {
         Blob raw = Blob.valueOf(input);
         Blob digest = Crypto.generateDigest('SHA-1', raw);
         return EncodingUtil.convertToHex(digest);
     }
 
-    /** SHA-256 digest — compliant, scanner should NOT flag. */
+    /** SHA-256 digest — compliant: inventoried in the CBOM, no finding. */
     public static String sha256(String input) {
         Blob raw = Blob.valueOf(input);
         Blob digest = Crypto.generateDigest('SHA-256', raw);

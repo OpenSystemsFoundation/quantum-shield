@@ -60,6 +60,35 @@ function staticRsaKexRule(): Rule {
   };
 }
 
+/**
+ * TLS 1.0 and 1.1 are not a migration item: NIST SP 800-52 Rev. 2 requires
+ * TLS 1.2 as the minimum and RFC 8996 formally deprecated both versions.
+ */
+function obsoleteTlsRule(): Rule {
+  return {
+    id: 'R-TLS-OBSOLETE',
+    description: 'Endpoint negotiated TLS 1.0 or 1.1 — obsolete protocol version.',
+    matches(asset) {
+      if (asset.kind !== 'tls-endpoint') return null;
+      if (asset.tlsVersion !== 'TLSv1' && asset.tlsVersion !== 'TLSv1.1') return null;
+      return {
+        title: `Endpoint negotiated ${asset.tlsVersion} — obsolete TLS version`,
+        severity: 'critical',
+        regulatoryStatus: 'already-non-compliant',
+        migrationPosture: 'replace-now',
+        effort: 'medium',
+        hndlExposure: true,
+        currentCrypto: `${asset.tlsVersion}${asset.algorithm ? ` · ${asset.algorithm}` : ''}`,
+        recommendedReplacement:
+          'Upgrade the endpoint to TLS 1.3 (TLS 1.2 at the very least) and disable TLS 1.0 and 1.1. Salesforce itself refuses outbound callouts below TLS 1.2, so an integration that depends on this endpoint is either already failing or reaches it another way.',
+        rationale:
+          `TLS 1.0 and 1.1 rely on SHA-1/MD5 constructions and lack modern cipher suites. NIST SP 800-52 Rev. 2 sets TLS 1.2 as the minimum and BSI TR-02102 excludes both versions. ${PROBE_VANTAGE_NOTE}`,
+        citations: cite('NIST_SP_800_52', 'BSI_TR_02102_1'),
+      };
+    },
+  };
+}
+
 function tlsVersionRule(): Rule {
   return {
     id: 'R-TLS-1_2-SNDL',
@@ -68,6 +97,8 @@ function tlsVersionRule(): Rule {
       if (asset.kind !== 'tls-endpoint') return null;
       if (!asset.tlsVersion) return null;
       if (asset.tlsVersion === 'TLSv1.3') return null;
+      // TLS 1.0 / 1.1 are reported by R-TLS-OBSOLETE instead.
+      if (asset.tlsVersion !== 'TLSv1.2') return null;
       return {
         title: `Endpoint negotiated ${asset.tlsVersion} — PQC hybrid KEMs unavailable before TLS 1.3`,
         severity: 'high',
@@ -94,14 +125,16 @@ function hybridKemRule(): Rule {
     matches(asset) {
       if (asset.kind !== 'tls-endpoint') return null;
       if (asset.tlsVersion !== 'TLSv1.3') return null;
-      // Only fire when we KNOW no hybrid KEM was negotiated. `undefined`
-      // means the probing client could not offer ML-KEM groups itself
-      // (OpenSSL < 3.5), so the endpoint's capability is unknown — reporting
-      // a finding would state a fact about the server that is actually a
+      // Only fire when we KNOW the endpoint refused hybrid KEMs: the probe
+      // offered only hybrid groups and the server refused each one.
+      // `undefined` means the probing client could not offer ML-KEM groups
+      // itself (OpenSSL < 3.5) or that handshake failed for a network
+      // reason, so the endpoint's capability is unknown — reporting a
+      // finding would state a fact about the server that is actually a
       // limitation of the client.
       if (asset.hybridKem !== false) return null;
       return {
-        title: `TLS 1.3 without hybrid KEM — still exposed to SNDL harvesting`,
+        title: `TLS 1.3 without hybrid KEM — still exposed to harvest-now-decrypt-later`,
         severity: 'medium',
         regulatoryStatus: 'advisory',
         migrationPosture: 'plan-2030',
@@ -152,5 +185,5 @@ function hybridCapableEndpointRule(): Rule {
 }
 
 export function tlsProbeRules(): Rule[] {
-  return [staticRsaKexRule(), tlsVersionRule(), hybridKemRule(), hybridCapableEndpointRule()];
+  return [staticRsaKexRule(), obsoleteTlsRule(), tlsVersionRule(), hybridKemRule(), hybridCapableEndpointRule()];
 }

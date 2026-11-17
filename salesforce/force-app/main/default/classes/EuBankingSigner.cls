@@ -1,8 +1,8 @@
 /**
  * Hits multiple quantum-vulnerable primitives in one class so the scanner
  * must report distinct findings at distinct line numbers:
- *   - RSA-SHA512 signature (high, HNDL)
- *   - SHA-1 digest             (critical)
+ *   - RSA-SHA512 signature (high; signatures are not HNDL-exposed)
+ *   - SHA-1 digest             (high, deprecated)
  *   - MD5 digest               (critical)
  */
 public with sharing class EuBankingSigner {

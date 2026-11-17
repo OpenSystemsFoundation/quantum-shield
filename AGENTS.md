@@ -148,6 +148,11 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 
 - [ ] Re-verify a full CLI scan (`--probe-tls`, `--region`, `--overlay`) against
   a live org after this wave, on a clean clone.
+- [ ] Re-verify `--probe-tls` hybrid-KEM detection against a real
+  hybrid-capable endpoint from a machine with OpenSSL ≥ 3.5 and no TLS
+  interception. The 2026-11 accuracy wave rewrote the detection (hybrid-only
+  second handshake) and covered it with unit tests, but the review sandbox's
+  egress gateway terminates TLS, so live probes there only see the gateway.
 - [ ] Verify browser OAuth (code + PKCE) against production, sandbox, and
   My Domain orgs — the review sandbox could not complete a live round-trip.
 - [x] CI trimmed to cheap checks that need no org, browser, or secrets

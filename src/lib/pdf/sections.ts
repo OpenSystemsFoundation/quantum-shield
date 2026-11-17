@@ -142,21 +142,50 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
   drawSeverityBar(cursor, report);
   spacer(cursor, 16);
 
-  drawHeading(cursor, 'Earliest regulatory deadline', { size: FONT.h3, spaceAfter: 6 });
-  const deadline = report.summary.earliestDeadline
-    ? report.summary.earliestDeadline
-    : 'No binding deadlines from enabled frameworks';
-  drawParagraph(cursor, deadline, { size: FONT.body, color: COLORS.inkSoft });
+  drawHeading(cursor, 'Deadlines', { size: FONT.h3, spaceAfter: 6 });
+  for (const line of deadlineSummaryLines(report)) {
+    drawParagraph(cursor, line, { size: FONT.body, color: COLORS.inkSoft });
+  }
   spacer(cursor, 10);
 
   if (report.summary.hndlFindings > 0) {
     const n = report.summary.hndlFindings;
-    const msg = `${n} asset${n === 1 ? '' : 's'} ${n === 1 ? 'carries' : 'carry'} long-confidentiality data and ${n === 1 ? 'is' : 'are'} exposed to Harvest-Now-Decrypt-Later attacks today.`;
+    const msg = `${n} finding${n === 1 ? '' : 's'} ${n === 1 ? 'concerns' : 'concern'} key establishment or encryption that a quantum computer could break. Traffic recorded today could be decrypted later (harvest now, decrypt later); how much that matters depends on how long the data must stay confidential.`;
     drawPill(cursor, 'HNDL exposure', COLORS.critical, COLORS.white);
     const pillHeight = FONT.small + 6;
     cursor.y -= pillHeight + 8;
     drawParagraph(cursor, msg, { color: COLORS.inkSoft, size: FONT.body });
   }
+}
+
+/**
+ * Plain statements about finding deadlines. A date in the past is not an
+ * upcoming deadline — "SHA-1 signatures disallowed since 2013" or an expired
+ * certificate is overdue — so the two are reported separately instead of
+ * printing the oldest date under an "earliest deadline" heading.
+ */
+export function deadlineSummaryLines(report: Report): string[] {
+  const today = (report.scanStartedAt || report.generatedAt).slice(0, 10);
+  const dated = report.findings
+    .map((f) => f.deadline?.slice(0, 10))
+    .filter((d): d is string => Boolean(d) && /^\d{4}-\d{2}-\d{2}$/.test(d as string));
+  const overdue = dated.filter((d) => d < today).sort();
+  const upcoming = dated.filter((d) => d >= today).sort();
+  const lines: string[] = [];
+  if (overdue.length > 0) {
+    lines.push(
+      `Already past: ${overdue.length} finding${overdue.length === 1 ? '' : 's'} with a date that has passed (oldest ${overdue[0]}). These need action now.`,
+    );
+  }
+  if (upcoming.length > 0) {
+    const first = upcoming[0];
+    const atFirst = upcoming.filter((d) => d === first).length;
+    lines.push(
+      `Next upcoming: ${first} (${atFirst} finding${atFirst === 1 ? '' : 's'}). Dates come from the cited sources or, for certificates, from the certificate's own expiry.`,
+    );
+  }
+  if (lines.length === 0) lines.push('No finding in this report carries a dated deadline.');
+  return lines;
 }
 
 function drawSeverityBar(cursor: Cursor, report: Report): void {
@@ -604,7 +633,7 @@ export function drawMethodology(cursor: Cursor, report: Report): void {
   drawHeading(cursor, 'Severity derivation', { size: FONT.h3, spaceAfter: 4 });
   drawParagraph(
     cursor,
-    'Severity is computed deterministically from (regulatory status × data sensitivity × exposure). The rule is open and reproducible; the same inputs always produce the same severity.',
+    'Severity is fixed by the rule case that matched, as written in the open rule catalog; it is not computed from the org\'s data. The same asset always gets the same severity. The scanner does not know how sensitive the data behind an asset is or how exposed it is, so treat severity as a starting priority and adjust it with that context.',
     { color: COLORS.inkSoft, spaceAfter: 10 },
   );
 
@@ -673,7 +702,7 @@ export function drawCbomAppendix(cursor: Cursor, report: Report): void {
   let i = 0;
   for (const c of report.cbom) {
     drawRow(
-      [c.name, c.type, c.algorithm, c.keySize ? String(c.keySize) : '—', c.quantumSafe ? 'Yes' : 'No'],
+      [c.name, c.type, c.algorithm, c.keySize ? String(c.keySize) : '—', c.quantumSafe === null || c.quantumSafe === undefined ? 'Unknown' : c.quantumSafe ? 'Yes' : 'No'],
       false,
       i % 2 === 0,
     );

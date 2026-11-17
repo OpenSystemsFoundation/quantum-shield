@@ -6,10 +6,7 @@ import type { CbomComponent } from './types.js';
  * FIPS-legal algorithm name, and execution environment.
  *
  * Security levels follow NIST's PQC categories:
- *   1 → AES-128 equivalent   (quantum-vulnerable classical primitives land here
- *                             or below because Shor's defeats RSA/ECC entirely,
- *                             but we report the *classical* strength so auditors
- *                             see the contrast.)
+ *   1 → AES-128 equivalent
  *   3 → AES-192 equivalent
  *   5 → AES-256 equivalent
  *
@@ -22,7 +19,8 @@ export interface CryptoClassification {
   legalAlgorithmName: string | undefined;
   oid: string | undefined;
   nistQuantumSecurityLevel: number | undefined;
-  quantumSafe: boolean;
+  /** `null` = not determinable from what the scanner observed. */
+  quantumSafe: boolean | null;
   primitive: string;
 }
 
@@ -30,6 +28,7 @@ const OID_BY_ALGORITHM: Record<string, string> = {
   // RFC 3279 / PKCS#1
   RSA: '1.2.840.113549.1.1.1',
   'RSA-SHA256': '1.2.840.113549.1.1.11',
+  'RSA-SHA384': '1.2.840.113549.1.1.12',
   'RSA-SHA512': '1.2.840.113549.1.1.13',
   'RSA-SHA1': '1.2.840.113549.1.1.5',
   // DSA
@@ -46,8 +45,17 @@ const OID_BY_ALGORITHM: Record<string, string> = {
   'SHA-256': '2.16.840.1.101.3.4.2.1',
   'SHA-384': '2.16.840.1.101.3.4.2.2',
   'SHA-512': '2.16.840.1.101.3.4.2.3',
-  // AES (CBC by default in OID registry — actual mode is carried separately)
-  AES: '2.16.840.1.101.3.4.1',
+  'SHA3-256': '2.16.840.1.101.3.4.2.8',
+  'SHA3-384': '2.16.840.1.101.3.4.2.9',
+  'SHA3-512': '2.16.840.1.101.3.4.2.10',
+  // HMAC (RFC 8018 / RFC 4231 arcs; HMAC-MD5 per RFC 2104 / IANA)
+  'HMAC-MD5': '1.3.6.1.5.5.8.1.1',
+  'HMAC-SHA1': '1.2.840.113549.2.7',
+  'HMAC-SHA256': '1.2.840.113549.2.9',
+  'HMAC-SHA512': '1.2.840.113549.2.11',
+  // AES. 2.16.840.1.101.3.4.1 is the NIST AES arc, not an algorithm; only
+  // mode-specific OIDs identify one. Apex Crypto.encrypt/decrypt always use
+  // CBC with PKCS#5 padding, so those calls get the CBC OID for their size.
   'AES-128-CBC': '2.16.840.1.101.3.4.1.2',
   'AES-192-CBC': '2.16.840.1.101.3.4.1.22',
   'AES-256-CBC': '2.16.840.1.101.3.4.1.42',
@@ -78,6 +86,7 @@ const LEGAL_NAME_BY_ALGORITHM: Record<string, string> = {
   RSA: 'RSA',
   'RSA-SHA1': 'RSA-PKCS1-v1.5-SHA1',
   'RSA-SHA256': 'RSA-PKCS1-v1.5-SHA256',
+  'RSA-SHA384': 'RSA-PKCS1-v1.5-SHA384',
   'RSA-SHA512': 'RSA-PKCS1-v1.5-SHA512',
   DSA: 'DSA',
   ECDSA: 'ECDSA',
@@ -161,24 +170,11 @@ function aesLegalName(keySize: number | undefined): string {
   return 'AES';
 }
 
-function rsaSecurityLevel(keySize: number | undefined): number {
-  // RSA is fully broken by Shor's — report classical level so consumers see
-  // transition urgency. Per NIST SP 800-57: RSA-3072 ≈ AES-128, RSA-7680 ≈
-  // AES-192, RSA-15360 ≈ AES-256. Still quantum-unsafe at every size.
-  if (!keySize) return 0;
-  if (keySize >= 15360) return 5;
-  if (keySize >= 7680) return 3;
-  if (keySize >= 3072) return 1;
-  return 0;
-}
-
-function aesSecurityLevel(keySize: number | undefined): number {
-  // Grover halves effective bits: AES-128 → 64, AES-256 → 128. Category 5 only
-  // AES-256 reaches; AES-192 → 3; AES-128 is category 1 and considered
-  // acceptable-for-now by NIST (not by CNSA 2.0).
-  if (keySize === 256) return 5;
-  if (keySize === 192) return 3;
-  if (keySize === 128) return 1;
+function aesSecurityLevel(keySize: number): number {
+  // NIST PQC categories are defined by AES key search: AES-128 → 1,
+  // AES-192 → 3, AES-256 → 5 (NIST IR 8547, Table 6).
+  if (keySize >= 256) return 5;
+  if (keySize >= 192) return 3;
   return 1;
 }
 
@@ -199,14 +195,18 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
     };
   }
 
-  // RSA family (signature or key transport) — quantum-unsafe.
+  // RSA family (signature or key transport) — quantum-unsafe. Shor's
+  // algorithm breaks RSA at every key size, so the NIST *quantum* security
+  // level is 0 for RSA-3072 and RSA-15360 alike; classical strength is not
+  // what this field reports.
   if (upper.startsWith('RSA')) {
     return {
       legalAlgorithmName: keySize ? `RSA-${keySize}` : LEGAL_NAME_BY_ALGORITHM[upper] ?? 'RSA',
       oid: OID_BY_ALGORITHM[upper] ?? OID_BY_ALGORITHM.RSA,
-      nistQuantumSecurityLevel: rsaSecurityLevel(keySize),
+      nistQuantumSecurityLevel: 0,
       quantumSafe: false,
-      primitive: component.type === 'certificate' ? 'pke' : 'signature',
+      primitive:
+        component.usage === 'encryption' || component.usage === 'key-establishment' ? 'pke' : 'signature',
     };
   }
 
@@ -251,6 +251,30 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
       primitive: 'hash',
     };
   }
+  const hmac = /^HMAC-?(MD5|SHA-?1|SHA-?256|SHA-?384|SHA-?512)$/.exec(upper);
+  if (hmac) {
+    const hash = hmac[1].replace('-', '');
+    const weak = hash === 'MD5' || hash === 'SHA1';
+    return {
+      legalAlgorithmName: `HMAC-${hash}`,
+      oid: OID_BY_ALGORITHM[`HMAC-${hash}`],
+      nistQuantumSecurityLevel: undefined,
+      // HMAC-MD5 / HMAC-SHA-1 are retired for classical reasons; their
+      // quantum resistance depends on the key length, which is not observed.
+      quantumSafe: weak ? null : true,
+      primitive: 'mac',
+    };
+  }
+  if (/^SHA3-(256|384|512)$/.test(upper)) {
+    const bits = upper.slice(5);
+    return {
+      legalAlgorithmName: upper,
+      oid: OID_BY_ALGORITHM[upper],
+      nistQuantumSecurityLevel: bits === '512' ? 5 : bits === '384' ? 4 : 2,
+      quantumSafe: true,
+      primitive: 'hash',
+    };
+  }
   if (upper === 'SHA-256') {
     return {
       legalAlgorithmName: 'SHA-256',
@@ -276,20 +300,38 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
   if (upper === 'AES') {
     return {
       legalAlgorithmName: aesLegalName(keySize),
-      oid: OID_BY_ALGORITHM.AES,
-      nistQuantumSecurityLevel: aesSecurityLevel(keySize),
-      quantumSafe: keySize === 256,
+      oid:
+        component.usage === 'encryption' && keySize
+          ? OID_BY_ALGORITHM[`AES-${keySize}-CBC`]
+          : undefined,
+      nistQuantumSecurityLevel: keySize ? aesSecurityLevel(keySize) : undefined,
+      // NIST IR 8547 places AES-128 in PQC category 1 and AES-192 in
+      // category 3: every AES key size is quantum-resistant. (CNSA 2.0
+      // requiring AES-256 is a policy choice, reported by R-AES-128.)
+      quantumSafe: keySize ? true : null,
       primitive: 'block-cipher',
     };
   }
 
-  if (upper === 'HARDCODED-AES-KEY') {
+  if (upper.startsWith('HARDCODED')) {
+    const what = upper.includes('HMAC') ? 'HMAC' : upper.includes('SIGNING') ? 'Signing' : 'AES';
     return {
-      legalAlgorithmName: 'AES (hardcoded key material)',
-      oid: OID_BY_ALGORITHM.AES,
-      nistQuantumSecurityLevel: 0,
+      legalAlgorithmName: `${what} key (hardcoded in source)`,
+      oid: undefined,
+      nistQuantumSecurityLevel: undefined,
+      // A key readable in source is compromised regardless of algorithm.
       quantumSafe: false,
-      primitive: 'block-cipher',
+      primitive: what === 'HMAC' ? 'mac' : what === 'Signing' ? 'signature' : 'block-cipher',
+    };
+  }
+
+  if (upper === 'UNRESOLVED') {
+    return {
+      legalAlgorithmName: 'Unresolved (algorithm passed as a variable)',
+      oid: undefined,
+      nistQuantumSecurityLevel: undefined,
+      quantumSafe: null,
+      primitive: 'unknown',
     };
   }
 
@@ -298,7 +340,7 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
       legalAlgorithmName: 'OAuth 2.0 (bearer)',
       oid: undefined,
       nistQuantumSecurityLevel: undefined,
-      quantumSafe: false,
+      quantumSafe: null,
       // "protocol" is not a CycloneDX 1.6 primitive — protocols are described
       // via assetType/protocolProperties instead.
       primitive: 'other',
@@ -309,7 +351,7 @@ export function classifyCryptoAsset(component: CbomComponent): CryptoClassificat
     legalAlgorithmName: algorithm,
     oid: undefined,
     nistQuantumSecurityLevel: undefined,
-    quantumSafe: component.quantumSafe,
+    quantumSafe: component.quantumSafe ?? null,
     primitive: 'other',
   };
 }

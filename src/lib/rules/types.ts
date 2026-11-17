@@ -53,7 +53,7 @@ export type RuleCondition =
       caseInsensitive?: boolean;
     }
   | {
-      field: 'signatureHash';
+      field: 'signatureHash' | 'algorithm';
       op: 'one-of';
       values: string[];
       caseInsensitive?: boolean;
@@ -68,6 +68,11 @@ export type RuleCondition =
       op: 'between';
       min: number;
       max: number;
+    }
+  | {
+      /** True when the scanner could not observe the field at all. */
+      field: 'keySize';
+      op: 'missing';
     }
   | {
       field: 'endpointUrl';

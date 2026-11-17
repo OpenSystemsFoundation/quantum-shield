@@ -6,11 +6,11 @@ implementationStatus: active
 citationKey: NIST_IR_8547
 sourceId: NIST-IR-8547
 jurisdiction: US
-documentVersion: Initial Public Draft
-retrievalUrl: https://csrc.nist.gov/pubs/ir/8547/ipd
-lastReviewed: '2026-04-21'
+documentVersion: Final (October 2026)
+retrievalUrl: https://csrc.nist.gov/pubs/ir/8547/final
+lastReviewed: '2026-11-17'
 updateCadence: monthly
-summary: NIST transition-planning draft for moving products, services, and infrastructure from quantum-vulnerable public-key algorithms to approved PQC standards.
+summary: NIST transition plan for moving products, services, and infrastructure from quantum-vulnerable public-key algorithms to approved PQC standards.
 tags:
   - reference
   - us
@@ -25,6 +25,8 @@ requirements:
     title: Plan migration for products, services, and infrastructure
     mapping: Vendor roadmap and platform-readiness guidance should cite this document when immediate replacement is unavailable.
 ---
-This is a draft, but it is the clearest NIST transition-planning document for products and services that still depend on RSA or ECC.
+NIST published the final report on 27 October 2026; it replaces the November 2024 initial public draft.
 
-Review it promptly when NIST publishes a final or revised edition so migration deadlines and language stay aligned with the current US transition plan.
+The schedule it sets: every quantum-vulnerable digital signature algorithm (RSA, ECDSA, EdDSA) and key-establishment scheme (DH, ECDH, MQV, RSA) is deprecated after 2030 and disallowed under NIST standards and guidelines after 2035, whatever the key size. Symmetric algorithms with at least 128 bits of classical security, including AES-128, are placed in post-quantum security category 1 or higher and are not on that schedule. SHA-1 is recorded as deprecated for all remaining uses and disallowed in validated modules after 2030.
+
+US federal high value assets and high impact systems have earlier dates under OMB M-26-15 (key establishment by 31 December 2030, digital signatures by 31 December 2031). Those dates bind federal agencies, not Salesforce customers in general, so rules cite the 2030 and 2035 dates.

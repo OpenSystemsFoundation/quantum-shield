@@ -1,45 +1,41 @@
 ---
 order: 90
 id: R-SESSION-LENGTH
-title: Long session lifetimes weaken upstream cryptographic protections
-summary: Advisory rule that flags long Salesforce session lifetimes.
-description: Session lifetime exceeding guidance should be flagged as a supporting exposure.
+title: Long session timeouts are a session-hygiene advisory
+summary: Low-severity hygiene note for org session timeouts of eight hours or more. Not a cryptographic finding.
+description: Flags an org-wide session timeout of eight hours or more as a hygiene advisory. It is not a cryptographic or post-quantum finding and carries no deadline.
 implementationStatus: active
 appliesTo:
-  - '*'
-overlays:
-  - pci-dss-4
-  - hipaa
+  - session-settings
 tags:
   - session
-  - token
-  - exposure-window
+  - hygiene
+  - advisory
 cases:
   - when:
-      - field: name
+      - field: kind
         op: equals
-        value: SessionSettings
+        value: session-settings
       - field: location
         op: capture-number
-        pattern: '(\d+)\s*h'
-        capture: hours
-      - field: captures.hours
+        pattern: '(\d+)\s*minutes'
+        capture: minutes
+      - field: captures.minutes
         op: gte
-        value: 8
+        value: 480
     result:
-      title: Session timeout exceeds NIST session-termination guidance
-      severity: medium
+      title: Session timeout is {{captures.minutes}} minutes — session-hygiene advisory
+      severity: low
       regulatoryStatus: advisory
       migrationPosture: advisory
       effort: low
       hndlExposure: false
-      currentCrypto: 'Session lifetime: {{captures.hours}} hours'
+      currentCrypto: 'Session timeout: {{captures.minutes}} minutes (not a cryptographic setting)'
       recommendedReplacement: >-
-        Reduce session lifetime to 2 hours with idle timeout at 30 minutes or less. Reauthenticate for privileged or high-risk actions so token theft windows do not persist for most of a workday.
+        Consider a shorter timeout in Setup → Session Settings (for example 2 hours) and require re-authentication for privileged actions. Choose the value from your own access-control policy.
       rationale: >-
-        NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.
+        A long session timeout lengthens the window in which a stolen session can be replayed. NIST SP 800-53 AC-12 requires sessions to be terminated under organisation-defined conditions; it sets no numeric limit, so this is a hygiene note rather than a compliance failure. It says nothing about the strength of the org's cryptography and is unrelated to the post-quantum transition.
       citations:
         - NIST_SP_800_53
-        - NIS2
 ---
-This rule shows how operational settings can still be encoded declaratively, including small captured values like the hour count parsed from the scanned location string.
+This rule is kept as a low-severity hygiene note. Earlier versions rated it medium, cited NIS 2 and mapped it to PCI DSS and HIPAA; none of those sources sets a session-length limit, so those claims were removed.

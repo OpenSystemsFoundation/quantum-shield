@@ -197,9 +197,10 @@
             <div class="qs-card-head"><h3>Regulatory region</h3></div>
             <div class="qs-card-body">
               <p style="margin:0 0 10px;font-size:12px;color:var(--ink-3);">
-                Pick the jurisdictions that apply to this org. Only rules citing one of
-                those authorities (plus universal INTL rules) will fire. Leave all unchecked
-                to run the full catalog.
+                Pick the jurisdictions that apply to this org. Every rule runs whatever you
+                pick; the selection only decides which authorities are cited on each finding
+                (your jurisdictions first, plus international sources). Leave all unchecked
+                to show every citation.
               </p>
               <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
                 {#each REGIONS as r (r.id)}

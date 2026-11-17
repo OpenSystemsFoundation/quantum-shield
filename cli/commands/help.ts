@@ -13,7 +13,7 @@ COMMANDS
 SCAN FLAGS
   --target-org, -o <alias|username>    Pick a specific org (else uses sf's default).
                                        Note: lowercase -o. Uppercase -O is --out.
-  --api-version <vN>                   API version (default: reuse sf's)
+  --api-version <NN.0>                 API version, e.g. 62.0 or v62.0 (default: reuse sf's)
   --out, -O <dir>                      Output directory (default: ./qshield-out).
                                        Note: uppercase -O. Lowercase -o is --target-org.
   --format <list>                      Comma-separated outputs (case-insensitive).
@@ -21,16 +21,22 @@ SCAN FLAGS
                                        Accepted: pdf | cbom | vex | csv | json
   --region <list>                      Comma-separated regulatory regions.
                                        Accepted: US, EU, NL, DE, FR, UK, INTL
-                                       When set, only rules citing the listed
-                                       jurisdictions (or INTL) fire.
+                                       Scopes the citations shown on each finding to
+                                       those jurisdictions (plus international
+                                       sources). Every rule runs for every region:
+                                       this never changes which findings you get.
   --overlay <list>                     Comma-separated regulatory overlays.
-                                       e.g. nis2,dora,gdpr,pci-dss-4,hipaa,cmmc
+                                       Accepted: gdpr, dora, nis2, eidas2, pci-dss-4,
+                                       hipaa, cmmc, swift-csp
   --probe-tls                          Probe NamedCredential / RemoteSite endpoints
-                                       for TLS version + hybrid-KEM support.
+                                       for TLS version + hybrid-KEM support. Makes up
+                                       to three handshakes per endpoint from this
+                                       machine; no request is sent after a handshake.
   --allow-partial                      Exit 0 even when some categories could not be
                                        fully scanned (coverage 'partial' or 'failed').
                                        For CI pipelines that accept partial coverage.
   --quiet, -q                          Suppress per-scanner progress and log lines.
+  --help, -h                           Show this message.
 
 ORGS FLAGS
   --json                               Print raw \`sf org list\` JSON instead of the
@@ -51,7 +57,7 @@ COVERAGE
 
 EXAMPLES
   qshield scan                                    # default org, all outputs
-  qshield scan -o prod-eu --region NL,EU          # Dutch/EU org, Dutch/EU rules only
+  qshield scan -o prod-eu --region NL,EU          # Dutch/EU org, Dutch/EU citations first
   qshield scan --format cbom,vex --probe-tls      # CBOM + VEX + endpoint probing
   qshield scan --allow-partial                    # CI-friendly: partial coverage → exit 0
   qshield orgs                                    # list what sf CLI knows about

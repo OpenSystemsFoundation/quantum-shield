@@ -19,7 +19,7 @@ QuantumShield is beta software distributed **from source**: it is not published 
 
 - **Node.js ≥ 22.12** (`node --version`)
 - **Salesforce CLI (`sf`)** installed and authenticated to the org you want to scan (CLI mode)
-- **Org permissions:** a user with API access and read access to Setup metadata (e.g. *View Setup and Configuration*; *API Enabled*). Categories your user cannot query are reported as `partial`/`failed` coverage rather than silently skipped.
+- **Org permissions:** a user with API access and read access to Setup metadata (e.g. *View Setup and Configuration*; *API Enabled*). Categories your user cannot query are reported as `partial`, `failed` or `skipped` coverage with the reason — never as scanned with zero assets. Salesforce answers the same way for "this object does not exist here" and "you may not see it", so the report says *not available or not permitted* instead of guessing.
 
 ## CLI quickstart (recommended)
 
@@ -46,7 +46,7 @@ npm run qshield -- scan --target-org prod-eu --probe-tls --region NL,EU
 ### Useful flags
 
 ```sh
-qshield scan --target-org prod-eu --region NL,EU            # scope regulatory framing to NL/EU
+qshield scan --target-org prod-eu --region NL,EU            # cite NL/EU sources first (never changes findings)
 qshield scan --format cbom,vex --probe-tls                  # CBOM + VEX + live TLS probe
 qshield scan --overlay nis2,dora,pci-dss-4                  # enable regulatory overlays
 qshield scan --out ./audit-2026Q2                           # custom output directory
@@ -60,7 +60,7 @@ qshield help                                                # all flags
 
 | Code | Meaning |
 |---|---|
-| `0` | Success. Full coverage — categories `skipped` because the org lacks the feature (e.g. Shield not licensed) still count as success. |
+| `0` | Success. Full coverage — categories `skipped` because the feature is not available to the scanning user (e.g. Shield not provisioned) still count as success. |
 | `2` | Usage error: unknown command/flag, missing or invalid flag value. |
 | `3` | Partial scan: the report was written, but at least one category has coverage `partial` or `failed`. Pass `--allow-partial` to downgrade to `0`. |
 | `10` | Authentication failure: `sf` CLI missing, unknown org alias, or expired session. |
@@ -98,17 +98,17 @@ All read-only, metadata and configuration only — never record data, field valu
 | Target | Source | What is checked |
 |---|---|---|
 | X.509 certificates (SSO, integrations) | Tooling API `Certificate` | RSA key size as reported by the API; quantum-vulnerable asymmetric keys, undersized RSA |
-| Connected Apps & External Client Apps | Tooling API `ConnectedApplication`, `ExternalClientApplication` | **Inventory only.** Salesforce's API does not expose OAuth signing-key configuration, so no key-size claims are made — review JWT certificates manually in Setup |
-| Named Credentials & External Credentials | REST API `NamedCredential`, `ExternalCredential` | Non-HTTPS endpoints; configured authentication protocol as reported by the API |
+| Connected Apps & External Client Apps | Tooling API `ConnectedApplication`; `ExternalClientApplication` via REST, falling back to Tooling | **Inventory only.** Salesforce's API does not expose OAuth signing-key configuration, so no key-size claims are made — review JWT certificates manually in Setup |
+| Named Credentials & External Credentials | REST API `NamedCredential`; Tooling API `ExternalCredential` | Non-HTTPS endpoints; configured authentication protocol as reported by the API |
 | Remote Site Settings | Tooling API `RemoteSiteSetting` | Non-HTTPS endpoints (active sites only) |
-| TLS endpoints (CLI only, `--probe-tls`) | Live `node:tls` handshake | Negotiated TLS version, cipher and key-exchange group; TLS 1.2 flagged as HNDL-exposed, static RSA key exchange (no forward secrecy) flagged as critical. Probes run from your machine, not from Salesforce, so findings note that Salesforce callouts should still be assumed classical even when the endpoint supports a hybrid KEM. Hybrid-KEM detection (X25519MLKEM768 etc.) requires a local OpenSSL ≥ 3.5 — on older stacks the verdict is recorded as *unknown*, not "no hybrid" |
-| SAML SSO & Auth Providers | REST API `SamlSsoConfig`, `AuthProvider` | SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by type. IdP certificate key sizes are not exposed by the API and are not guessed |
-| Shield Platform Encryption | REST API `TenantSecret` | Tenant secret type, BYOK/EKM vs Salesforce-derived key material, rotation history; active secrets not rotated in over 365 days are flagged. Orgs without Shield record the category as `skipped` with a note — not as clean |
-| Apex classes | Tooling API `ApexClass.Body` (pattern analysis, comments stripped) | `Crypto.generateDigest` MD5/SHA-1, `Crypto.sign`/`signWithCertificate` incl. the `'RSA'`→RSA-SHA1 alias, `Crypto.generateMac` HMAC-MD5/HMAC-SHA1, AES-128/192 encrypt/decrypt, hardcoded AES key literals |
+| TLS endpoints (CLI only, `--probe-tls`) | Live `node:tls` handshake | Negotiated TLS version, cipher and key-exchange group; TLS 1.0/1.1 flagged as critical, TLS 1.2 as HNDL-exposed, static RSA key exchange (no forward secrecy) as critical. Probes run from your machine, not from Salesforce, so findings note that Salesforce callouts should still be assumed classical even when the endpoint supports a hybrid KEM. Hybrid-KEM support (X25519MLKEM768, SecP256r1MLKEM768) is decided by a second handshake that offers only a hybrid group: success means supported, a TLS refusal means not. This needs a local OpenSSL ≥ 3.5 — on older stacks, or if that handshake fails for a network reason, the verdict is *unknown*, not "no hybrid". Certificates are not verified during the probe (so endpoints behind a private CA are still inspected); an untrusted chain is noted on the asset. Up to three handshakes per endpoint; no request is sent |
+| SAML SSO & Auth Providers | REST API `SamlSsoConfig`, `AuthProvider` | SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by type. Certificate key sizes are not exposed by the API and are not guessed: RSA request signing is reported as "RSA with an unknown key size" |
+| Shield Platform Encryption | REST API `TenantSecret` | Tenant secret type, key origin from `Source` (`HSM` Salesforce-generated, `UPLOADED` BYOK, `REMOTE` external key service), rotation history; active secrets not rotated in over 365 days are flagged. When `TenantSecret` is not available to the scanning user the category is `skipped` with a note — Shield may be unprovisioned or the user may lack *Manage Encryption Keys*; the report does not claim which |
+| Apex classes and triggers | Tooling API `ApexClass.Body`, `ApexTrigger.Body` (pattern analysis, comments stripped) | Every `System.Crypto` call that names an algorithm: `generateDigest`, `generateMac`/`verifyHMac`, `sign`/`signWithCertificate`/`signXML`, `verify`/`verifyWithCertificate` (incl. the `'RSA'`→RSA-SHA1 alias), `encrypt`/`decrypt`(`WithManagedIV`), `generateAesKey`. Findings for MD5, SHA-1, HMAC-MD5/SHA1, RSA/ECDSA signatures, AES-128/192 (low advisory) and keys hardcoded as `Blob.valueOf`/`base64Decode`/`convertFromHex` literals. Calls whose algorithm is a variable are listed as *unresolved* for manual review; SHA-256+, HMAC-SHA256+ and AES-256 calls are inventoried in the CBOM without a finding |
 | Installed managed packages | Tooling API `InstalledSubscriberPackage` | Inventory for supply-chain visibility (their crypto cannot be inspected) |
-| Session settings | Tooling API `SessionSettings` | Session timeout configuration |
+| Session settings | Tooling API `SessionSettings` | Session timeout; eight hours or more is a low-severity hygiene note, not a cryptographic finding |
 
-Coverage semantics: every category ends a scan as `scanned`, `partial` (some queries failed), `failed`, or `skipped` (feature not present in the org), and that status is carried into the PDF, CBOM, VEX, CSV, and JSON. Treat anything other than `scanned` as *unverified*.
+Coverage semantics: every category ends a scan as `scanned`, `partial` (some queries failed), `failed`, or `skipped` (not available at this API version or not permitted for the scanning user), and that status is carried into the PDF, CBOM, VEX, CSV, and JSON. Treat anything other than `scanned` as *unverified*.
 
 ---
 
@@ -117,7 +117,7 @@ Coverage semantics: every category ends a scan as `scanned`, `partial` (some que
 - **Cryptographic Bill of Materials:** OWASP CycloneDX v1.6 (ECMA-424), schema-valid, with `cryptoProperties` populated for each crypto asset.
 - **Exploitability:** OpenVEX v0.2.0, one statement per finding, consumable by Grype, Trivy, and Dependency-Track.
 - **NIST PQC:** FIPS 203 (ML-KEM / Kyber), FIPS 204 (ML-DSA / Dilithium), FIPS 205 (SLH-DSA / SPHINCS+).
-- **Regulatory sources** (25 of them, each as a canonical Markdown file under `src/content/regulations/`): NIST SP 800-131A r3, SP 800-52 r2, SP 800-53 r5, SP 800-57 Pt1 r5, IR 8547; NSA CNSA 2.0; BSI TR-02102; NCSC-NL PQC factsheet; ANSSI PQC; NCSC-UK PQC; ENISA PQC 2024; NIS Cooperation Group PQC roadmap; GDPR Art. 32; NIS 2 Art. 21; DORA Art. 9; eIDAS 2; PCI DSS 4.0; HIPAA Security Rule; CMMC 2.0; SWIFT CSP; FTC Safeguards Rule. Salesforce's own PQC white paper (March 2026) is included as a vendor reference.
+- **Regulatory sources** (25 of them, each as a canonical Markdown file under `src/content/regulations/`): NIST SP 800-131A r2 (Rev. 3 is still a draft), SP 800-52 r2, SP 800-53 r5, SP 800-57 Pt1 r5, IR 8547 (final, October 2026); NSA CNSA 2.0; BSI TR-02102; NCSC-NL PQC factsheet; ANSSI PQC; NCSC-UK PQC; ENISA PQC 2024; NIS Cooperation Group PQC roadmap; GDPR Art. 32; NIS 2 Art. 21; DORA Art. 9; eIDAS 2; PCI DSS 4.0; HIPAA Security Rule; CMMC 2.0; SWIFT CSP; FTC Safeguards Rule. Salesforce's own PQC white paper (March 2026) is included as a vendor reference.
 
 Rules are generated from the Markdown frontmatter at build time (`npm run sync:regulations`); hand-edits to `src/lib/rules/*.generated.ts` are overwritten. Rules declare which regulatory overlays they map to; enabling overlays (`--overlay`) scopes the report's regulatory appendix and never changes which rules fire.
 
@@ -126,9 +126,10 @@ Rules are generated from the Markdown frontmatter at build time (`npm run sync:r
 ## Beta caveats
 
 - **Advisory output.** Findings are decision support, not legal advice or compliance attestation. Human review is required.
-- **Detection is best-effort.** Apex analysis is pattern-based (comments are stripped, but string-built algorithm names and unusual formatting can evade it). False positives and negatives are possible.
+- **Detection is best-effort.** Apex analysis is pattern-based. Comments are stripped and constants are resolved, but an algorithm name built at run time cannot be resolved — those calls are reported as *unresolved* rather than missed. Crypto reached through a wrapper class is only seen where the wrapper calls `Crypto`. False positives and negatives are possible.
+- **HNDL flag scope.** Harvest-now-decrypt-later is flagged only for key establishment and encryption (probed TLS endpoints). Signing certificates, SAML/OIDC signing and Apex signatures are quantum-vulnerable but not harvestable, and are not flagged.
 - **API-bounded surface.** Salesforce does not expose everything (Connected App signing keys, IdP certificate details); those surfaces are inventoried, not assessed. Check the coverage section of every report.
-- **TLS probe caveat.** Hybrid-KEM verdicts depend on the local OpenSSL (≥ 3.5 required); older stacks report *unknown*.
+- **TLS probe caveat.** Hybrid-KEM verdicts depend on the local OpenSSL (≥ 3.5 required); older stacks report *unknown*. Behind a TLS-intercepting proxy the probe sees the proxy, not the endpoint.
 - **From-source beta.** No npm package, no signed release binaries yet; pin the commit you audit.
 - Support is best-effort via [GitHub issues](https://github.com/OpenSystemsFoundation/quantum-shield/issues).
 
