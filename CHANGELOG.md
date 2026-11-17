@@ -4,6 +4,31 @@ All notable changes to QuantumShield are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`R-TLS-RSA-KEX`** (critical): flags probed TLS 1.2 endpoints that negotiate
+  static RSA key exchange (no forward secrecy), the first thing Salesforce's
+  PQC white paper tells customers to remove.
+- **`R-TLS-HYBRID-SF-SIDE`** (low, advisory): a hybrid-KEM-capable endpoint
+  used to produce no finding, which read as "clean". It now records that the
+  probe ran from the scanning machine and Salesforce callouts should still be
+  assumed classical.
+- **`R-SHIELD-KEY-ROTATION`** (low, advisory): active Shield tenant secrets not
+  rotated in over 365 days. Shield assets now carry `lastRotatedAt`.
+- **Sources:** Salesforce "Cryptographic Agility" PQC white paper (2026-03-18)
+  and the NIS Cooperation Group's EU PQC implementation roadmap (2025-06).
+
+### Changed
+
+- TLS probe findings explain that probes run from the scanning machine, not
+  from Salesforce, and cite the new sources.
+- CI runs only cheap checks that need no Salesforce org, browser, or secrets.
+  The advisory Playwright job was removed (run `npm run test:e2e` locally); a
+  check that the committed generated rule/regulation tables are fresh was
+  added, plus a job timeout and cancellation of superseded runs.
+
 ## [0.1.0] — 2026-08-13
 
 First versioned release: the production-readiness wave. Findings and

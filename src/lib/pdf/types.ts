@@ -82,6 +82,8 @@ export interface CryptoAsset {
   kexGroup?: string;
   /** True if probe saw a negotiated PQC hybrid KEM */
   hybridKem?: boolean;
+  /** ISO timestamp of the most recent key rotation (e.g. Shield tenant secret version) */
+  lastRotatedAt?: string;
 }
 
 export interface Finding {

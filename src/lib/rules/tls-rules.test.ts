@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CryptoAsset } from '@lib/pdf';
 import { evaluate } from './engine.js';
-import { tlsProbeRules } from './tls-rules.js';
+import { isStaticRsaKeyExchange, tlsProbeRules } from './tls-rules.js';
 
 const ctx = { scanId: 'scan-test', now: new Date('2026-04-22T00:00:00.000Z') };
 
@@ -23,13 +23,47 @@ describe('tls probe rules', () => {
     expect(findings[0].hndlExposure).toBe(true);
   });
 
-  it('does not flag TLS 1.3 endpoints with a negotiated hybrid KEM', () => {
+  it('records hybrid-capable TLS 1.3 endpoints as a low advisory about the Salesforce side', () => {
     const findings = evaluate(
       probedAsset({ tlsVersion: 'TLSv1.3', kexGroup: 'X25519MLKEM768', hybridKem: true }),
       tlsProbeRules(),
       ctx,
     );
-    expect(findings).toHaveLength(0);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].id).toContain('R-TLS-HYBRID-SF-SIDE');
+    expect(findings[0].severity).toBe('low');
+    expect(findings[0].hndlExposure).toBe(false);
+    expect(findings[0].rationale).toMatch(/not by Salesforce/);
+  });
+
+  it('flags static RSA key exchange on TLS 1.2 as critical, alongside the TLS 1.2 finding', () => {
+    const findings = evaluate(
+      probedAsset({ tlsVersion: 'TLSv1.2', algorithm: 'AES256-GCM-SHA384' }),
+      tlsProbeRules(),
+      ctx,
+    );
+    expect(findings).toHaveLength(2);
+    const rsa = findings.find((f) => f.id.includes('R-TLS-RSA-KEX'));
+    expect(rsa?.severity).toBe('critical');
+    expect(rsa?.migrationPosture).toBe('replace-now');
+  });
+
+  it('does not flag ECDHE suites on TLS 1.2 as static RSA', () => {
+    const findings = evaluate(
+      probedAsset({ tlsVersion: 'TLSv1.2', algorithm: 'ECDHE-RSA-AES256-GCM-SHA384' }),
+      tlsProbeRules(),
+      ctx,
+    );
+    expect(findings.map((f) => f.id).some((id) => id.includes('R-TLS-RSA-KEX'))).toBe(false);
+  });
+
+  it('classifies cipher names by key exchange', () => {
+    expect(isStaticRsaKeyExchange('AES128-SHA')).toBe(true);
+    expect(isStaticRsaKeyExchange('DES-CBC3-SHA')).toBe(true);
+    expect(isStaticRsaKeyExchange('ECDHE-ECDSA-AES128-GCM-SHA256')).toBe(false);
+    expect(isStaticRsaKeyExchange('DHE-RSA-AES256-GCM-SHA384')).toBe(false);
+    expect(isStaticRsaKeyExchange('TLS_AES_256_GCM_SHA384')).toBe(false);
+    expect(isStaticRsaKeyExchange(undefined)).toBe(false);
   });
 
   it('flags TLS 1.3 without a hybrid KEM at medium severity', () => {
