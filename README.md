@@ -17,7 +17,7 @@ QuantumShield is beta software distributed **from source**: it is not published 
 
 ## Prerequisites
 
-- **Node.js ≥ 22.12** (`node --version`)
+- **Node.js ≥ 22.23.4** (`node --version`)
 - **Salesforce CLI (`sf`)** installed and authenticated to the org you want to scan (CLI mode)
 - **Org permissions:** a user with API access and read access to Setup metadata (e.g. *View Setup and Configuration*; *API Enabled*). Categories your user cannot query are reported as `partial`, `failed` or `skipped` coverage with the reason — never as scanned with zero assets. Salesforce answers the same way for "this object does not exist here" and "you may not see it", so the report says *not available or not permitted* instead of guessing.
 
@@ -147,7 +147,7 @@ Cloudflare builds from GitHub (Workers Builds) with:
 |---|---|
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
-| Build variable `NODE_VERSION` | `22.12.0` (or newer 22.x) |
+| Build variable `NODE_VERSION` | 22.23.4 or newer (Astro 7.4 requires it) |
 | Build variable `PUBLIC_APP_ORIGIN` | `https://quantumshield.opensf.foundation` |
 | Build variable `PUBLIC_SF_API_VERSION` | `66.0` |
 
