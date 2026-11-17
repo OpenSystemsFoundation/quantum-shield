@@ -15,9 +15,24 @@ import {
   type ParsedArgs,
 } from '../args.js';
 import { NodeTlsProbe } from '../probe/tls.js';
+import { GENERATED_OVERLAYS } from '../../src/lib/rules/regulations.generated.js';
+import { helpCommand } from './help.js';
 
 const VALID_FORMATS = new Set(['pdf', 'cbom', 'vex', 'csv', 'json']);
 const VALID_REGIONS = new Set(['US', 'EU', 'NL', 'DE', 'FR', 'UK', 'INTL']);
+
+const VALID_OVERLAYS: ReadonlySet<string> = new Set(GENERATED_OVERLAYS.map((o) => o.id));
+
+/**
+ * Accepts `62`, `62.0`, `v62` or `v62.0` and returns the `NN.0` form the
+ * Salesforce REST path needs. Anything else is a usage error: an unvalidated
+ * value ends up in the request URL and every category then fails with an
+ * opaque 404.
+ */
+export function normaliseApiVersion(raw: string): string | undefined {
+  const match = /^v?(\d{2,3})(?:\.0)?$/i.exec(raw.trim());
+  return match ? `${match[1]}.0` : undefined;
+}
 
 const SCAN_FLAGS: FlagSpec[] = [
   { name: 'target-org', short: 'o', takesValue: true },
@@ -29,6 +44,7 @@ const SCAN_FLAGS: FlagSpec[] = [
   { name: 'probe-tls' },
   { name: 'allow-partial' },
   { name: 'quiet', short: 'q' },
+  { name: 'help', short: 'h' },
 ];
 
 function writeLine(stream: NodeJS.WriteStream, msg: string): void {
@@ -81,6 +97,10 @@ export function evaluateCoverage(coverage: CategoryCoverage[], allowPartial: boo
 
 export async function scanCommand(args: ParsedArgs): Promise<number> {
   const parsed = parseFlagsStrict(args.rest, SCAN_FLAGS);
+  // `qshield scan --help` is a request for help, not a usage error.
+  if (getBool(parsed.flags, 'help')) {
+    return helpCommand();
+  }
   for (const warning of parsed.warnings) {
     writeLine(stderr, `warn: ${warning}`);
   }
@@ -118,9 +138,20 @@ export async function scanCommand(args: ParsedArgs): Promise<number> {
     }
   }
 
-  const overlays = getList(flags, 'overlay', []);
+  const overlays = getList(flags, 'overlay', []).map((o) => o.toLowerCase());
+  for (const o of overlays) {
+    if (!VALID_OVERLAYS.has(o)) {
+      writeLine(stderr, `unknown --overlay value: ${o}. Valid: ${[...VALID_OVERLAYS].join(', ')}`);
+      return 2;
+    }
+  }
   const targetOrg = getString(flags, 'target-org');
-  const apiVersion = getString(flags, 'api-version');
+  const rawApiVersion = getString(flags, 'api-version');
+  const apiVersion = rawApiVersion === undefined ? undefined : normaliseApiVersion(rawApiVersion);
+  if (rawApiVersion !== undefined && apiVersion === undefined) {
+    writeLine(stderr, `invalid --api-version value: ${rawApiVersion}. Expected a version such as 62.0 or v62.0`);
+    return 2;
+  }
   const outDir = getString(flags, 'out') ?? './qshield-out';
   const probe = getBool(flags, 'probe-tls');
   const allowPartial = getBool(flags, 'allow-partial');

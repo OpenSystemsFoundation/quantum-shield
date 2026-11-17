@@ -55,3 +55,20 @@ describe('evaluateCoverage', () => {
     expect(result.incomplete).toEqual([failedEntry]);
   });
 });
+
+describe('normaliseApiVersion', () => {
+  it('accepts the common spellings and returns NN.0', async () => {
+    const { normaliseApiVersion } = await import('./scan.js');
+    expect(normaliseApiVersion('62.0')).toBe('62.0');
+    expect(normaliseApiVersion('v62.0')).toBe('62.0');
+    expect(normaliseApiVersion('62')).toBe('62.0');
+    expect(normaliseApiVersion('V66')).toBe('66.0');
+  });
+
+  it('rejects anything that would corrupt the request path', async () => {
+    const { normaliseApiVersion } = await import('./scan.js');
+    for (const bad of ['', 'latest', '62.5', '6', '62.0/../x', 'v']) {
+      expect(normaliseApiVersion(bad), bad).toBeUndefined();
+    }
+  });
+});
