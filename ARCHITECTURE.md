@@ -157,6 +157,17 @@ All read-only. All queries are scoped to metadata and configuration; we never re
 - Crypto elements: negotiated TLS version, cipher, key-exchange group.
 - Risk: TLS 1.0/1.1 (already non-compliant); TLS 1.2 (HNDL-exposed); TLS 1.3 without a hybrid PQC KEM. The hybrid verdict comes from a second handshake that offers only a hybrid group (X25519MLKEM768, then SecP256r1MLKEM768): success means supported, a TLS-level refusal of both means not supported. The name of the group negotiated in the first handshake is not relied on, because OpenSSL ≥ 3.5 reports an empty ephemeral-key record for ML-KEM hybrids. Without a local OpenSSL ≥ 3.5, or when the second handshake fails for a network reason, the verdict is unknown rather than a false negative. The probe does not verify certificates — it inspects the handshake and sends no request — so endpoints behind a private CA are assessed; an untrusted chain is recorded on the asset.
 
+**Data sensitivity (for prioritisation)**
+- Source: `EntityDefinition` (which standard sensitive objects and custom objects exist), `FieldDefinition.SecurityClassification` and `ComplianceGroup` (field classification), `EntityParticle.IsEncrypted` (Shield-encrypted fields), all via the REST query API and filtered by object, as these objects require. Metadata only; no records are read. Salesforce returns only fields visible to the scanning user.
+- Output: `report.dataProfile`, used to estimate how long the data behind each asset must stay secret. It produces no findings. Recorded in coverage as `data-profile`; when it fails the scan still succeeds (and the CLI does not exit `3`), and priorities fall back to best-practice defaults.
+
+**HTTPS callouts**
+- Every HTTPS Named Credential, Remote Site and External Data Source gets `R-CALLOUT-HNDL`: Salesforce agrees callout session keys classically, so recorded traffic is harvestable. Whether that matters is decided by prioritisation.
+
+### Prioritisation
+
+`src/lib/priority/` ranks findings after the rules run. For each finding: shelf life (years the data at stake must stay secret, from its data tier; zero when the finding is not harvestable) plus migration time (years, from the rule's effort) minus years until the assumed quantum year gives a margin. Classically weak findings (`replace-now` or `already-non-compliant`) are `act-now`; otherwise a positive margin is `act-now`, a margin within three years is `plan`, the rest `monitor`. Ranking is by band, then data tier, then margin, then severity. The scan stores priorities under default assumptions (`report.riskAssumptions`); the browser recomputes them from `report.dataProfile` with the reader's assumptions and per-asset overrides (kept in `localStorage`), and every export uses the recomputed copy. Severity is unchanged. Public method page: `/docs/prioritization`.
+
 ### Coverage model
 
 Every category (plus the TLS probe pass) ends a scan with an explicit status recorded in `report.coverage` and carried into all five artifacts:

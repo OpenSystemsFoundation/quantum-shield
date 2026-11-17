@@ -22,5 +22,15 @@ describe('mock scan fixtures', () => {
     expect(report.cbom.length).toBeGreaterThan(0);
     expect(events.some((event) => event.type === 'asset')).toBe(true);
     expect(events.some((event) => event.type === 'completed')).toBe(true);
+
+    // Data-sensitivity pass ran against the captured metadata and every
+    // finding is ranked, most urgent first.
+    expect(report.coverage.find((c) => c.id === 'data-profile')?.status).toBe('scanned');
+    expect(report.dataProfile?.entries.some((e) => e.sources.includes('classification'))).toBe(true);
+    expect(report.riskAssumptions?.quantumYear).toBe(2033);
+    expect(report.findings.map((f) => f.priority?.rank)).toEqual(report.findings.map((_, i) => i + 1));
+    const counts = report.summary.priorityCounts!;
+    expect(counts['act-now'] + counts.plan + counts.monitor).toBe(report.findings.length);
+    expect(report.findings[0].priority?.band).toBe('act-now');
   });
 });

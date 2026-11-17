@@ -127,6 +127,72 @@ export interface Finding {
    * regulatory appendix filters to the enabled subset.
    */
   overlayIds?: string[];
+  /**
+   * Harvest-now-decrypt-later priority under the report's risk assumptions.
+   * Absent on reports written before prioritisation existed; viewers
+   * recompute it from `report.dataProfile` and the reader's assumptions.
+   */
+  priority?: FindingPriority;
+}
+
+/**
+ * How long data must stay confidential, from least to most demanding.
+ * `none` means the finding does not protect stored or transmitted data at all
+ * (signatures, certificates), so shelf life does not apply.
+ */
+export type DataTier = 'none' | 'ephemeral' | 'internal' | 'confidential' | 'personal' | 'regulated';
+
+export type PriorityBand = 'act-now' | 'plan' | 'monitor';
+
+export interface RiskAssumptions {
+  /** Year a cryptographically relevant quantum computer is assumed to exist. */
+  quantumYear: number;
+  /** Years each data tier must stay confidential (shelf life). */
+  shelfLifeYears: Record<Exclude<DataTier, 'none'>, number>;
+  /** Years a fix takes, by finding effort. */
+  migrationYears: Record<EffortLevel, number>;
+}
+
+export interface FindingPriority {
+  band: PriorityBand;
+  /** 1 = most urgent; ranks are unique within a report. */
+  rank: number;
+  dataTier: DataTier;
+  /** Where the data tier came from, in plain words. */
+  dataBasis: string;
+  shelfLifeYears: number;
+  migrationYears: number;
+  yearsToQuantum: number;
+  /**
+   * shelf life + migration − years to quantum. Positive: data recorded today
+   * would still need protecting after a quantum computer could read it.
+   */
+  marginYears: number;
+  reason: string;
+}
+
+export type SensitiveDataSource = 'classification' | 'compliance' | 'shield' | 'default';
+
+export interface SensitiveDataEntry {
+  object: string;
+  /** Field API name; absent for object-level best-practice defaults. */
+  field?: string;
+  tier: Exclude<DataTier, 'none'>;
+  sources: SensitiveDataSource[];
+  /** e.g. "Restricted · PII;GDPR · Shield-encrypted" */
+  detail: string;
+}
+
+export interface DataProfile {
+  entries: SensitiveDataEntry[];
+  /** Highest tier found anywhere in the org (drives integrations by default). */
+  orgTier: Exclude<DataTier, 'none'>;
+  /** Highest tier among Shield-encrypted fields, when any were visible. */
+  shieldTier?: Exclude<DataTier, 'none'>;
+  /** Objects inspected for classification / encryption. */
+  objectsInspected: number;
+  /** User-facing caveat, e.g. field-level security limits. */
+  note?: string;
 }
 
 export interface OverlayScope {
@@ -182,8 +248,11 @@ export interface CbomComponent {
 export type CoverageStatus = 'scanned' | 'partial' | 'failed' | 'skipped';
 
 export interface CategoryCoverage {
-  /** Category id, or 'tls-probe' for the live TLS probing pass. */
-  id: Category | 'tls-probe';
+  /**
+   * Category id, 'tls-probe' for the live TLS probing pass, or
+   * 'data-profile' for the data-sensitivity pass that feeds prioritisation.
+   */
+  id: Category | 'tls-probe' | 'data-profile';
   label: string;
   status: CoverageStatus;
   assetCount: number;
@@ -226,6 +295,12 @@ export interface Report {
     earliestDeadline?: string;
     postureSentence: string;
     hndlFindings: number;
+    /** Findings per priority band under `riskAssumptions`. */
+    priorityCounts?: Record<PriorityBand, number>;
   };
+  /** Sensitive data the scan found (or assumed) — input to prioritisation. */
+  dataProfile?: DataProfile;
+  /** Assumptions the stored `finding.priority` values were computed with. */
+  riskAssumptions?: RiskAssumptions;
   cbom: CbomComponent[];
 }

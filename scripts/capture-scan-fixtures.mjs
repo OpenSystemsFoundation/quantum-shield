@@ -180,6 +180,23 @@ for (const plan of QUERY_PLAN) {
   responses.push(await runRestQuery(session, plan.kind, plan.soql));
 }
 
+// The data-sensitivity pass builds its queries from what the org contains
+// (which objects exist), so instead of a fixed plan it is run for real
+// against a recording client. Requires running this script with tsx (the
+// npm script does), which can import the TypeScript source.
+const { buildDataProfile } = await import('../src/lib/priority/profile.ts');
+const record = async (kind, soql) => {
+  const response = await runRestQuery(session, kind, soql);
+  if (!responses.some((r) => r.kind === kind && r.soql === soql)) responses.push(response);
+  if (response.outcome === 'error') throw new Error(response.error);
+  return response.result;
+};
+await buildDataProfile({
+  query: (soql) => record('query', soql),
+  toolingQuery: (soql) => record('toolingQuery', soql),
+  sobject: () => Promise.reject(new Error('not recorded')),
+});
+
 const snapshot = {
   capturedAt: new Date().toISOString(),
   source: {

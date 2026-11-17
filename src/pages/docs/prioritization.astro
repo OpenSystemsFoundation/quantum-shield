@@ -1,0 +1,234 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import {
+  DEFAULT_ASSUMPTIONS,
+  QUANTUM_YEAR_PRESETS,
+  STANDARD_OBJECT_DEFAULTS,
+  TIER_DESCRIPTIONS,
+  TIER_LABELS,
+  TIER_ORDER,
+} from '@lib/priority/defaults';
+import { PLAN_WINDOW_YEARS } from '@lib/priority/score';
+
+const tiers = [...TIER_ORDER].reverse();
+const defaults = Object.entries(STANDARD_OBJECT_DEFAULTS);
+const a = DEFAULT_ASSUMPTIONS;
+const exampleYears = a.quantumYear - 2026;
+---
+
+<Shell
+  title="How findings are prioritised — QuantumShield"
+  description="How QuantumShield ranks post-quantum findings: how long your data must stay secret, plus how long the fix takes, against the year a quantum computer could break today's encryption."
+>
+  <SiteHeader />
+  <main class="prio">
+    <section class="intro">
+      <div class="tiny-caps" style="color:var(--navy-600);">Method</div>
+      <h1 class="display">How findings are prioritised</h1>
+      <p class="lede">
+        Not every quantum-vulnerable setting is equally urgent. A key exchange that protects health records is a
+        bigger problem than one that protects a session cookie, even if the cryptography is the same. QuantumShield
+        ranks every finding by what is at stake in <em>your</em> org.
+      </p>
+    </section>
+
+    <section class="qs-card block">
+      <h2 class="display">Harvest now, decrypt later</h2>
+      <p>
+        An attacker does not need a quantum computer today to steal today's data. They can record encrypted traffic
+        now, store it, and decrypt it once a quantum computer can break the key exchange that protected it. So the
+        question is not "when will quantum computers arrive?" but "will this data still matter when they do?"
+      </p>
+      <h3>The test</h3>
+      <div class="formula" role="img" aria-label="Years the data must stay secret plus years the fix takes, compared with years until a quantum computer can break it">
+        <span><strong>How long the data must stay secret</strong></span>
+        <span class="op">+</span>
+        <span><strong>How long the fix takes</strong></span>
+        <span class="op">&gt;</span>
+        <span><strong>Time until a quantum computer can break it</strong></span>
+      </div>
+      <p>
+        If the left side is bigger, you are already late: data sent today will still need protecting after it can be
+        read. The difference in years is the finding's <em>margin</em>.
+      </p>
+      <ul class="bands">
+        <li><span class="pill crit">Act now</span> The margin is positive, or the setting is weak or non-compliant today regardless of quantum computing (plaintext HTTP, MD5, hardcoded keys).</li>
+        <li><span class="pill med">Plan</span> Less than {PLAN_WINDOW_YEARS} years of slack: smaller than a typical budget and procurement cycle.</li>
+        <li><span class="pill low">Monitor</span> Comfortable slack under the current assumptions.</li>
+      </ul>
+      <p>
+        Signatures and certificates are different: a recorded signature cannot be "decrypted later". For them only
+        the fix time counts, because the replacement must be in place before forgery becomes possible.
+      </p>
+    </section>
+
+    <section class="qs-card block">
+      <h2 class="display">Where the numbers come from</h2>
+      <h3>How long the data must stay secret</h3>
+      <p>The scan reads, from metadata only and never from records:</p>
+      <ol>
+        <li><strong>Your field classification.</strong> Salesforce's Data Sensitivity Level (Restricted and Mission Critical count as long-lived regulated data) and Compliance Categorization (PII, GDPR and CCPA count as personal data; HIPAA, PCI and GLBA as long-lived regulated data).</li>
+        <li><strong>Shield Platform Encryption.</strong> Fields you chose to encrypt count as at least confidential, and decide what each Shield key protects.</li>
+        <li><strong>Best-practice defaults</strong> for standard and industry objects that exist in the org, when nothing is classified (table below).</li>
+      </ol>
+      <p>
+        An integration is assumed to carry the most sensitive data found in the org. You know better: open a finding in
+        the app and say what that integration really carries. Salesforce only shows fields the scanning user can see, so
+        treat the profile as a lower bound.
+      </p>
+      <h3>How long the fix takes</h3>
+      <p>Each rule states the effort of its fix. By default low effort takes {a.migrationYears.low} year, medium {a.migrationYears.medium} years and high {a.migrationYears.high} years, including testing and coordination with partners.</p>
+      <h3>When a quantum computer can break it</h3>
+      <p>
+        Nobody knows. QuantumShield assumes <strong>{a.quantumYear}</strong> by default and offers{' '}
+        {QUANTUM_YEAR_PRESETS.map((p, i) => `${i ? (i === QUANTUM_YEAR_PRESETS.length - 1 ? ' and ' : ', ') : ''}${p.year} (${p.label.toLowerCase()})`).join('')}{' '}
+        presets. NIST plans to deprecate today's public-key algorithms after 2030 and disallow them after 2035
+        (NIST IR 8547). Change the year in the app and the ranking updates instantly.
+      </p>
+    </section>
+
+    <section class="qs-card block">
+      <h2 class="display">Default assumptions</h2>
+      <p>All of these can be changed in the findings view. Your changes stay in your browser.</p>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th scope="col">Data</th><th scope="col">Stays secret for</th><th scope="col">Examples</th></tr></thead>
+          <tbody>
+            {tiers.map((t) => (
+              <tr><td>{TIER_LABELS[t]}</td><td class="mono">{a.shelfLifeYears[t]} years</td><td>{TIER_DESCRIPTIONS[t]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h3>Worked example</h3>
+      <p>
+        A named credential sends Contact records, which include a national ID number classified as Restricted, to a
+        partner over TLS. Salesforce callouts still agree their keys with classical cryptography. The data must stay
+        secret for {a.shelfLifeYears.regulated} years and the fix is high effort ({a.migrationYears.high} years). Scanned in 2026
+        with {a.quantumYear} as the quantum year: {a.shelfLifeYears.regulated} + {a.migrationYears.high} = {a.shelfLifeYears.regulated + a.migrationYears.high} years, against {exampleYears} years left.
+        The margin is {a.shelfLifeYears.regulated + a.migrationYears.high - exampleYears} years, so it's <strong>Act now</strong>: trim what the integration sends.
+        If you mark that integration as carrying only short-lived data, the same finding drops to{' '}
+        {a.shelfLifeYears.ephemeral + a.migrationYears.high - exampleYears > -PLAN_WINDOW_YEARS ? 'Plan' : 'Monitor'}.
+      </p>
+    </section>
+
+    <section class="qs-card block">
+      <h2 class="display">Best-practice defaults for standard objects</h2>
+      <p>Used only when the object exists in the scanned org. Objects that exist in every org whether used or not (such as PaymentMethod) are left out, because their presence says nothing about your data.</p>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th scope="col">Object</th><th scope="col">Assumed data</th><th scope="col">Why</th></tr></thead>
+          <tbody>
+            {defaults.map(([name, d]) => (
+              <tr><td class="mono">{name}</td><td>{TIER_LABELS[d.tier]}</td><td>{d.why}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="qs-card block">
+      <h2 class="display">What this does not do</h2>
+      <ul>
+        <li>It does not read record data. Field classification and encryption are metadata.</li>
+        <li>It does not change severity, which stays as written in the <a href="/docs/rules">rule catalog</a>. Priority is a separate ranking on top.</li>
+        <li>It does not predict when quantum computers will arrive. It shows how your priorities change with that one assumption.</li>
+      </ul>
+    </section>
+  </main>
+  <SiteFooter />
+</Shell>
+
+<style>
+  .prio {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 28px 72px;
+    display: grid;
+    gap: 22px;
+  }
+  .intro {
+    display: grid;
+    gap: 10px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+  .lede {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .block {
+    padding: 22px 24px;
+    display: grid;
+    gap: 10px;
+  }
+  .block h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .block h3 {
+    font-size: 15px;
+    margin: 8px 0 0;
+  }
+  .block p,
+  .block li {
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .block ul,
+  .block ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+  }
+  .formula {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 14px;
+  }
+  .formula .op {
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--navy-600);
+  }
+  .bands {
+    list-style: none;
+    padding-left: 0 !important;
+  }
+  .bands .pill {
+    margin-right: 6px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .table-wrap table {
+    width: 100%;
+    font-size: 13px;
+  }
+  @media (max-width: 600px) {
+    .prio {
+      padding: 28px 16px 56px;
+    }
+    h1 {
+      font-size: 28px;
+    }
+  }
+</style>

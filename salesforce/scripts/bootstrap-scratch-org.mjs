@@ -100,6 +100,9 @@ await runSf([
 ]);
 
 await runSf(['project', 'deploy', 'start', '--target-org', options.alias, '--wait', '20']);
+// Field-level security on the classified seed fields, so the scan (which
+// only sees fields the user can access) picks up their classification.
+await runSf(['org', 'assign', 'permset', '--name', 'QuantumShield_Seed_Data', '--target-org', options.alias]);
 
 const passwordRaw = await runSf(['org', 'generate', 'password', '--target-org', options.alias, '--json'], {
   silent: true,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import type { Category, Finding, Severity } from '@lib/pdf';
+  import { TIER_LABELS, TIER_ORDER, canOverrideTier, type StoredTier } from '@lib/priority';
 
   interface Props {
     finding: Finding | null;
@@ -8,8 +9,15 @@
     height?: number;
     /** Set in sample-report mode so the detail is labelled even when it covers the page banner. */
     sampleLabel?: string;
+    quantumYear?: number;
+    /** The reader's override of what this finding's asset carries, if any. */
+    tierOverride?: StoredTier;
+    onTierChange?: (tier: StoredTier | '') => void;
   }
-  let { finding, onClose, height = $bindable(360), sampleLabel }: Props = $props();
+  let { finding, onClose, height = $bindable(360), sampleLabel, quantumYear, tierOverride, onTierChange }: Props = $props();
+
+  const BAND_LABELS = { 'act-now': 'Act now', plan: 'Plan', monitor: 'Monitor' } as const;
+  const BAND_CLASS = { 'act-now': 'crit', plan: 'med', monitor: 'low' } as const;
 
   const HEIGHT_KEY = 'qs.findingDrawer.height.v1';
   const MIN_HEIGHT = 180;
@@ -17,7 +25,7 @@
 
   /** Below this width the drawer is a full-screen modal dialog. */
   const MOBILE_QUERY = '(max-width: 700px)';
-  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
   let isMobile = $state(false);
   let mobileQuery: MediaQueryList | null = null;
@@ -236,6 +244,7 @@
     <div class="qs-drawer-head">
       <div class="title-row" style="flex:1;min-width:0;">
         {#if sampleLabel}<span class="pill sample" data-testid="drawer-sample-label">{sampleLabel}</span>{/if}
+        {#if finding.priority}<span class={`pill ${BAND_CLASS[finding.priority.band]}`} data-testid="drawer-priority">#{finding.priority.rank} {BAND_LABELS[finding.priority.band]}</span>{/if}
         <span class={`pill ${SEV_CLASS[finding.severity]}`}>{finding.severity}</span>
         <span class="pill adv">{POSTURE_LABELS[finding.migrationPosture]}</span>
         {#if finding.hndlExposure}<span class="pill hndl">HNDL</span>{/if}
@@ -265,6 +274,34 @@
 
     <div class="qs-drawer-body">
       <div class="detail-grid">
+        {#if finding.priority}
+          {@const p = finding.priority}
+          <div class="detail-cell" style="grid-column:1 / -1;border-right:none;" data-testid="drawer-priority-detail">
+            <h5>Why this priority</h5>
+            <div class="margin-math">
+              <span><strong>{p.shelfLifeYears}</strong> yrs data must stay secret</span>
+              <span class="op">+</span>
+              <span><strong>{p.migrationYears}</strong> yrs to fix ({finding.effort} effort)</span>
+              <span class="op">vs</span>
+              <span><strong>{p.yearsToQuantum}</strong> yrs until a quantum computer ({quantumYear ?? '—'})</span>
+              <span class="op">=</span>
+              <span class={p.marginYears > 0 ? 'exposed' : ''}><strong>{p.marginYears > 0 ? `${p.marginYears} yrs exposed` : `${Math.abs(p.marginYears)} yrs slack`}</strong></span>
+            </div>
+            <div style="font-size:12.5px;color:var(--ink-2);line-height:1.5;margin-top:6px;">{p.reason}</div>
+            <div style="font-size:12px;color:var(--ink-3);line-height:1.5;margin-top:4px;">Data at stake: {TIER_LABELS[p.dataTier]}. {p.dataBasis}.</div>
+            {#if onTierChange && canOverrideTier(finding.asset)}
+              <label class="tier-pick">
+                What does {finding.asset.kind === 'shield-key' ? 'this key protect' : 'this carry'}?
+                <select value={tierOverride ?? ''} onchange={(e) => onTierChange((e.currentTarget as HTMLSelectElement).value as StoredTier | '')} data-testid="drawer-tier">
+                  <option value="">Assume (default)</option>
+                  {#each [...TIER_ORDER].reverse() as t}
+                    <option value={t}>{TIER_LABELS[t]}</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
+          </div>
+        {/if}
         <div class="detail-cell">
           <h5>Current cryptography</h5>
           <div class="big">{finding.currentCrypto}</div>
@@ -389,6 +426,38 @@
 
   :global(.qs-drawer .detail-grid) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .margin-math {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .margin-math .op {
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .margin-math .exposed {
+    color: var(--crit);
+  }
+  .tier-pick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .tier-pick select {
+    font: inherit;
+    padding: 2px 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink);
   }
   .pill.sample {
     background: var(--warn-bg);
