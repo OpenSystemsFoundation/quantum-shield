@@ -308,11 +308,14 @@
             <div class="filter-group">
               <h5>Migration posture</h5>
               {#each Object.entries(POSTURE_LABELS) as [key, label]}
-                <label>
-                  <input type="checkbox" bind:checked={postureFilter[key]} />
-                  <span>{label}</span>
-                  <span class="ct">{postureCount(key)}</span>
-                </label>
+                <!-- No current rule uses prepare-2033; keep it only for older saved reports. -->
+                {#if key !== 'prepare-2033' || postureCount(key) > 0}
+                  <label>
+                    <input type="checkbox" bind:checked={postureFilter[key]} />
+                    <span>{label}</span>
+                    <span class="ct">{postureCount(key)}</span>
+                  </label>
+                {/if}
               {/each}
             </div>
 
