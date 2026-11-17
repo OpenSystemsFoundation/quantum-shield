@@ -94,8 +94,8 @@ export const GENERATED_CITATIONS = {
     "sourceId": "NCSC-NL-PQC-factsheet",
     "title": "Factsheet Post-Quantum Cryptography",
     "jurisdiction": "NL",
-    "documentVersion": "2024",
-    "retrievalUrl": "https://www.ncsc.nl/documenten/factsheets/2023/januari/17/factsheet-pqc"
+    "documentVersion": "2023-11",
+    "retrievalUrl": "https://www.ncsc.nl/documenten/publicaties/2023/november/8/factsheet-postquantumcryptografie"
   },
   "ANSSI_PQC": {
     "sourceId": "ANSSI-PQC-notes",
@@ -287,8 +287,8 @@ export const GENERATED_SOURCE_VERSIONS = [
   },
   {
     "sourceId": "NCSC-NL-PQC-factsheet",
-    "documentVersion": "2024",
-    "retrievedAt": "2026-04-21"
+    "documentVersion": "2023-11",
+    "retrievedAt": "2026-11-17"
   },
   {
     "sourceId": "ANSSI-PQC-notes",

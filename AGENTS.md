@@ -104,7 +104,7 @@ polish task, or a verification step that has been completed.
 - **Release stage:** beta candidate
 - **Primary product path:** local `qshield` CLI
 - **Secondary product path:** static browser app for setup, scans, and report review
-- **Last reviewed:** 2026-08-13 (production-readiness wave; audit trail in
+- **Last reviewed:** 2026-11-17 (live-org review: browser sign-in fixed, rule accuracy, Astro 7; earlier 2026-08-13 wave in
   [docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md))
 - **Version:** 0.1.0 (`package.json` ↔ `src/lib/version.ts`, enforced by CI)
 
@@ -146,21 +146,25 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 
 ## Open Items Toward Public Beta
 
-- [ ] Re-verify a full CLI scan (`--probe-tls`, `--region`, `--overlay`) against
-  a live org after this wave, on a clean clone.
+- [x] Full CLI scan (`--probe-tls`, `--region`) against a live scratch org on a
+  clean clone (2026-11-17; `qs-review` from the OpenSF Dev Hub).
 - [ ] Re-verify `--probe-tls` hybrid-KEM detection against a real
   hybrid-capable endpoint from a machine with OpenSSL ≥ 3.5 and no TLS
   interception. The 2026-11 accuracy wave rewrote the detection (hybrid-only
   second handshake) and covered it with unit tests, but the review sandbox's
   egress gateway terminates TLS, so live probes there only see the gateway.
-- [ ] Verify browser OAuth (code + PKCE) against production, sandbox, and
-  My Domain orgs — the review sandbox could not complete a live round-trip.
+- [x] Browser OAuth (code + PKCE) verified end to end against a scratch org's
+  My Domain, both locally and on the Cloudflare preview with the real CSP:
+  sign-in, scan, all five downloads, sign-out revoke (token rejected after).
+  2026-11-17.
+- [ ] Repeat the browser round-trip against a production org and a sandbox
+  (same code path as the scratch org's My Domain; not yet exercised).
 - [x] CI trimmed to cheap checks that need no org, browser, or secrets
   (typecheck, unit tests, build, generated-table and version gates). The
   Playwright e2e suite is local-only: run `npm run test:e2e` before releases.
-- [ ] Remaining npm advisories (5: 1 low, 2 moderate, 2 high as of 2026-08-13)
-  all require the Astro 7 major upgrade; schedule it deliberately, not via
-  `npm audit fix --force`.
+- [x] Astro 7 upgrade done 2026-11-17. `npm audit --omit=dev`: 1 low
+  (esbuild dev server on Windows). Dev-only: zod under `@google/design.md`
+  (no fix yet).
 - [x] Production domain is `https://quantumshield.opensf.foundation`, deployed
   as a static-assets Cloudflare Worker (`wrangler.jsonc`). PDF metadata points
   at the GitHub repository, not the domain.
@@ -170,19 +174,24 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 - [ ] Decide whether the beta ever publishes to npm; until then the repo stays
   `"private": true` and installs from source (documented in README).
 - [ ] Rotate the committed scratch-org ECA consumer key under `salesforce/`
-  and keep seed metadata credential-free.
+  and keep seed metadata credential-free. (A consumer key is not a secret and
+  only exists in short-lived scratch orgs, so this is hygiene, not a leak.)
+- [ ] The GitHub repository is private, so every "source", licence, issues and
+  `git clone` link on the site and in the README returns 404 for the public.
+  Make it public or change the links before promoting the site.
 
 ## Release Readiness Definition
 
 Beta is ready when:
 
 - [ ] Clean clone setup succeeds from README instructions.
-- [ ] CLI scan works against at least one real Salesforce org.
-- [ ] Browser setup and scan work against at least one real Salesforce org.
-- [ ] All public links resolve.
+- [x] CLI scan works against at least one real Salesforce org.
+- [x] Browser setup and scan work against at least one real Salesforce org.
+- [ ] All public links resolve. (2026-11-17: GitHub links 404 while the repo
+  is private; a few regulator sites block automated checks with 403.)
 - [x] README, architecture, install, and security docs match the implemented app
   (reconciled 2026-08-13).
 - [x] Legal/privacy posture is explicit (LICENSE, NOTICE, /privacy, /terms).
-- [ ] Unit, type/check, and build pass in CI; key e2e tests pass locally.
+- [x] Unit, type/check, and build pass in CI; key e2e tests pass locally.
 - [x] Known limitations are documented in user-facing language (README beta
   caveats, /terms).
