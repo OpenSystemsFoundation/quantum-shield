@@ -1,6 +1,10 @@
 import type { Finding, Report } from './types.js';
 
 const HEADERS = [
+  'priorityRank',
+  'priorityBand',
+  'dataTier',
+  'marginYears',
   'id',
   'category',
   'severity',
@@ -25,6 +29,10 @@ export function buildFindingsCsv(report: Report): string {
 function row(f: Finding): string {
   const sources = f.citations.map((c) => `${c.sourceId} ${c.section ?? ''}`.trim()).join(' | ');
   const fields = [
+    f.priority ? String(f.priority.rank) : '',
+    f.priority?.band ?? '',
+    f.priority?.dataTier ?? '',
+    f.priority ? String(f.priority.marginYears) : '',
     f.id,
     f.category,
     f.severity,

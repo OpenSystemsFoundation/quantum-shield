@@ -1,4 +1,5 @@
 import type { Citation, CryptoAsset, Finding, Jurisdiction } from '@lib/pdf';
+import { isHttpsCallout } from './callout-rules.js';
 import { buildRuleCatalog } from './catalog.js';
 import { GENERATED_RULE_DEFS } from './rule-catalog.generated.js';
 import type { Rule, RuleContext } from './types.js';
@@ -19,7 +20,7 @@ export type { Rule, RuleContext, RuleMatchResult } from './types.js';
 export function isHndlRelevant(asset: CryptoAsset): boolean {
   if (asset.usage === 'encryption' || asset.usage === 'key-establishment') return true;
   if (asset.usage) return false;
-  return asset.kind === 'tls-endpoint';
+  return asset.kind === 'tls-endpoint' || isHttpsCallout(asset);
 }
 
 function idFor(ruleId: string, asset: CryptoAsset): string {

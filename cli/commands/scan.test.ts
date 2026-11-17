@@ -124,8 +124,8 @@ describe('rankFindings', () => {
 
   it('prefers an explicit priority rank when findings carry one', async () => {
     const { rankFindings } = await import('./scan.js');
-    const a = { ...finding('a', 'critical'), priority: { rank: 2 } };
-    const b = { ...finding('b', 'low'), priority: { rank: 1 } };
+    const a = { ...finding('a', 'critical'), priority: { rank: 2 } } as unknown as Finding;
+    const b = { ...finding('b', 'low'), priority: { rank: 1 } } as unknown as Finding;
     expect(rankFindings([a, b]).map((f) => f.id)).toEqual(['b', 'a']);
   });
 });

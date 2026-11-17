@@ -212,7 +212,7 @@
     if (!session) return;
     status = 'complete';
     const coverage: CategoryCoverage[] | undefined = report.coverage;
-    coverageIssues = (coverage ?? []).filter((c) => c.status !== 'scanned');
+    coverageIssues = (coverage ?? []).filter((c) => c.status !== 'scanned' && c.id !== 'data-profile');
     pushLog('ok', `scan complete · ${report.summary.totalFindings} findings`);
     for (const c of coverageIssues) {
       pushLog('warn', `${c.label} · ${c.status}${c.detail ? ` — ${c.detail}` : ''}`);

@@ -20,6 +20,7 @@ import {
 import { NodeTlsProbe } from '../probe/tls.js';
 import { GENERATED_OVERLAYS } from '../../src/lib/rules/regulations.generated.js';
 import { helpCommand } from './help.js';
+import { DEFAULT_ASSUMPTIONS } from '../../src/lib/priority/defaults.js';
 
 const VALID_FORMATS = new Set(['pdf', 'cbom', 'vex', 'csv', 'json']);
 const VALID_REGIONS = new Set(['US', 'EU', 'NL', 'DE', 'FR', 'UK', 'INTL']);
@@ -45,6 +46,7 @@ const SCAN_FLAGS: FlagSpec[] = [
   { name: 'region', takesValue: true },
   { name: 'overlay', takesValue: true },
   { name: 'probe-tls' },
+  { name: 'quantum-year', takesValue: true },
   { name: 'allow-partial' },
   { name: 'fail-on', takesValue: true },
   { name: 'json' },
@@ -91,7 +93,11 @@ export interface CoverageAssessment {
  * coverage. 'skipped' categories (feature not present in the org) are fine.
  */
 export function evaluateCoverage(coverage: CategoryCoverage[], allowPartial: boolean): CoverageAssessment {
-  const incomplete = coverage.filter((c) => c.status === 'failed' || c.status === 'partial');
+  // The data-sensitivity pass only feeds prioritisation (it falls back to
+  // best-practice defaults); it never hides a cryptographic finding.
+  const incomplete = coverage.filter(
+    (c) => c.id !== 'data-profile' && (c.status === 'failed' || c.status === 'partial'),
+  );
   const skipped = coverage.filter((c) => c.status === 'skipped');
   return {
     incomplete,
@@ -118,17 +124,14 @@ export function findingsAtOrAbove(findings: Finding[], threshold: Severity): Fin
   return findings.filter((f) => severityRank(f.severity) <= limit);
 }
 
-/** Optional per-finding priority, added by the risk-prioritization work. */
-type MaybePrioritised = Finding & { priority?: { rank?: number; band?: string } };
-
 /**
  * Most urgent findings first: by explicit priority rank when the report has
  * one, then severity, then harvest-now-decrypt-later exposure, then deadline.
  */
 export function rankFindings(findings: Finding[]): Finding[] {
   return [...findings].sort((a, b) => {
-    const pa = (a as MaybePrioritised).priority?.rank;
-    const pb = (b as MaybePrioritised).priority?.rank;
+    const pa = a.priority?.rank;
+    const pb = b.priority?.rank;
     if (pa !== undefined && pb !== undefined && pa !== pb) return pa - pb;
     const sev = severityRank(a.severity) - severityRank(b.severity);
     if (sev !== 0) return sev;
@@ -195,7 +198,7 @@ export function buildScanResult(input: ScanResultInput) {
         migrationPosture: f.migrationPosture,
         effort: f.effort,
         deadline: f.deadline ?? null,
-        ...((f as MaybePrioritised).priority ? { priority: (f as MaybePrioritised).priority } : {}),
+        ...(f.priority ? { priority: f.priority } : {}),
       })),
   };
 }
@@ -270,6 +273,11 @@ export async function scanCommand(args: ParsedArgs): Promise<number> {
   if (rawFailOn !== undefined && failOn === undefined) {
     return usage(`invalid --fail-on value: ${rawFailOn}. Valid: critical, high, medium, low`);
   }
+  const rawQuantumYear = getString(flags, 'quantum-year');
+  const quantumYear = rawQuantumYear === undefined ? DEFAULT_ASSUMPTIONS.quantumYear : Number(rawQuantumYear);
+  if (!/^\d{4}$/.test(rawQuantumYear ?? '2033') || quantumYear < 2024 || quantumYear > 2100) {
+    return usage(`invalid --quantum-year value: ${rawQuantumYear}. Expected a year between 2024 and 2100`);
+  }
   const outDir = getString(flags, 'out') ?? './qshield-out';
   const probe = getBool(flags, 'probe-tls');
   const allowPartial = getBool(flags, 'allow-partial');
@@ -329,6 +337,7 @@ export async function scanCommand(args: ParsedArgs): Promise<number> {
         regions: regionsUpper,
         probeTls: probe,
         generatorMode: 'cli',
+        riskAssumptions: { ...DEFAULT_ASSUMPTIONS, quantumYear },
       },
       emit,
       probe ? new NodeTlsProbe() : undefined,

@@ -143,6 +143,10 @@ All read-only, metadata and configuration only — never record data, field valu
 | Installed managed packages | Tooling API `InstalledSubscriberPackage` | Inventory for supply-chain visibility (their crypto cannot be inspected) |
 | Session settings | Tooling API `SessionSettings` | Session timeout; eight hours or more is a low-severity hygiene note, not a cryptographic finding |
 
+### Prioritisation
+
+Every finding is ranked **Act now**, **Plan** or **Monitor** by what is at stake in the scanned org: how long the data an asset protects must stay secret, plus how long the fix takes, compared with the year a quantum computer is assumed to break today's public-key cryptography (default 2033, `--quantum-year` in the CLI, editable in the browser). Data sensitivity comes from metadata only: field Data Sensitivity Level and Compliance Categorization (`FieldDefinition`), Shield-encrypted fields (`EntityParticle.IsEncrypted`), and best-practice defaults for standard objects present in the org. Only fields visible to the scanning user are seen. Every HTTPS callout is reported as harvest-now exposure (`R-CALLOUT-HNDL`) because Salesforce callouts still agree keys classically; the ranking decides which matter. Method and defaults: [/docs/prioritization](https://quantumshield.opensf.foundation/docs/prioritization). Reports carry `finding.priority`, `summary.priorityCounts`, `dataProfile` and `riskAssumptions`; the CSV adds `priorityRank`, `priorityBand`, `dataTier` and `marginYears`.
+
 Coverage semantics: every category ends a scan as `scanned`, `partial` (some queries failed), `failed`, or `skipped` (not available at this API version or not permitted for the scanning user), and that status is carried into the PDF, CBOM, VEX, CSV, and JSON. Treat anything other than `scanned` as *unverified*.
 
 ---
@@ -162,7 +166,7 @@ Rules are generated from the Markdown frontmatter at build time (`npm run sync:r
 
 - **Advisory output.** Findings are decision support, not legal advice or compliance attestation. Human review is required.
 - **Detection is best-effort.** Apex analysis is pattern-based. Comments are stripped and constants are resolved, but an algorithm name built at run time cannot be resolved — those calls are reported as *unresolved* rather than missed. Crypto reached through a wrapper class is only seen where the wrapper calls `Crypto`. False positives and negatives are possible.
-- **HNDL flag scope.** Harvest-now-decrypt-later is flagged only for key establishment and encryption (probed TLS endpoints). Signing certificates, SAML/OIDC signing and Apex signatures are quantum-vulnerable but not harvestable, and are not flagged.
+- **HNDL flag scope.** Harvest-now-decrypt-later is flagged only for key establishment and encryption (HTTPS callouts and probed TLS endpoints). Signing certificates, SAML/OIDC signing and Apex signatures are quantum-vulnerable but not harvestable, and are not flagged.
 - **API-bounded surface.** Salesforce does not expose everything (Connected App signing keys, IdP certificate details); those surfaces are inventoried, not assessed. Check the coverage section of every report.
 - **TLS probe caveat.** Hybrid-KEM verdicts depend on the local OpenSSL (≥ 3.5 required); older stacks report *unknown*. Behind a TLS-intercepting proxy the probe sees the proxy, not the endpoint.
 - **From-source beta.** No npm package; pin the commit or release tag you audit.

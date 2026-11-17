@@ -25,7 +25,7 @@ Classic Connected App seed metadata is intentionally excluded from this deployab
 What the bootstrap script does:
 
 1. Creates the scratch org from `config/project-scratch-def.json`
-2. Deploys this DX project into that org
+2. Deploys this DX project into that org and assigns the `QuantumShield_Seed_Data` permission set (field access to the classified seed fields)
 3. Generates a password for browser sign-in
 4. Prints the instance URL, username, password, and Consumer Key you need for the QuantumShield app
 

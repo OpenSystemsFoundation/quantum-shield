@@ -2,12 +2,12 @@
 import type { ScanSnapshot } from './types.js';
 
 export const LIVE_ORG_SCAN_SNAPSHOT = {
-  "capturedAt": "2026-11-17T15:23:11.475Z",
+  "capturedAt": "2026-11-17T18:26:28.201Z",
   "source": {
-    "targetOrg": "qs-review",
-    "orgId": "00DPw00000OqMQ1MAN",
+    "targetOrg": "qs-seed2",
+    "orgId": "00DQJ00000Nhttd2AB",
     "orgName": "OpenSF",
-    "instanceUrl": "https://efficiency-page-9215-dev-ed.scratch.my.salesforce.com",
+    "instanceUrl": "https://efficiency-energy-28422-dev-ed.scratch.my.salesforce.com",
     "apiVersion": "68.0"
   },
   "responses": [
@@ -48,9 +48,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ExternalClientApplication",
-              "url": "/services/data/v68.0/sobjects/ExternalClientApplication/0xIPw0000005jAzMAI"
+              "url": "/services/data/v68.0/sobjects/ExternalClientApplication/0xIQJ0000005v8v2AA"
             },
-            "Id": "0xIPw0000005jAzMAI",
+            "Id": "0xIQJ0000005v8v2AA",
             "DeveloperName": "QuantumShield_Scanner",
             "MasterLabel": "QuantumShield Scanner"
           }
@@ -71,9 +71,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ExternalClientApplication",
-              "url": "/services/data/v68.0/tooling/sobjects/ExternalClientApplication/0xIPw0000005jAzMAI"
+              "url": "/services/data/v68.0/tooling/sobjects/ExternalClientApplication/0xIQJ0000005v8v2AA"
             },
-            "Id": "0xIPw0000005jAzMAI",
+            "Id": "0xIQJ0000005v8v2AA",
             "DeveloperName": "QuantumShield_Scanner",
             "MasterLabel": "QuantumShield Scanner"
           }
@@ -91,9 +91,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAPw000000p2PbOAI"
+              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAQJ000000pNIj4AM"
             },
-            "Id": "0XAPw000000p2PbOAI",
+            "Id": "0XAQJ000000pNIj4AM",
             "DeveloperName": "EU_Payments_TLS13",
             "MasterLabel": "EU Payments (TLS 1.3 probe target)",
             "Endpoint": "https://www.cloudflare.com/",
@@ -102,9 +102,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAPw000000p2PcOAI"
+              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAQJ000000pNIk4AM"
             },
-            "Id": "0XAPw000000p2PcOAI",
+            "Id": "0XAQJ000000pNIk4AM",
             "DeveloperName": "Legacy_Billing_API",
             "MasterLabel": "Legacy Billing API",
             "Endpoint": "http://billing-legacy.internal.example/api",
@@ -113,9 +113,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAPw000000p2PdOAI"
+              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAQJ000000pNIl4AM"
             },
-            "Id": "0XAPw000000p2PdOAI",
+            "Id": "0XAQJ000000pNIl4AM",
             "DeveloperName": "NL_Tax_TLS12",
             "MasterLabel": "NL Tax Filing (legacy TLS 1.2 probe target)",
             "Endpoint": "https://tls-v1-2.badssl.com:1012/",
@@ -124,9 +124,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAPw000000p2PeOAI"
+              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAQJ000000pNIm4AM"
             },
-            "Id": "0XAPw000000p2PeOAI",
+            "Id": "0XAQJ000000pNIm4AM",
             "DeveloperName": "Partner_OAuth_API",
             "MasterLabel": "Partner OAuth API",
             "Endpoint": "https://api.partner.example/v1",
@@ -135,9 +135,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "NamedCredential",
-              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAPw000000p2PfOAI"
+              "url": "/services/data/v68.0/sobjects/NamedCredential/0XAQJ000000pNIn4AM"
             },
-            "Id": "0XAPw000000p2PfOAI",
+            "Id": "0XAQJ000000pNIn4AM",
             "DeveloperName": "US_Medicare_Claims_API",
             "MasterLabel": "US Medicare Claims API",
             "Endpoint": "http://medicare-claims.legacy.us.example/api",
@@ -179,9 +179,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpPw000002CER3IAO"
+              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpQJ000002SGlRYAW"
             },
-            "Id": "0rpPw000002CER3IAO",
+            "Id": "0rpQJ000002SGlRYAW",
             "FullName": "ApexDevNet",
             "EndpointUrl": "http://www.apexdevnet.com",
             "IsActive": true
@@ -189,9 +189,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpPw000002DAoPIAW"
+              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpQJ000002TD8nYAG"
             },
-            "Id": "0rpPw000002DAoPIAW",
+            "Id": "0rpQJ000002TD8nYAG",
             "FullName": "Internal_Reporting_HTTP",
             "EndpointUrl": "http://reporting.internal.example",
             "IsActive": true
@@ -199,9 +199,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpPw000002DAoQIAW"
+              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpQJ000002TD8oYAG"
             },
-            "Id": "0rpPw000002DAoQIAW",
+            "Id": "0rpQJ000002TD8oYAG",
             "FullName": "Legacy_Billing_HTTP",
             "EndpointUrl": "http://billing-legacy.internal.example",
             "IsActive": true
@@ -209,9 +209,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpPw000002DAoRIAW"
+              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpQJ000002TD8pYAG"
             },
-            "Id": "0rpPw000002DAoRIAW",
+            "Id": "0rpQJ000002TD8pYAG",
             "FullName": "Partner_API_HTTPS",
             "EndpointUrl": "https://api.partner.example",
             "IsActive": true
@@ -219,9 +219,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "RemoteProxy",
-              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpPw000002DAoSIAW"
+              "url": "/services/data/v68.0/tooling/sobjects/RemoteProxy/0rpQJ000002TD8qYAG"
             },
-            "Id": "0rpPw000002DAoSIAW",
+            "Id": "0rpQJ000002TD8qYAG",
             "FullName": "US_Federal_Reporting_HTTP",
             "EndpointUrl": "http://reporting.federal-legacy.us.example",
             "IsActive": true
@@ -269,9 +269,9 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbOzIAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTFYA5"
             },
-            "Id": "01pPw00000LVbOzIAL",
+            "Id": "01pQJ00000VVGTFYA5",
             "Name": "DutchVaultCipher",
             "Body": "/**\n * Dutch regional vault — wraps AES encryption with a HARDCODED 32-byte key.\n * This exercises the scanner's 256-bit hardcoded-key detection path\n * alongside an AES-256 algorithm that on its own is compliant.\n * R-APEX-CRYPTO (critical, hardcoded key) must still fire.\n */\npublic with sharing class DutchVaultCipher {\n\n    // HARDCODED 256-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob DUTCH_VAULT_KEY =\n        Blob.valueOf('RijksVaultKeyMaterial_32_BYTES!!');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES256', DUTCH_VAULT_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES256', DUTCH_VAULT_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
             "ApiVersion": 62,
@@ -280,20 +280,20 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbP0IAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTGYA5"
             },
-            "Id": "01pPw00000LVbP0IAL",
+            "Id": "01pQJ00000VVGTGYA5",
             "Name": "EuBankingSigner",
-            "Body": "/**\n * Hits multiple quantum-vulnerable primitives in one class so the scanner\n * must report distinct findings at distinct line numbers:\n *   - RSA-SHA512 signature (high, HNDL)\n *   - SHA-1 digest             (critical)\n *   - MD5 digest               (critical)\n */\npublic with sharing class EuBankingSigner {\n\n    private static final String CERT_NAME = 'eu_banking_signer_2026';\n\n    public static String signIsoPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA512', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    public static String weakHashSha1(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-1', Blob.valueOf(input))\n        );\n    }\n\n    public static String weakHashMd5(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('MD5', Blob.valueOf(input))\n        );\n    }\n}",
+            "Body": "/**\n * Hits multiple quantum-vulnerable primitives in one class so the scanner\n * must report distinct findings at distinct line numbers:\n *   - RSA-SHA512 signature (high; signatures are not HNDL-exposed)\n *   - SHA-1 digest             (high, deprecated)\n *   - MD5 digest               (critical)\n */\npublic with sharing class EuBankingSigner {\n\n    private static final String CERT_NAME = 'eu_banking_signer_2026';\n\n    public static String signIsoPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA512', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    public static String weakHashSha1(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-1', Blob.valueOf(input))\n        );\n    }\n\n    public static String weakHashMd5(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('MD5', Blob.valueOf(input))\n        );\n    }\n}",
             "ApiVersion": 62,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbP1IAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTHYA5"
             },
-            "Id": "01pPw00000LVbP1IAL",
+            "Id": "01pQJ00000VVGTHYA5",
             "Name": "LegacyCipher",
             "Body": "/**\n * Legacy AES cipher with a HARDCODED key baked into source.\n * Flagged by R-APEX-CRYPTO for hardcoded key material and\n * separately by QuantumShield's Apex pattern matcher.\n */\npublic with sharing class LegacyCipher {\n\n    // HARDCODED 128-bit key — intentionally committed so QuantumShield detects it.\n    private static final Blob HARDCODED_KEY =\n        Blob.valueOf('ThisIsA16ByteKey');\n\n    public static String encrypt(String plaintext) {\n        Blob data = Blob.valueOf(plaintext);\n        Blob encrypted = Crypto.encryptWithManagedIV('AES128', HARDCODED_KEY, data);\n        return EncodingUtil.base64Encode(encrypted);\n    }\n\n    public static String decrypt(String ciphertextB64) {\n        Blob encrypted = EncodingUtil.base64Decode(ciphertextB64);\n        Blob decrypted = Crypto.decryptWithManagedIV('AES128', HARDCODED_KEY, encrypted);\n        return decrypted.toString();\n    }\n}",
             "ApiVersion": 66,
@@ -302,33 +302,33 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbP2IAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTIYA5"
             },
-            "Id": "01pPw00000LVbP2IAL",
+            "Id": "01pQJ00000VVGTIYA5",
             "Name": "LegacyHashUtil",
-            "Body": "/**\n * Legacy hash utility. Deliberately uses MD5 and SHA-1 to\n * exercise the QuantumShield apex-crypto weak-hash rule.\n * DO NOT use these methods for anything security-relevant.\n */\npublic with sharing class LegacyHashUtil {\n\n    /** MD5 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String md5(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('MD5', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-1 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String sha1(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-1', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-256 digest — compliant, scanner should NOT flag. */\n    public static String sha256(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-256', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n}",
+            "Body": "/**\n * Legacy hash utility. Deliberately uses MD5 and SHA-1 to\n * exercise the QuantumShield apex-crypto weak-hash rule.\n * DO NOT use these methods for anything security-relevant.\n */\npublic with sharing class LegacyHashUtil {\n\n    /** MD5 digest — flagged by R-APEX-CRYPTO (critical). */\n    public static String md5(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('MD5', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-1 digest — flagged by R-APEX-CRYPTO (high, deprecated). */\n    public static String sha1(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-1', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n\n    /** SHA-256 digest — compliant: inventoried in the CBOM, no finding. */\n    public static String sha256(String input) {\n        Blob raw = Blob.valueOf(input);\n        Blob digest = Crypto.generateDigest('SHA-256', raw);\n        return EncodingUtil.convertToHex(digest);\n    }\n}",
             "ApiVersion": 66,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbP3IAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTJYA5"
             },
-            "Id": "01pPw00000LVbP3IAL",
+            "Id": "01pQJ00000VVGTJYA5",
             "Name": "ModernCrypto",
-            "Body": "/**\n * Compliant crypto helpers. QuantumShield should NOT flag this class\n * — it's the negative control.\n */\npublic with sharing class ModernCrypto {\n\n    public static String sha256(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-256', Blob.valueOf(input))\n        );\n    }\n\n    public static String sha3(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA3-256', Blob.valueOf(input))\n        );\n    }\n\n    public static Blob encryptAes256(Blob key, Blob data) {\n        return Crypto.encryptWithManagedIV('AES256', key, data);\n    }\n}",
+            "Body": "/**\n * Compliant crypto helpers. QuantumShield should raise NO finding for this class\n * — it is the negative control. Its calls are still inventoried in the CBOM.\n */\npublic with sharing class ModernCrypto {\n\n    public static String sha256(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA-256', Blob.valueOf(input))\n        );\n    }\n\n    public static String sha3(String input) {\n        return EncodingUtil.convertToHex(\n            Crypto.generateDigest('SHA3-256', Blob.valueOf(input))\n        );\n    }\n\n    public static Blob encryptAes256(Blob key, Blob data) {\n        return Crypto.encryptWithManagedIV('AES256', key, data);\n    }\n}",
             "ApiVersion": 66,
             "NamespacePrefix": null
           },
           {
             "attributes": {
               "type": "ApexClass",
-              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pPw00000LVbP4IAL"
+              "url": "/services/data/v68.0/tooling/sobjects/ApexClass/01pQJ00000VVGTKYA5"
             },
-            "Id": "01pPw00000LVbP4IAL",
+            "Id": "01pQJ00000VVGTKYA5",
             "Name": "PartnerWebhookSigner",
-            "Body": "/**\n * Signs outbound webhook payloads with RSA-SHA256.\n * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high, HNDL).\n */\npublic with sharing class PartnerWebhookSigner {\n\n    private static final String CERT_NAME = 'partner_signing_2026';\n\n    public static String signPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    /** ECDSA signing — also flagged by R-APEX-CRYPTO (high). */\n    public static String signPayloadEcdsa(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('ECDSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n}",
+            "Body": "/**\n * Signs outbound webhook payloads with RSA-SHA256.\n * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high). Signatures are not HNDL-exposed.\n */\npublic with sharing class PartnerWebhookSigner {\n\n    private static final String CERT_NAME = 'partner_signing_2026';\n\n    public static String signPayload(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('RSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n\n    /** ECDSA signing — also flagged by R-APEX-CRYPTO (high). */\n    public static String signPayloadEcdsa(String payload) {\n        Blob payloadBlob = Blob.valueOf(payload);\n        Blob signature = Crypto.signWithCertificate('ECDSA-SHA256', payloadBlob, CERT_NAME);\n        return EncodingUtil.base64Encode(signature);\n    }\n}",
             "ApiVersion": 66,
             "NamespacePrefix": null
           }
@@ -380,6 +380,391 @@ export const LIVE_ORG_SCAN_SNAPSHOT = {
         "done": true,
         "queryLocator": null,
         "entityTypeName": null,
+        "records": []
+      }
+    },
+    {
+      "kind": "query",
+      "soql": "SELECT QualifiedApiName FROM EntityDefinition WHERE QualifiedApiName IN ('Contact','Lead','Individual','ContactPointEmail','ContactPointPhone','ContactPointAddress','Case','Account','Opportunity','Contract','Order','Quote','IdentityDocument','FinancialAccount','FinServ__FinancialAccount__c','FinServ__Card__c','HealthCondition','ClinicalEncounter','PatientMedicalProcedure','MedicationStatement','CarePlan','HealthCloudGA__EhrPatient__c')",
+      "outcome": "success",
+      "result": {
+        "totalSize": 11,
+        "done": true,
+        "records": [
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Account"
+            },
+            "QualifiedApiName": "Account"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Case"
+            },
+            "QualifiedApiName": "Case"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+            },
+            "QualifiedApiName": "Contact"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ContactPointAddress"
+            },
+            "QualifiedApiName": "ContactPointAddress"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ContactPointEmail"
+            },
+            "QualifiedApiName": "ContactPointEmail"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ContactPointPhone"
+            },
+            "QualifiedApiName": "ContactPointPhone"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Contract"
+            },
+            "QualifiedApiName": "Contract"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Individual"
+            },
+            "QualifiedApiName": "Individual"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Lead"
+            },
+            "QualifiedApiName": "Lead"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Opportunity"
+            },
+            "QualifiedApiName": "Opportunity"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Order"
+            },
+            "QualifiedApiName": "Order"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "query",
+      "soql": "SELECT QualifiedApiName FROM EntityDefinition WHERE QualifiedApiName LIKE '%__c'",
+      "outcome": "success",
+      "result": {
+        "totalSize": 18,
+        "done": true,
+        "records": [
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ContentWorkspaceDoc"
+            },
+            "QualifiedApiName": "ContentWorkspaceDoc"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/PushTopic"
+            },
+            "QualifiedApiName": "PushTopic"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/Topic"
+            },
+            "QualifiedApiName": "Topic"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/DataAssessmentMetric"
+            },
+            "QualifiedApiName": "DataAssessmentMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/DataAssessmentFieldMetric"
+            },
+            "QualifiedApiName": "DataAssessmentFieldMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/DataAssessmentValueMetric"
+            },
+            "QualifiedApiName": "DataAssessmentValueMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ScorecardMetric"
+            },
+            "QualifiedApiName": "ScorecardMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/OrgMetric"
+            },
+            "QualifiedApiName": "OrgMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/MLModelMetric"
+            },
+            "QualifiedApiName": "MLModelMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/PlatformEventUsageMetric"
+            },
+            "QualifiedApiName": "PlatformEventUsageMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ConvDefDialogDailyMetric"
+            },
+            "QualifiedApiName": "ConvDefDialogDailyMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ConvDefDialogHourlyMetric"
+            },
+            "QualifiedApiName": "ConvDefDialogHourlyMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ActiveFeatureLicenseMetric"
+            },
+            "QualifiedApiName": "ActiveFeatureLicenseMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ActivePermSetLicenseMetric"
+            },
+            "QualifiedApiName": "ActivePermSetLicenseMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ActiveProfileMetric"
+            },
+            "QualifiedApiName": "ActiveProfileMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ConvDefSessionMetric"
+            },
+            "QualifiedApiName": "ConvDefSessionMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/MlFeatureValueMetric"
+            },
+            "QualifiedApiName": "MlFeatureValueMetric"
+          },
+          {
+            "attributes": {
+              "type": "EntityDefinition",
+              "url": "/services/data/v68.0/sobjects/EntityDefinition/ContactPointOttSvc"
+            },
+            "QualifiedApiName": "ContactPointOttSvc"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "query",
+      "soql": "SELECT QualifiedApiName, EntityDefinition.QualifiedApiName, SecurityClassification, ComplianceGroup FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('Account','Case','Contact','ContactPointAddress','ContactPointEmail','ContactPointPhone','Contract','Individual','Lead','Opportunity','Order') AND SecurityClassification != null",
+      "outcome": "success",
+      "result": {
+        "totalSize": 4,
+        "done": true,
+        "records": [
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.00NQJ00000YdurZ"
+            },
+            "QualifiedApiName": "National_Id__c",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Restricted",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Lead.Email"
+            },
+            "QualifiedApiName": "Email",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Lead"
+              },
+              "QualifiedApiName": "Lead"
+            },
+            "SecurityClassification": "Confidential",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.Birthdate"
+            },
+            "QualifiedApiName": "Birthdate",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Restricted",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.Email"
+            },
+            "QualifiedApiName": "Email",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Confidential",
+            "ComplianceGroup": "PII;GDPR"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "query",
+      "soql": "SELECT QualifiedApiName, EntityDefinition.QualifiedApiName, SecurityClassification, ComplianceGroup FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('Account','Case','Contact','ContactPointAddress','ContactPointEmail','ContactPointPhone','Contract','Individual','Lead','Opportunity','Order') AND ComplianceGroup != null",
+      "outcome": "success",
+      "result": {
+        "totalSize": 4,
+        "done": true,
+        "records": [
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.00NQJ00000YdurZ"
+            },
+            "QualifiedApiName": "National_Id__c",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Restricted",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Lead.Email"
+            },
+            "QualifiedApiName": "Email",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Lead"
+              },
+              "QualifiedApiName": "Lead"
+            },
+            "SecurityClassification": "Confidential",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.Birthdate"
+            },
+            "QualifiedApiName": "Birthdate",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Restricted",
+            "ComplianceGroup": "PII;GDPR"
+          },
+          {
+            "attributes": {
+              "type": "FieldDefinition",
+              "url": "/services/data/v68.0/sobjects/FieldDefinition/Contact.Email"
+            },
+            "QualifiedApiName": "Email",
+            "EntityDefinition": {
+              "attributes": {
+                "type": "EntityDefinition",
+                "url": "/services/data/v68.0/sobjects/EntityDefinition/Contact"
+              },
+              "QualifiedApiName": "Contact"
+            },
+            "SecurityClassification": "Confidential",
+            "ComplianceGroup": "PII;GDPR"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "query",
+      "soql": "SELECT QualifiedApiName, EntityDefinition.QualifiedApiName FROM EntityParticle WHERE EntityDefinition.QualifiedApiName IN ('Account','Case','Contact','ContactPointAddress','ContactPointEmail','ContactPointPhone','Contract','Individual','Lead','Opportunity','Order') AND IsEncrypted = true",
+      "outcome": "success",
+      "result": {
+        "totalSize": 0,
+        "done": true,
         "records": []
       }
     }
