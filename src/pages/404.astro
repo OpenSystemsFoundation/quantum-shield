@@ -1,0 +1,22 @@
+---
+import Shell from '../layouts/Shell.astro';
+import BlochShield from '../components/BlochShield.svelte';
+---
+
+<Shell title="Page not found — QuantumShield" description="This page does not exist.">
+  <main style="max-width:640px;margin:0 auto;padding:96px 32px;text-align:center;">
+    <div style="display:flex;justify-content:center;margin-bottom:16px;"><BlochShield size={48} /></div>
+    <div class="tiny-caps" style="color:var(--navy-600);">404</div>
+    <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:6px 0 10px;">
+      This page does not exist.
+    </h1>
+    <p style="font-size:14.5px;color:var(--ink-3);line-height:1.65;">
+      The link may be old, or the address may have a typo.
+    </p>
+    <p style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <a class="qs-btn qs-btn-primary" href="/">Home</a>
+      <a class="qs-btn" href="/install">Install</a>
+      <a class="qs-btn" href="/docs/rules">Rules</a>
+    </p>
+  </main>
+</Shell>
