@@ -6,6 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — AI agent support
+
+- **Agent skill** at `.agents/skills/quantumshield/SKILL.md` (linked from
+  `.claude/skills/`): how an agent checks readiness, runs a scan, reads the
+  JSON result and exit codes, and reports findings, with guardrails (read-only,
+  never print tokens, never call an org clean when coverage is incomplete).
+- **`--json` on every command.** stdout carries exactly one JSON document,
+  errors included (`qshield.error/v1`); `scan --json` silences progress on
+  stderr.
+- **`qshield scan` result** is now `qshield.scan-result/v1`: adds `ok`,
+  `exitCode`, `org`, `coverage` and the ten most urgent findings in
+  `topFindings`. Existing keys are unchanged.
+- **`--fail-on <severity>`** exits 4 when a finding is at or above that
+  severity, for CI and agent gates.
+- **`qshield doctor`** checks Node, the `sf` CLI, authenticated orgs and the
+  target org; **`qshield version`** / `--version`; **`qshield help <command>`**
+  and `<command> --help` print help for one command.
+- `npx -y github:OpenSystemsFoundation/quantum-shield` runs the CLI without a
+  clone.
+- `npm run --silent qshield -- … --json` now keeps stdout pure JSON (the
+  regulation sync prints its status line to stderr).
+
 ### Project
 
 - **Open-source repository essentials**: `SECURITY.md` with a private

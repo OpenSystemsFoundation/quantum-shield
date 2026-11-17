@@ -74,6 +74,11 @@ builder, and OpenVEX/report output code under `src/lib/`.
   fails if it disagrees with `package.json`'s `version`.
 - `cli/` is excluded from `tsconfig.json`; typecheck it with
   `npx tsc --noEmit -p tsconfig.cli.json`.
+- `.agents/skills/quantumshield/SKILL.md` is the user-facing agent skill for
+  running `qshield` (`.claude/skills/quantumshield` is a symlink to it). Keep
+  it in step with CLI flags, exit codes (`cli/exitCodes.ts`) and the
+  `qshield.scan-result/v1` / `qshield.error/v1` JSON shapes: add fields, never
+  rename or remove them.
 
 ## Common Commands
 
