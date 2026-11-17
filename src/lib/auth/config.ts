@@ -82,9 +82,14 @@ export function assertSalesforceOrigin(value: string): string {
 
 export function loadAuthConfig(): AuthConfig {
   const clientId = (import.meta.env.PUBLIC_SF_CLIENT_ID as string | undefined)?.trim() ?? '';
+  // The callback must return to the origin actually serving the page:
+  // PUBLIC_APP_ORIGIN is a production build variable that Cloudflare also
+  // applies to preview builds, so it is only a fallback for non-browser
+  // contexts (build time, tests).
   const origin =
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
     (import.meta.env.PUBLIC_APP_ORIGIN as string | undefined)?.trim() ||
-    (typeof window !== 'undefined' ? window.location.origin : '');
+    '';
   const apiVersion =
     (import.meta.env.PUBLIC_SF_API_VERSION as string | undefined)?.trim() || DEFAULT_API_VERSION;
   return {
