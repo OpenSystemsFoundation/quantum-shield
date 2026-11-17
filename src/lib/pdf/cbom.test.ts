@@ -177,6 +177,34 @@ describe('crypto classification', () => {
     expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'ML-KEM-1024', location: '', quantumSafe: true }).nistQuantumSecurityLevel).toBe(5);
   });
 
+  it('reports quantum security level 0 for RSA at every key size', () => {
+    for (const keySize of [2048, 3072, 4096, 15360]) {
+      const cls = classifyCryptoAsset({ name: 'x', type: 'certificate', algorithm: 'RSA', keySize, location: '', quantumSafe: false });
+      expect(cls.nistQuantumSecurityLevel, `RSA-${keySize}`).toBe(0);
+      expect(cls.quantumSafe).toBe(false);
+    }
+  });
+
+  it('classifies HMAC as a mac and Apex AES encryption with the CBC OID', () => {
+    const mac = classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'HMAC-SHA256', location: '', quantumSafe: null });
+    expect(mac.primitive).toBe('mac');
+    expect(mac.oid).toBe('1.2.840.113549.2.9');
+    expect(mac.quantumSafe).toBe(true);
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'HMAC-SHA1', location: '', quantumSafe: null }).quantumSafe).toBeNull();
+
+    const aes = classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'AES', keySize: 128, location: '', quantumSafe: null, usage: 'encryption' });
+    expect(aes.oid).toBe('2.16.840.1.101.3.4.1.2');
+    expect(aes.nistQuantumSecurityLevel).toBe(1);
+    expect(aes.quantumSafe).toBe(true);
+    // The bare AES arc is not an algorithm OID.
+    expect(classifyCryptoAsset({ name: 'x', type: 'key', algorithm: 'AES', keySize: 256, location: '', quantumSafe: null }).oid).toBeUndefined();
+  });
+
+  it('keeps unknown quantum safety as null instead of false', () => {
+    expect(classifyCryptoAsset({ name: 'x', type: 'protocol', algorithm: 'TLS (version and cipher not probed)', location: '', quantumSafe: null }).quantumSafe).toBeNull();
+    expect(classifyCryptoAsset({ name: 'x', type: 'algorithm', algorithm: 'UNRESOLVED', location: '', quantumSafe: null }).quantumSafe).toBeNull();
+  });
+
   it('only emits CycloneDX-valid primitives', () => {
     const inputs: CbomComponent[] = [
       { name: 'a', type: 'certificate', algorithm: 'RSA', keySize: 2048, location: '', quantumSafe: false },
@@ -186,6 +214,9 @@ describe('crypto classification', () => {
       { name: 'e', type: 'protocol', algorithm: 'OAuth', location: '', quantumSafe: false },
       { name: 'f', type: 'library', algorithm: 'unknown', location: '', quantumSafe: false },
       { name: 'g', type: 'algorithm', algorithm: 'ML-KEM-768', location: '', quantumSafe: true },
+      { name: 'h', type: 'algorithm', algorithm: 'HMAC-SHA1', location: '', quantumSafe: null },
+      { name: 'i', type: 'algorithm', algorithm: 'UNRESOLVED', location: '', quantumSafe: null },
+      { name: 'j', type: 'key', algorithm: 'HARDCODED-HMAC-KEY', location: '', quantumSafe: null },
     ];
     for (const c of inputs) {
       const cls = classifyCryptoAsset(c);
@@ -195,28 +226,81 @@ describe('crypto classification', () => {
 });
 
 describe('buildCbomJson (CycloneDX 1.6)', () => {
-  it('populates enum-valid executionEnvironment, nistQuantumSecurityLevel and oid per component', () => {
+  it('gives each asset type only its own properties object', () => {
     const report = mkReport({
       cbom: [
-        { name: 'rsa-cert', type: 'certificate', algorithm: 'RSA', keySize: 2048, location: 'Certificate/abc', quantumSafe: false },
-        { name: 'aes-key', type: 'key', algorithm: 'AES', keySize: 256, location: 'TenantSecret/xyz', quantumSafe: false },
+        {
+          name: 'rsa-cert',
+          type: 'certificate',
+          algorithm: 'RSA',
+          keySize: 2048,
+          location: 'Certificate/abc',
+          quantumSafe: false,
+          notValidAfter: '2027-06-01T12:00:00.000+0000',
+        },
+        { name: 'aes-key', type: 'key', algorithm: 'AES', keySize: 256, location: 'TenantSecret/xyz', quantumSafe: true },
+        {
+          name: 'Signer.cls',
+          type: 'algorithm',
+          algorithm: 'RSA-SHA384',
+          location: 'Signer.cls:4',
+          quantumSafe: false,
+          usage: 'signature',
+        },
+        {
+          name: 'https://api.example.com (probed)',
+          type: 'protocol',
+          algorithm: 'TLS_AES_256_GCM_SHA384',
+          location: 'x',
+          quantumSafe: null,
+          protocol: 'tls',
+          protocolVersion: '1.3',
+        },
+        {
+          name: 'Partner API',
+          type: 'protocol',
+          algorithm: 'TLS (version and cipher not probed)',
+          location: 'https://api.example.com/v1',
+          quantumSafe: null,
+          protocol: 'tls',
+        },
+        { name: 'Legacy', type: 'protocol', algorithm: 'HTTP (no TLS)', location: 'http://x.example', quantumSafe: false, protocol: 'http' },
       ],
     });
     const parsed = JSON.parse(buildCbomJson(report));
     expect(parsed.bomFormat).toBe('CycloneDX');
     expect(parsed.specVersion).toBe('1.6');
-    expect(parsed.components).toHaveLength(2);
+    const [cert, aes, algo, probed, unprobed, http] = parsed.components;
+    const prop = (comp: { properties: Array<{ name: string; value: string }> }, name: string) =>
+      comp.properties.find((p) => p.name === name)?.value;
 
-    const rsa = parsed.components[0];
-    expect(rsa.cryptoProperties.assetType).toBe('certificate');
-    expect(rsa.cryptoProperties.oid).toBe('1.2.840.113549.1.1.1');
-    expect(rsa.cryptoProperties.algorithmProperties.executionEnvironment).toBe('other');
-    expect(rsa.cryptoProperties.algorithmProperties.nistQuantumSecurityLevel).toBe(0);
+    expect(cert.cryptoProperties.assetType).toBe('certificate');
+    expect(cert.cryptoProperties.algorithmProperties).toBeUndefined();
+    expect(cert.cryptoProperties.certificateProperties.notValidAfter).toBe('2027-06-01T12:00:00.000Z');
+    expect(prop(cert, 'quantumshield:public-key-algorithm')).toBe('RSA-2048');
 
-    const aes = parsed.components[1];
     expect(aes.cryptoProperties.assetType).toBe('related-crypto-material');
-    expect(aes.cryptoProperties.relatedCryptoMaterialProperties.type).toBe('key');
-    expect(aes.cryptoProperties.algorithmProperties.nistQuantumSecurityLevel).toBe(5);
+    expect(aes.cryptoProperties.algorithmProperties).toBeUndefined();
+    expect(aes.cryptoProperties.relatedCryptoMaterialProperties).toEqual({ type: 'secret-key', size: 256 });
+
+    expect(algo.cryptoProperties.assetType).toBe('algorithm');
+    expect(algo.cryptoProperties.oid).toBe('1.2.840.113549.1.1.12');
+    expect(algo.cryptoProperties.algorithmProperties.primitive).toBe('signature');
+    expect(algo.cryptoProperties.algorithmProperties.executionEnvironment).toBe('other');
+    expect(algo.cryptoProperties.algorithmProperties.nistQuantumSecurityLevel).toBe(0);
+
+    expect(probed.cryptoProperties.algorithmProperties).toBeUndefined();
+    expect(probed.cryptoProperties.protocolProperties).toEqual({
+      type: 'tls',
+      version: '1.3',
+      cipherSuites: [{ name: 'TLS_AES_256_GCM_SHA384' }],
+    });
+    expect(prop(probed, 'quantumshield:quantum-safe')).toBe('unknown');
+
+    // An HTTPS endpoint is TLS even when it was not probed; no version is invented.
+    expect(unprobed.cryptoProperties.protocolProperties).toEqual({ type: 'tls' });
+    expect(http.cryptoProperties.protocolProperties).toEqual({ type: 'other' });
+    expect(prop(http, 'quantumshield:quantum-safe')).toBe('false');
   });
 
   it('moves quantumSafe out of cryptoProperties into spec-legal name/value properties', () => {
@@ -308,7 +392,7 @@ describe('buildVexJson (OpenVEX)', () => {
     expect(stmt.products[0].identifiers.purl).toMatch(/pkg:salesforce/);
   });
 
-  it('emits under_investigation for advisory findings', () => {
+  it('reports advisory findings as affected, not under_investigation', () => {
     const report = mkReport({
       findings: [
         {
@@ -329,8 +413,37 @@ describe('buildVexJson (OpenVEX)', () => {
       ],
     });
     const parsed = JSON.parse(buildVexJson(report));
-    expect(parsed.statements[0].status).toBe('under_investigation');
+    expect(parsed.statements[0].status).toBe('affected');
+    expect(parsed.statements[0].action_statement).toBe('Plan hybrid.');
+    expect(parsed.statements[0].status_notes).toContain('advisory');
     expect(parsed.statements[0].status_notes).not.toContain('Harvest-now-decrypt-later');
+  });
+
+  it('turns incomplete scan coverage into under_investigation statements', () => {
+    const report = mkReport({
+      findings: [],
+      coverage: [
+        { id: 'certificates', label: 'Certificates & keys', status: 'scanned', assetCount: 2, findingCount: 0 },
+        { id: 'sso', label: 'Single Sign-On', status: 'failed', assetCount: 0, findingCount: 0, detail: 'HTTP 500' },
+        { id: 'shield-encryption', label: 'Shield Platform Encryption', status: 'skipped', assetCount: 0, findingCount: 0 },
+      ],
+    });
+    const parsed = JSON.parse(buildVexJson(report));
+    // A scan with no findings but failed categories must not be an empty VEX.
+    expect(parsed.statements).toHaveLength(2);
+    for (const stmt of parsed.statements) {
+      expect(stmt.status).toBe('under_investigation');
+      expect(stmt.vulnerability.name).toMatch(/^QSHIELD-COVERAGE:/);
+      // OpenVEX 0.2.0: these fields are not legal on under_investigation.
+      expect(stmt.justification).toBeUndefined();
+      expect(stmt.impact_statement).toBeUndefined();
+      expect(stmt.action_statement).toBeUndefined();
+    }
+    expect(parsed.statements[0].status_notes).toContain('HTTP 500');
+    // No non-standard top-level fields.
+    expect(Object.keys(parsed).sort()).toEqual(
+      ['@context', '@id', 'author', 'statements', 'timestamp', 'tooling', 'version'].sort(),
+    );
   });
 
   it('never emits justification or impact_statement outside not_affected statements', () => {

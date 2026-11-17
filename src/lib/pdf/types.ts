@@ -49,7 +49,11 @@ export interface OrgIdentity {
   orgName: string;
   orgType: 'production' | 'sandbox' | 'developer' | 'scratch';
   apiVersion: string;
-  userLicense: string;
+  /**
+   * Licence of the scanning user, when known. Neither front-end queries it
+   * today, so new reports omit it instead of asserting a guessed value.
+   */
+  userLicense?: string;
 }
 
 export interface CryptoAsset {
@@ -84,7 +88,23 @@ export interface CryptoAsset {
   hybridKem?: boolean;
   /** ISO timestamp of the most recent key rotation (e.g. Shield tenant secret version) */
   lastRotatedAt?: string;
+  /**
+   * What the primitive is used for, when the scanner can tell. Harvest-now-
+   * decrypt-later exposure only applies to `encryption` and
+   * `key-establishment`; signatures, digests and MACs cannot be attacked
+   * retroactively by recording traffic today.
+   */
+  usage?: CryptoUsage;
 }
+
+export type CryptoUsage =
+  | 'signature'
+  | 'encryption'
+  | 'key-establishment'
+  | 'digest'
+  | 'mac'
+  | 'key-generation'
+  | 'key-material';
 
 export interface Finding {
   id: string;
@@ -125,11 +145,28 @@ export interface OverlayScope {
 
 export interface CbomComponent {
   name: string;
+  /**
+   * `library` is kept for reports written by older versions; the scan engine
+   * no longer emits it (installed packages are not cryptographic assets).
+   */
   type: 'certificate' | 'key' | 'algorithm' | 'protocol' | 'library';
   algorithm: string;
   keySize?: number;
   location: string;
-  quantumSafe: boolean;
+  /**
+   * Tri-state: `true` / `false` when the scanner observed enough to say,
+   * `null` when it could not tell (e.g. an HTTPS endpoint that was not
+   * probed). Unknown must never be rendered as "No".
+   */
+  quantumSafe: boolean | null;
+  /** What the primitive is used for, when known (drives the CBOM primitive). */
+  usage?: CryptoUsage;
+  /** Protocol components: 'tls' when the asset is an HTTPS/TLS endpoint. */
+  protocol?: 'tls' | 'http' | 'other';
+  /** Protocol components: negotiated version, e.g. '1.3' (probe only). */
+  protocolVersion?: string;
+  /** Certificate components: ISO expiry timestamp. */
+  notValidAfter?: string;
 }
 
 /**
@@ -185,6 +222,7 @@ export interface Report {
     totalFindings: number;
     bySeverity: Record<Severity, number>;
     byCategory: Record<Category, number>;
+    /** Earliest finding deadline that is still in the future at scan time. */
     earliestDeadline?: string;
     postureSentence: string;
     hndlFindings: number;
