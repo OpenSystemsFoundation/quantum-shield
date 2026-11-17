@@ -40,7 +40,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - **Fonts:** self-hosted woff2 subsets under `public/fonts/` — no third-party font CDN requests.
 - **Testing:** Vitest for unit tests (rules engine, parsers, scoring, PDF, CLI bridge); Playwright for browser preview and interaction flows; scratch-org smoke tests and fixture capture under `salesforce/`.
 - **Analytics:** none. The site ships no analytics, no tracking scripts, and no third-party requests of any kind.
-- **Build & deploy:** GitHub → Cloudflare Pages auto-build. Preview deployments per pull request. Security headers (CSP and friends) ship via `public/_headers`.
+- **Build & deploy:** GitHub → Cloudflare Pages auto-build. Preview deployments per pull request. Security headers (CSP and friends) ship via `public/_headers`. `script-src` has no `'unsafe-inline'`; the last build step hashes each inline script in the built HTML and writes the `'sha256-…'` sources into `dist/_headers`.
 
 ---
 
@@ -52,6 +52,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - `/app` — Authenticated shell. Shows connected org identity, scan CTA, history of prior scans (from IndexedDB).
 - `/app/scan` — Live scan view with progress per category, keyed by `?id=`.
 - `/app/report` — Findings viewer, filters, remediation detail, export to PDF, keyed by `?id=`.
+- `/demo` — Public sample report: the report view over the bundled fixture snapshot, run through the real rule catalog in memory. No session, nothing persisted, always under a "Sample data — not your org" banner. Separate from the dev-only mock sign-in.
 - `/install` — CLI quickstart plus browser-mode setup and CORS guide.
 - `/docs/regulations/*` — Indexed regulation and standards source pages. One document per regulation/source with machine-readable frontmatter used to generate the app's citation and overlay manifest.
 - `/docs/rules/*` — Indexed rule catalog pages generated from the same content pipeline. (A broader methodology/FAQ docs area is planned, not implemented.)
@@ -175,7 +176,7 @@ Rules declare which regulatory overlays (NIS 2, DORA, PCI DSS 4, HIPAA, …) the
 
 **CLI mode.** Trust boundary is the admin's machine. The scanner inherits the `sf` CLI's stored session — QuantumShield adds no credentials, no network listener, and no telemetry. Threats considered: malicious org metadata flowing into artifacts (CSV formula injection is escaped; PDF text is rendered with a Unicode-capable font, not executed), and the TLS probe touching third-party endpoints (it performs handshakes only, with certificate validation on, and never sends the org token to probed hosts). The org token never leaves the machine except toward the org itself.
 
-**Browser mode.** Trust boundary is the browser tab plus the static host. The access token lives in `sessionStorage` (XSS-readable by design trade-off, dies with the tab; no `refresh_token` scope is requested so there is no long-lived credential to steal). Defenses: a strict CSP served via `public/_headers` whose `connect-src` is limited to Salesforce-owned domains — exfiltration targets are constrained even under script injection — plus `frame-ancestors 'none'`, self-hosted fonts, and no third-party scripts. OAuth uses authorization code + PKCE with `state` validation; the callback scrubs sensitive parameters from the URL. The static host (Cloudflare Pages) sees page requests only — never org data or tokens.
+**Browser mode.** Trust boundary is the browser tab plus the static host. The access token lives in `sessionStorage` (XSS-readable by design trade-off, dies with the tab; no `refresh_token` scope is requested so there is no long-lived credential to steal). Defenses: a strict CSP served via `public/_headers` (inline scripts allowed only by build-generated hash, never `'unsafe-inline'`) whose `connect-src` is limited to Salesforce-owned domains — exfiltration targets are constrained even under script injection — plus `frame-ancestors 'none'`, self-hosted fonts, and no third-party scripts. OAuth uses authorization code + PKCE with `state` validation; the callback scrubs sensitive parameters from the URL. The static host (Cloudflare Pages) sees page requests only — never org data or tokens.
 
 ---
 

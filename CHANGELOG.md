@@ -6,6 +6,44 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **CSP no longer allows inline scripts wholesale.** `script-src 'unsafe-inline'`
+  is gone from `public/_headers`. A final build step (`csp-inline-hashes` in
+  `astro.config.mjs`) hashes every inline `<script>` in the built pages and
+  writes `'sha256-…'` sources into `dist/_headers`, so new inline scripts are
+  covered automatically and injected ones do not run. The build fails on inline
+  event-handler attributes. `/security` describes the generated policy.
+- **Sign out revokes the token.** Signing out now sends a best-effort
+  `POST /services/oauth2/revoke` to the org before discarding the session
+  (skipped for dev-mock sessions), and asks whether to also delete local scan
+  data. `/security` and `/privacy` now state plainly that scan history and
+  reports persist in IndexedDB until the user deletes them.
+- Citation links in the finding detail only link to `https:` URLs and use
+  `rel="noopener noreferrer"`.
+
+### Added (browser app)
+
+- **Public sample report at `/demo`**, linked as "View a sample report" from
+  the landing page and `/connect`. It runs the real rule catalog over the
+  bundled fixture snapshot under a persistent "Sample data — not your org"
+  banner, creates no session, stores nothing, and does not enable the dev-mock
+  sign-in. Sample exports are prefixed `SAMPLE-`. The landing page's sample
+  card now shows that same report's numbers, computed at build time.
+
+### Fixed (browser app)
+
+- **Phone layout.** No horizontal scrolling at 390px on `/app`, the scan and
+  report pages, `/security` and `/callback`; findings render as stacked cards
+  on phones and the scan-history table scrolls inside its card.
+- **Findings table accessibility.** Rows are no longer `role="button"`; each
+  finding has a real button, headers have `scope="col"`, the truncated ID
+  column (identical for most rows) is replaced by the rule id, and rows without
+  a deadline date say so. The finding detail is a labelled dialog: full-screen
+  with a focus trap on phones, and no longer covering the sidebar on desktop.
+- Sidebar "Scans" and "Overview" no longer point at the same place, and
+  unavailable items are announced as unavailable.
+
 ### Changed
 
 - **Rebranded as a free, open-source OpenSF project.** All references to the

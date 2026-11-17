@@ -7,7 +7,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 <Shell title="Security — QuantumShield">
   <SiteHeader />
 
-  <main style="max-width:960px;margin:0 auto;padding:48px 32px 80px;">
+  <main class="container" style="max-width:960px;padding-top:48px;padding-bottom:80px;">
     <div class="tiny-caps" style="color:var(--navy-600);">Security & trust</div>
     <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:6px 0 10px;">
       How QuantumShield keeps your org's data yours.
@@ -16,7 +16,7 @@ import SiteFooter from '../components/SiteFooter.astro';
       QuantumShield has two execution paths. Preferred path: the local <span class="mono">qshield</span> CLI reusing the Salesforce CLI session already on your machine. Optional path: a static browser app using an External Client App or Connected App you own. In neither path does QuantumShield proxy your org data.
     </p>
 
-    <section style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px;">
+    <section class="trust-cards" style="margin-top:28px;">
       <div class="qs-card qs-card-body">
         <div class="tiny-caps" style="color:var(--navy-600);">Recommended path</div>
         <h3 class="display" style="font-size:16px;font-weight:600;margin:6px 0 6px;">Local qshield CLI</h3>
@@ -43,12 +43,12 @@ import SiteFooter from '../components/SiteFooter.astro';
     <section class="qs-card" style="margin-top:24px;">
       <div class="qs-card-head"><h3>Browser OAuth scopes requested</h3></div>
       <div class="qs-card-body">
-        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-2);align-items:start;font-size:12.5px;">
+        <div class="scope-row">
           <span class="mono" style="font-weight:600;">api</span>
           <span style="color:var(--ink-3);">Access the REST, Tooling, and Metadata APIs to read configuration and metadata.</span>
           <span class="pill ok">Required</span>
         </div>
-        <div style="display:grid;grid-template-columns:140px 1fr auto;gap:16px;padding:10px 0;align-items:start;font-size:12.5px;">
+        <div class="scope-row">
           <span class="mono" style="font-weight:600;">id</span>
           <span style="color:var(--ink-3);">Identify the user and org for display purposes. No profile or directory data queried.</span>
           <span class="pill ok">Required</span>
@@ -60,19 +60,42 @@ import SiteFooter from '../components/SiteFooter.astro';
     </section>
 
     <section class="qs-card" style="margin-top:16px;">
+      <div class="qs-card-head"><h3>What stays in your browser, and for how long</h3></div>
+      <div class="qs-card-body" style="font-size:12.5px;color:var(--ink-3);line-height:1.6;">
+        <ul style="margin:0;padding-left:18px;">
+          <li>
+            <strong style="color:var(--ink);">Scan history and reports persist.</strong> Browser mode saves every scan summary and full report in this browser's IndexedDB, on this device, so you can reopen them later. They stay there — across tab closes, sign-outs and browser restarts — until you delete them with <em>Clear local data</em> on the app overview, tick <em>Also delete local scan data</em> when signing out, or clear this site's data in your browser. Nothing is uploaded.
+          </li>
+          <li>
+            <strong style="color:var(--ink);">The access token does not persist.</strong> It lives in sessionStorage and is gone when the tab closes. <em>Sign out</em> also asks Salesforce to revoke the token (a best-effort request to your instance's <span class="mono">/services/oauth2/revoke</span> endpoint) before discarding it.
+          </li>
+          <li>
+            <strong style="color:var(--ink);">Preferences.</strong> Your chosen environment, Consumer Key and region selection are remembered in localStorage.
+          </li>
+          <li>
+            <strong style="color:var(--ink);">The sample report</strong> at <a href="/demo">/demo</a> uses bundled fixture data only. It contacts no Salesforce org and stores nothing.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="qs-card" style="margin-top:16px;">
       <div class="qs-card-head"><h3>Content Security Policy</h3></div>
       <div class="qs-card-body">
         <p style="margin-top:0;color:var(--ink-3);font-size:12.5px;">
-          The deployed site serves the following CSP as an HTTP response header on every page, via the Cloudflare Pages <span class="mono">_headers</span> file in this repository (<span class="mono">public/_headers</span>). <span class="mono">connect-src</span> limits outbound requests to this origin plus Salesforce-owned domains (<span class="mono">*.salesforce.com</span>, <span class="mono">*.force.com</span>, <span class="mono">*.my.site.com</span>) — the scanner talks to your org directly and nowhere else. Fonts and images are served from this origin only; the page cannot be framed.
+          The deployed site serves a CSP as an HTTP response header on every page, via the Cloudflare <span class="mono">_headers</span> file (<span class="mono">public/_headers</span> in the repository, finalised at build time). <span class="mono">connect-src</span> limits outbound requests to this origin plus Salesforce-owned domains (<span class="mono">*.salesforce.com</span>, <span class="mono">*.force.com</span>, <span class="mono">*.my.site.com</span>) — the scanner talks to your org directly and nowhere else. Fonts and images are served from this origin only; the page cannot be framed.
         </p>
-        <div class="mono-field" style="margin-top:8px;font-family:var(--mono);font-size:11px;white-space:pre;overflow:auto;">
-          <code>default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';
+        <p style="color:var(--ink-3);font-size:12.5px;">
+          <span class="mono">script-src</span> does not allow <span class="mono">'unsafe-inline'</span>. Scripts load from this origin, and the few inline scripts the build emits (the component bootstrap and small page scripts) are allowed individually by SHA-256 hash: the build hashes every inline script in the generated pages and writes those hashes into the header, so an injected inline script or event handler does not run. The policy below is the template; <span class="mono">&lt;build hashes&gt;</span> stands for those generated <span class="mono">'sha256-…'</span> values, which change with each release — check the response header for the exact list. <span class="mono">style-src</span> still allows inline styles.
+        </p>
+        <div class="policy-block"><code>default-src 'self';
+script-src 'self' &lt;build hashes&gt;;
+style-src 'self' 'unsafe-inline';
 img-src 'self' data:; font-src 'self';
 connect-src 'self' https://*.salesforce.com https://*.force.com https://*.my.site.com;
-worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</code>
-        </div>
+worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</code></div>
         <p style="margin:10px 0 0;color:var(--muted);font-size:11.5px;font-family:var(--mono);">
-          Also served: X-Content-Type-Options: nosniff · Referrer-Policy: strict-origin-when-cross-origin · Permissions-Policy: camera=(), microphone=(), geolocation=(). Local dev servers (astro dev/preview) do not apply these headers.
+          Also served: X-Content-Type-Options: nosniff · Referrer-Policy: strict-origin-when-cross-origin · Permissions-Policy: camera=(), microphone=(), geolocation=() · Strict-Transport-Security. Local dev servers (astro dev/preview) do not apply these headers.
         </p>
       </div>
     </section>
