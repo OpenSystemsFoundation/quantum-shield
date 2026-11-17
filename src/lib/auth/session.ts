@@ -34,12 +34,18 @@ export function savePendingAuth(p: PendingAuth): void {
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(p));
 }
 
-export function takePendingAuth(): PendingAuth | null {
-  const raw = sessionStorage.getItem(PENDING_KEY);
-  if (!raw) return null;
-  sessionStorage.removeItem(PENDING_KEY);
+/** A sign-in that has not come back within this window is abandoned. */
+export const PENDING_AUTH_TTL_MS = 10 * 60 * 1000;
+
+export function takePendingAuth(now = Date.now()): PendingAuth | null {
   try {
-    return JSON.parse(raw) as PendingAuth;
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(PENDING_KEY);
+    const pending = JSON.parse(raw) as PendingAuth;
+    const started = Date.parse(pending.startedAt);
+    if (!Number.isFinite(started) || now - started > PENDING_AUTH_TTL_MS) return null;
+    return pending;
   } catch {
     return null;
   }

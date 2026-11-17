@@ -7,7 +7,7 @@ Free, open-source post-quantum readiness scanner for Salesforce orgs, from the [
 One TypeScript scan engine, two front-ends:
 
 - **Local CLI (`qshield`)** — recommended for real orgs. Reuses the `sf` CLI session you already have on macOS, Windows, or Linux. No Connected App, no CORS setup, and no QuantumShield auth infrastructure in the path.
-- **Browser app** — optional static UI for in-browser scans, demos, and report review. Uses an External Client App or Connected App you own plus a one-time CORS allowlist entry in the org.
+- **Browser app** — optional static UI for in-browser scans, demos, and report review. Uses an External Client App or Connected App you own plus one-time CORS settings in the org.
 
 Both produce the same artifacts: a PDF executive report, a CycloneDX v1.6 CBOM, an OpenVEX document, a findings CSV, and a raw report JSON. Every artifact records **per-category coverage** (`scanned` / `partial` / `failed` / `skipped`), so "we could not check" is never presented as "clean."
 
@@ -85,7 +85,7 @@ npm run dev
 # open http://localhost:4321/connect
 ```
 
-Browser mode is the static web UI. It never uses a shared QuantumShield Connected App: you create an External Client App or Connected App in your own org, paste the Consumer Key into the setup wizard, and add the site's origin to your org's CORS allowlist. Sign-in uses OAuth 2.0 authorization code with PKCE and requests only the `api` and `id` scopes.
+Browser mode is the static web UI. It never uses a shared QuantumShield Connected App: you create an External Client App or Connected App in your own org, paste the Consumer Key into the setup wizard, add the site's origin to your org's CORS allowlist, and tick **Enable CORS for OAuth endpoints** on the same Setup page. Sign-in uses OAuth 2.0 authorization code with PKCE against your org's **My Domain** (the generic login.salesforce.com/test.salesforce.com hosts do not allow cross-origin sign-in) and requests only the `api` and `id` scopes. The `/install` page has the full click path, and `/connect` checks the CORS settings before redirecting.
 
 If you only care about production scans, you can ignore browser mode entirely and use the CLI.
 

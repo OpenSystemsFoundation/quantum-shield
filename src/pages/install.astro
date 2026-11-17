@@ -2,6 +2,11 @@
 import Shell from '../layouts/Shell.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import { SETUP_STEPS } from '../lib/auth/setupSteps';
+
+// Server-rendered default; the script below swaps in the origin actually
+// serving the page (preview builds, localhost).
+const PROD_ORIGIN = 'https://quantumshield.opensf.foundation';
 ---
 
 <Shell title="Setup guide — QuantumShield">
@@ -27,7 +32,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             <li class="cors-step">
               <div class="num">1</div>
               <div class="body">
-                Clone the repo and install dependencies with <span class="mono" style="color:var(--ink)">npm install</span>.
+                Clone the repo and install dependencies: <span class="mono" style="color:var(--ink);overflow-wrap:anywhere;">git clone https://github.com/OpenSystemsFoundation/quantum-shield.git && cd quantum-shield && npm install</span> (Node 22.12 or newer).
               </div>
             </li>
             <li class="cors-step">
@@ -52,105 +57,55 @@ import SiteFooter from '../components/SiteFooter.astro';
         </div>
       </article>
 
-      <article class="qs-card">
-        <div class="qs-card-head"><h3>Browser mode · Create the External Client App you own</h3></div>
+      <article class="qs-card" id="browser">
+        <div class="qs-card-head"><h3>Browser mode · One-time org setup</h3></div>
         <div class="qs-card-body">
           <p class="sub" style="margin-top:0;">
-            Browser mode never depends on a shared QuantumShield Connected App. You create the OAuth app inside your org, keep ownership of the client ID, and can revoke access at any time from <span class="mono">Setup → App Manager</span>.
+            Browser mode never uses a shared QuantumShield app. You create the OAuth app in your own org, keep ownership of the Consumer Key, and can revoke access at any time. Sign-in always goes through your org's My Domain (for example <span class="mono">acme.my.salesforce.com</span>): the generic login.salesforce.com and test.salesforce.com pages do not allow cross-origin sign-in.
           </p>
-          <ol class="cors-steps" style="list-style:none;padding:0;">
-            <li class="cors-step">
-              <div class="num">1</div>
-              <div class="body">
-                Open <span class="mono" style="color:var(--ink)">Setup → App Manager</span> and click <span class="mono" style="color:var(--ink)">New External Client App</span>. On orgs without External Client Apps yet, use <span class="mono" style="color:var(--ink)">New Connected App</span>.
-              </div>
-            </li>
-            <li class="cors-step">
-              <div class="num">2</div>
-              <div class="body">Name: <span class="mono" style="color:var(--ink)">QuantumShield Scanner</span>. Contact email: your own.</div>
-            </li>
-            <li class="cors-step">
-              <div class="num">3</div>
-              <div class="body">
-                Under API (Enable OAuth Settings): enable OAuth; leave Device Flow and Client Credentials off.
-              </div>
-            </li>
-            <li class="cors-step">
-              <div class="num">4</div>
-              <div class="body">
-                Scopes: <span class="mono" style="color:var(--ink)">api</span> and <span class="mono" style="color:var(--ink)">id</span> only. <span class="mono" style="color:var(--ink)">refresh_token</span> is not needed — the browser session intentionally ends when the tab closes. Do not select <span class="mono" style="color:var(--ink)">full</span> or <span class="mono" style="color:var(--ink)">web</span>.
-              </div>
-            </li>
-            <li class="cors-step">
-              <div class="num">5</div>
-              <div class="body">Save. OAuth configuration changes can take a few minutes to propagate — if the first sign-in attempt fails, wait briefly and retry.</div>
-            </li>
-          </ol>
-        </div>
-      </article>
-
-      <article class="qs-card">
-        <div class="qs-card-head"><h3>Browser mode · Add the callback URL</h3></div>
-        <div class="qs-card-body">
-          <p class="sub" style="margin-top:0;">
-            In the External Client App you just created, add this URL to the <span class="mono" style="color:var(--ink)">Callback URL</span> list:
-          </p>
-          <div class="cors-step" style="grid-template-columns:1fr;">
-            <div class="body">
-              <div class="mono-field">
-                <code id="redirect-uri">https://quantumshield.opensf.foundation/callback</code>
-                <button type="button" id="copy-callback">Copy</button>
-              </div>
-            </div>
-          </div>
-          <p style="margin-top:10px;font-size:11.5px;color:var(--muted);font-family:var(--mono);">
-            You can add multiple callback URLs. As with other OAuth settings, saved changes can take a few minutes to propagate.
+          {SETUP_STEPS.map((section, si) => (
+            <section id={section.id === 'cors' ? 'cors' : `setup-${section.id}`} style="margin-top:18px;">
+              <h4 style="margin:0 0 6px;font-size:14px;">{String.fromCharCode(65 + si)}. {section.title}</h4>
+              <ol style="margin:0;padding-left:22px;font-size:13px;color:var(--ink-2);line-height:1.6;">
+                {section.items.map((item) => (
+                  <li style="margin:4px 0;overflow-wrap:anywhere;">
+                    {item.map((seg) =>
+                      typeof seg === 'string' ? (
+                        seg
+                      ) : 'ui' in seg ? (
+                        <span class="mono" style="color:var(--ink);font-size:12px;">{seg.ui}</span>
+                      ) : (
+                        <span class="cors-step" style="display:block;grid-template-columns:1fr;padding:0;background:none;border:0;">
+                          <span class="mono-field" style="display:flex;">
+                            <code data-setup-value={seg.value}>
+                              {seg.value === 'callback' ? `${PROD_ORIGIN}/callback` : PROD_ORIGIN}
+                            </code>
+                            <button type="button" data-copy={seg.value}>Copy</button>
+                          </span>
+                        </span>
+                      ),
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
+          <p style="margin-top:18px;font-size:13px;color:var(--ink-2);">
+            Then open <a href="/connect" style="color:var(--navy-600);font-weight:600;">/connect</a>, enter your My Domain and paste the Consumer Key. The setup page can check the CORS settings for you before you sign in.
           </p>
         </div>
       </article>
 
-      <article class="qs-card" id="cors">
-        <div class="qs-card-head"><h3>Browser mode · Add QuantumShield to CORS</h3></div>
+      <article class="qs-card" id="troubleshooting">
+        <div class="qs-card-head"><h3>Browser mode · If sign-in fails</h3></div>
         <div class="qs-card-body">
-          <div class="cors-panel">
-            <div class="head">
-              <div class="ico">!</div>
-              <div>
-                <h4>One-time admin task</h4>
-                <p class="sub">This applies to browser mode only. The local CLI does not need a CORS allowlist.</p>
-              </div>
-            </div>
-            <ol class="cors-steps" style="list-style:none;padding:0;">
-              <li class="cors-step">
-                <div class="num">1</div>
-                <div class="body">Open <span class="mono" style="color:var(--ink)">Setup → Quick Find → "CORS"</span>. Select <span class="mono" style="color:var(--ink)">CORS Allowlist</span>.</div>
-              </li>
-              <li class="cors-step">
-                <div class="num">2</div>
-                <div class="body">
-                  Click <span class="mono" style="color:var(--ink)">New</span> and paste this origin:
-                  <div class="mono-field" style="margin-top:6px;">
-                    <code id="cors-origin">https://quantumshield.opensf.foundation</code>
-                    <button type="button" id="copy-cors">Copy</button>
-                  </div>
-                </div>
-              </li>
-              <li class="cors-step">
-                <div class="num">3</div>
-                <div class="body">Save. Subsequent users of the scanner in this org do not need to repeat this step.</div>
-              </li>
-            </ol>
-          </div>
-        </div>
-      </article>
-
-      <article class="qs-card">
-        <div class="qs-card-head"><h3>Browser mode · Paste your Consumer Key</h3></div>
-        <div class="qs-card-body">
-          <p class="sub" style="margin-top:0;">
-            In your new External Client App, open the <span class="mono" style="color:var(--ink)">Manage Consumer Details</span> panel. Copy the <span class="mono" style="color:var(--ink)">Consumer Key</span> and paste it into
-            <a href="/connect" style="color:var(--navy-600);font-weight:600;">/connect</a>. We remember it in your browser's localStorage so you never need to paste it again on this device.
-          </p>
+          <dl style="margin:0;font-size:13px;color:var(--ink-2);line-height:1.6;display:grid;gap:10px;">
+            <div><dt class="mono" style="color:var(--ink);">redirect_uri_mismatch (on the Salesforce page)</dt><dd style="margin:0;">The app's Callback URL does not include this site's callback URL exactly. Add it and wait a few minutes.</dd></div>
+            <div><dt class="mono" style="color:var(--ink);">invalid_client</dt><dd style="margin:0;">Untick "Require secret for Web Server Flow" in the app's OAuth settings.</dd></div>
+            <div><dt class="mono" style="color:var(--ink);">invalid_client_id</dt><dd style="margin:0;">Wrong key, or the app is under 10 minutes old.</dd></div>
+            <div><dt class="mono" style="color:var(--ink);">"The org blocked sign-in from this site"</dt><dd style="margin:0;">The origin is missing from the CORS Allowed Origins List, or "Enable CORS for OAuth endpoints" is off.</dd></div>
+            <div><dt class="mono" style="color:var(--ink);">"user is not admin approved"</dt><dd style="margin:0;">In the app's policies, let all users self-authorize or assign the app to your profile or a permission set.</dd></div>
+          </dl>
         </div>
       </article>
     </section>
@@ -163,15 +118,20 @@ import SiteFooter from '../components/SiteFooter.astro';
 
   <script>
     const origin = window.location.origin;
-    const cb = document.getElementById('redirect-uri');
-    const co = document.getElementById('cors-origin');
-    if (cb) cb.textContent = `${origin}/callback`;
-    if (co) co.textContent = origin;
-    document.getElementById('copy-callback')?.addEventListener('click', () => {
-      if (cb?.textContent) navigator.clipboard.writeText(cb.textContent).catch(() => {});
+    document.querySelectorAll<HTMLElement>('[data-setup-value]').forEach((el) => {
+      el.textContent = el.dataset.setupValue === 'callback' ? `${origin}/callback` : origin;
     });
-    document.getElementById('copy-cors')?.addEventListener('click', () => {
-      if (co?.textContent) navigator.clipboard.writeText(co.textContent).catch(() => {});
+    document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const text = btn.dataset.copy === 'callback' ? `${origin}/callback` : origin;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            btn.textContent = 'Copied';
+            setTimeout(() => (btn.textContent = 'Copy'), 1500);
+          })
+          .catch(() => {});
+      });
     });
   </script>
   <SiteFooter />

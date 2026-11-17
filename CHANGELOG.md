@@ -6,6 +6,32 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — browser sign-in (verified end to end against a live scratch org)
+
+- **Sign-in could never complete in the browser.** Two blockers found on the
+  first real round-trip: the token endpoint needs the org setting "Enable CORS
+  for OAuth endpoints" (never mentioned in setup, and off in the seed org),
+  and the identity lookup went to login/test.salesforce.com, which never
+  answer CORS. Identity is now read from the org's My Domain (best effort),
+  and the setup steps cover the OAuth CORS setting.
+- **`/connect` redesigned around My Domain.** The Production/Sandbox options
+  pointed at login/test.salesforce.com, where a browser token exchange cannot
+  work; the wizard now takes the org's My Domain (Lightning and Setup URLs are
+  normalised), shows a single setup checklist shared with `/install`, checks
+  the org's CORS settings before redirecting, and explains token errors
+  (`invalid_client`, `invalid_client_id`, `redirect_uri_mismatch`, blocked
+  users) in plain language. The forced `prompt=login consent` is gone.
+- **Token hardening.** `instance_url` and the identity URL must be
+  `https://*.salesforce.com` before the bearer token is sent; pending sign-ins
+  expire after 10 minutes; Salesforce error text on `/callback` is shown only
+  for a sign-in this tab started.
+- Query pagination requested `/services/data/vNN/services/data/vNN/...` for
+  the second page (`nextRecordsUrl` is instance-relative).
+- The app header shows the org name and environment (sandbox/scratch) instead
+  of the org id.
+- Seed scratch-org metadata now enables OAuth CORS, allows the production
+  origin, and lists the production callback URL.
+
 ### Changed
 
 - **Rebranded as a free, open-source OpenSF project.** All references to the

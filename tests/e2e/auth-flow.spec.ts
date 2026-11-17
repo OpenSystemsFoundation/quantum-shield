@@ -12,45 +12,54 @@ const PENDING_AUTH = {
   environmentId: 'custom',
   loginUrl: LOGIN_URL,
   apiVersion: '66.0',
-  startedAt: '2026-04-21T00:00:00.000Z',
+  // Pending sign-ins expire after 10 minutes.
+  startedAt: new Date().toISOString(),
 };
 
 test.describe('Auth wizard (/connect)', () => {
-  test('guides through all four steps and launches PKCE OAuth', async ({ page }) => {
-    await page.goto('/connect');
-
-    await expect(page.getByRole('heading', { name: 'Step 1 · Pick your environment' })).toBeVisible();
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    await expect(page.getByRole('heading', { name: /Step 2/ })).toBeVisible();
-    await page.getByRole('button', { name: /App created/ }).click();
-
-    await expect(page.getByRole('heading', { name: /Step 3/ })).toBeVisible();
-    const callback = await page.getByTestId('redirect-uri').textContent();
-    expect(callback).toContain('/callback');
-    await page.getByRole('button', { name: /Callback saved/ }).click();
-
-    await expect(page.getByRole('heading', { name: /Step 4/ })).toBeVisible();
-    await page.getByTestId('client-id-input').fill('3MVG9FAKE.CLIENT.ID.FOR.TESTS');
-
-    // We block navigation to the actual Salesforce authorize URL in the test.
-    await page.route('https://login.salesforce.com/services/oauth2/authorize*', (route) =>
+  test('guides through the three steps and launches PKCE OAuth against My Domain', async ({ page }) => {
+    const MY_DOMAIN = 'https://acme.my.salesforce.com';
+    // CORS probe: answer the token endpoint so the wizard sees CORS as set up.
+    await page.route(`${MY_DOMAIN}/services/oauth2/token`, (route) =>
+      route.fulfill({
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: '{"error":"invalid_grant"}',
+      }),
+    );
+    await page.route(`${MY_DOMAIN}/services/oauth2/authorize*`, (route) =>
       route.fulfill({ status: 200, body: 'blocked' }),
     );
 
-    await page.getByTestId('connect-button').click();
-    await page.waitForURL(/login\.salesforce\.com.*response_type=code.*/);
+    await page.goto('/connect');
+    await expect(page.getByRole('heading', { name: /Step 1/ })).toBeVisible();
 
-    expect(page.url()).not.toContain('response_type=token');
+    // Generic login hosts are refused with guidance.
+    await page.getByTestId('my-domain-input').fill('login.salesforce.com');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('alert')).toContainText('My Domain');
+
+    // A Lightning URL is normalised to the My Domain.
+    await page.getByTestId('my-domain-input').fill('https://acme.lightning.force.com/lightning/page/home');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await expect(page.getByRole('heading', { name: /Step 2 · One-time setup in acme\.my\.salesforce\.com/ })).toBeVisible();
+    expect(await page.getByTestId('redirect-uri').textContent()).toContain('/callback');
+    await page.getByTestId('cors-check').click();
+    await expect(page.getByText('CORS is set up for this site.')).toBeVisible();
+    await page.getByRole('button', { name: /Setup done/ }).click();
+
+    await expect(page.getByRole('heading', { name: /Step 3/ })).toBeVisible();
+    await page.getByTestId('client-id-input').fill('3MVG9FAKE.CLIENT.ID.FOR.TESTS');
+    await page.getByTestId('connect-button').click();
+    await page.waitForURL(/acme\.my\.salesforce\.com.*response_type=code.*/);
 
     const url = new URL(page.url());
     expect(url.searchParams.get('response_type')).toBe('code');
     expect(url.searchParams.get('code_challenge')).toBeTruthy();
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.get('state')).toBeTruthy();
-    expect(url.searchParams.get('scope')).toContain('api');
-    expect(url.searchParams.get('scope')).toContain('id');
-    expect(url.searchParams.get('scope')).not.toContain('refresh_token');
+    expect(url.searchParams.get('scope')?.split(' ').sort()).toEqual(['api', 'id']);
     expect(url.searchParams.get('client_id')).toBe('3MVG9FAKE.CLIENT.ID.FOR.TESTS');
   });
 
@@ -104,9 +113,9 @@ test.describe('/callback code exchange', () => {
       });
     });
 
-    await page.route(IDENTITY_URL, async (route) => {
-      // The identity fetch carries an Authorization header, so the browser
-      // sends a CORS preflight first.
+    // Identity is read from the org's My Domain (login/test.salesforce.com
+    // never answer CORS), carrying an Authorization header, so expect a preflight.
+    await page.route(`${LOGIN_URL}/id/**`, async (route) => {
       if (route.request().method() === 'OPTIONS') {
         await route.fulfill({
           status: 204,
@@ -132,11 +141,32 @@ test.describe('/callback code exchange', () => {
       });
     });
 
+    await page.route(`${LOGIN_URL}/services/data/**`, async (route) => {
+      if (route.request().method() === 'OPTIONS') {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'authorization, accept',
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        contentType: 'application/json',
+        body: JSON.stringify({
+          records: [{ Name: 'Velocity Scratch', OrganizationType: 'Developer Edition', IsSandbox: false }],
+        }),
+      });
+    });
+
     await page.goto(`/callback?code=e2e-auth-code&state=${PENDING_AUTH.state}`);
 
     await page.waitForURL('**/app');
     expect(page.url()).not.toContain('code=');
-    await expect(page.getByTestId('session-org-name')).toHaveText('00DRR00000PekkH2AR');
+    await expect(page.getByTestId('session-org-name')).toHaveText('Velocity Scratch');
     await expect(page.getByTestId('start-scan-button')).toBeVisible();
 
     expect(tokenRequestBody).toContain('grant_type=authorization_code');
@@ -146,10 +176,25 @@ test.describe('/callback code exchange', () => {
 });
 
 test.describe('/callback error handling', () => {
-  test('shows a clear error when Salesforce returns error param', async ({ page }) => {
-    await page.goto('/callback?error=access_denied&error_description=User+denied+the+request');
+  test('shows guidance when Salesforce returns an error for our sign-in', async ({ page }) => {
+    await page.addInitScript(
+      ({ key, pending }) => {
+        sessionStorage.setItem(key, JSON.stringify(pending));
+      },
+      { key: PENDING_KEY, pending: PENDING_AUTH },
+    );
+    await page.goto(
+      `/callback?error=OAUTH_APP_BLOCKED&error_description=user+is+not+admin+approved&state=${PENDING_AUTH.state}`,
+    );
     await expect(page.getByTestId('callback-error-title')).toBeVisible();
-    await expect(page.getByTestId('callback-error-detail')).toContainText('User denied the request');
+    await expect(page.getByTestId('callback-error-detail')).toContainText('Permitted Users');
+    expect(page.url()).not.toContain('error=');
+  });
+
+  test('does not echo error text for a sign-in this tab did not start', async ({ page }) => {
+    await page.goto('/callback?error=access_denied&error_description=Call+support+at+555');
+    await expect(page.getByTestId('callback-error-title')).toBeVisible();
+    await expect(page.getByTestId('callback-error-detail')).not.toContainText('555');
     // Scrubbed even on the error path.
     expect(page.url()).not.toContain('error=');
   });

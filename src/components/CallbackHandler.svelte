@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
+    describeProviderError,
+    enrichSessionWithOrg,
     exchangeCode,
     loadClientId,
     OAuthFlowError,
@@ -25,8 +27,14 @@
 
     if (params.error) {
       status = 'error';
-      errorTitle = 'Salesforce denied the authorization';
-      errorDetail = params.errorDescription ?? params.error;
+      // Only echo Salesforce's description when the response belongs to a
+      // sign-in this tab started; otherwise anyone could put text here.
+      const pendingForError = takePendingAuth();
+      const trusted = !!pendingForError && params.state === pendingForError.state;
+      errorTitle = params.error === 'access_denied' ? 'Sign-in was cancelled' : 'Salesforce refused the sign-in';
+      errorDetail = trusted
+        ? describeProviderError(params.error, params.errorDescription ?? '')
+        : 'Start again from the setup page.';
       return;
     }
 
@@ -71,6 +79,7 @@
         clientId,
       });
       const session = sessionFromTokenAndIdentity(pending, token, identity);
+      await enrichSessionWithOrg(session);
 
       saveSession(session);
       status = 'success';
@@ -78,7 +87,12 @@
     } catch (err) {
       status = 'error';
       if (err instanceof OAuthFlowError) {
-        errorTitle = `OAuth failed (${err.kind})`;
+        errorTitle =
+          err.kind === 'cors-blocked'
+            ? 'The org blocked sign-in from this site'
+            : err.kind === 'token-exchange-failed'
+              ? 'Salesforce rejected the sign-in'
+              : 'Sign-in could not be completed';
         errorDetail = err.message;
       } else {
         errorTitle = 'OAuth failed';

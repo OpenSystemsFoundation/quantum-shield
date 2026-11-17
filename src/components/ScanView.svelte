@@ -273,7 +273,7 @@
             </div>
           </div>
           <p style="margin:12px 0 0;font-size:12.5px;color:var(--ink-2);">
-            Open <span class="mono" style="color:var(--ink)">Setup → CORS Allowlist</span> and add:
+            Open <span class="mono" style="color:var(--ink)">Setup → CORS</span> and add this origin to the Allowed Origins List:
           </p>
           <div class="mono-field" style="margin-top:10px;">
             <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>

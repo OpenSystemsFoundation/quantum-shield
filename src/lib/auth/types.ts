@@ -1,10 +1,4 @@
-export type EnvironmentId = 'production' | 'sandbox' | 'custom';
-
-export interface EnvironmentChoice {
-  id: EnvironmentId;
-  loginUrl: string;
-  label: string;
-}
+export type EnvironmentId = 'production' | 'sandbox' | 'scratch' | 'custom';
 
 export interface AuthConfig {
   clientId: string;
