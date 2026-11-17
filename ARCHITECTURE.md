@@ -284,7 +284,7 @@ The CLI exists specifically so admins can run a scan without the org having to s
 - TypeScript. Shares types with the browser scan engine verbatim — the CLI imports from `src/lib/` directly.
 - `tsx` as the runtime, so we ship no separate compile step for v1. The bin shim (`bin/qshield.mjs`) uses `tsx`'s `tsImport` API to execute `cli/index.ts`. `npm install` in the repo is the only prerequisite.
 - No external argv parser. `cli/args.ts` is ~60 lines of string-crunching.
-- No external Salesforce SDK for the CLI either — `src/lib/scan/sfClient.ts` was already plain `fetch` + `Authorization: Bearer`, portable to Node as-is (the CLI requires Node ≥ 22.12, like the build).
+- No external Salesforce SDK for the CLI either — `src/lib/scan/sfClient.ts` was already plain `fetch` + `Authorization: Bearer`, portable to Node as-is (the CLI requires Node ≥ 22.23.4, like the build).
 
 **Out of scope for the CLI:**
 

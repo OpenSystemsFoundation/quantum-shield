@@ -65,6 +65,10 @@ builder, and OpenVEX/report output code under `src/lib/`.
   into `dist/_headers`. Never add inline event handlers (`onclick="…"`); the
   build fails on them. The `/security` page describes the policy — change them
   together.
+- `.node-version` pins the Node version for the Cloudflare build and CI. Keep
+  `engines` in `package.json`, `.node-version` and the workflows in step, and
+  leave the Cloudflare `NODE_VERSION` build variable unset (it would override
+  the file).
 - `src/lib/version.ts` is the single source of truth for the tool version; CI
   fails if it disagrees with `package.json`'s `version`.
 - `cli/` is excluded from `tsconfig.json`; typecheck it with

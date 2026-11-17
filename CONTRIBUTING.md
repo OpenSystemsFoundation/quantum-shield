@@ -25,7 +25,7 @@ By taking part you agree to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Development setup
 
-Requirements: Node.js ≥ 22.12 and npm. The Salesforce CLI (`sf`) is only
+Requirements: Node.js ≥ 22.23.4 (see `.node-version`) and npm. The Salesforce CLI (`sf`) is only
 needed to run real scans.
 
 ```sh

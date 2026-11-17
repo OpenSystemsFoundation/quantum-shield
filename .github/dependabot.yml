@@ -13,13 +13,6 @@ updates:
         update-types: [minor, patch]
     commit-message:
       prefix: deps
-    ignore:
-      # Astro is held at 7.3.x: 7.4 needs Node >= 22.23.4 and the Cloudflare
-      # build does not run it yet. Remove these once NODE_VERSION is raised.
-      - dependency-name: astro
-        update-types: ["version-update:semver-minor", "version-update:semver-major"]
-      - dependency-name: "@astrojs/*"
-        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
