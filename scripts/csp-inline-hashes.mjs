@@ -14,7 +14,7 @@ import path from 'node:path';
 /** Cloudflare ignores _headers lines longer than this. */
 const MAX_HEADER_LINE = 2000;
 
-const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi;
 const NON_EXECUTING_TYPE_RE = /\btype\s*=\s*["']?(application\/(ld\+)?json|importmap-shim|text\/template)/i;
 const INLINE_HANDLER_RE = /<[a-z][^<>]*\son[a-z]+\s*=\s*["'][^<>]*>/gi;
 
@@ -40,7 +40,7 @@ export function inlineEventHandlers(html) {
   // Strip script/style bodies and comments first so their text is not scanned.
   const markup = html
     .replace(SCRIPT_RE, '')
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, '')
+    .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '');
   return markup.match(INLINE_HANDLER_RE) ?? [];
 }
