@@ -6,6 +6,17 @@
   import type { Category, CategoryCoverage, CoverageStatus, Finding, Report, Severity } from '@lib/pdf';
   import AppChrome from './AppChrome.svelte';
   import FindingDrawer from './FindingDrawer.svelte';
+  import { SAMPLE_BANNER_TEXT, SAMPLE_SCAN_ID, SAMPLE_SESSION, buildSampleReport } from '@lib/demo/sample';
+
+  interface Props {
+    /**
+     * Public sample-report mode (/demo): render a report built in memory from
+     * the bundled fixtures. No session is read or created and nothing is
+     * loaded from or written to IndexedDB.
+     */
+    demo?: boolean;
+  }
+  const { demo = false }: Props = $props();
 
   const initialScanId = (() => {
     if (typeof window === 'undefined') return '';
@@ -15,7 +26,7 @@
     const fromHash = url.hash.startsWith('#') ? url.hash.slice(1) : '';
     return fromHash;
   })();
-  const scanId = initialScanId;
+  const scanId = demo ? SAMPLE_SCAN_ID : initialScanId;
 
   let session = $state<Session | null>(null);
   let report = $state<Report | null>(null);
@@ -68,16 +79,22 @@
   };
 
   onMount(async () => {
-    const s = loadSession();
-    if (!s) {
-      window.location.replace('/connect');
-      return;
+    let loadedReport: Report | null = null;
+    if (demo) {
+      session = SAMPLE_SESSION;
+      loadedReport = await buildSampleReport();
+    } else {
+      const s = loadSession();
+      if (!s) {
+        window.location.replace('/connect');
+        return;
+      }
+      session = s;
+      loadedReport = (await getReport(scanId))?.report ?? null;
     }
-    session = s;
-    const stored = await getReport(scanId);
-    if (stored) {
-      report = stored.report;
-      const cats = new Set(stored.report.findings.map((f) => f.category));
+    if (loadedReport) {
+      report = loadedReport;
+      const cats = new Set(loadedReport.findings.map((f) => f.category));
       const init: Record<string, boolean> = {};
       for (const c of cats) init[c] = true;
       categoryFilter = init;
@@ -106,11 +123,24 @@
     });
   });
 
-  function onRowKeydown(e: KeyboardEvent, id: string) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleSelect(id);
-    }
+  /**
+   * Mouse convenience: clicking anywhere on a row toggles it. The <button> in
+   * the finding cell is the real, keyboard-reachable control; its own click
+   * is handled there, so ignore it here to avoid toggling twice.
+   */
+  function onRowClick(e: MouseEvent, id: string) {
+    if ((e.target as HTMLElement).closest('button, a')) return;
+    toggleSelect(id);
+  }
+
+  /** Finding ids are `<rule id>:<asset…>`; the rule id is the readable part. */
+  function ruleIdOf(f: Finding): string {
+    return f.id.split(':')[0] ?? f.id;
+  }
+
+  function deadlineText(f: Finding): string {
+    if (f.deadline) return f.deadline;
+    return f.migrationPosture === 'replace-now' ? 'As soon as possible' : 'No fixed deadline';
   }
 
   const coverageIssues = $derived.by<CategoryCoverage[]>(() => {
@@ -173,35 +203,38 @@
 
   const hndlCount = $derived(report?.findings.filter((f) => f.hndlExposure).length ?? 0);
 
+  // Exports of the sample are named as such so they are never mistaken for a real scan.
+  const filePrefix = demo ? 'SAMPLE-' : '';
+
   async function downloadPdf() {
     if (!report) return;
     const bytes = await renderReportPdf(report);
     const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-    triggerDownload(blob, `quantum-shield-${safeName(report.org.orgName)}.pdf`);
+    triggerDownload(blob, `quantum-shield-${filePrefix}${safeName(report.org.orgName)}.pdf`);
   }
 
   function downloadCbom() {
     if (!report) return;
     const json = buildCbomJson(report);
-    triggerDownload(new Blob([json], { type: 'application/json' }), 'quantum-shield-cbom.json');
+    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}cbom.json`);
   }
 
   function downloadVex() {
     if (!report) return;
     const json = buildVexJson(report);
-    triggerDownload(new Blob([json], { type: 'application/json' }), 'quantum-shield-vex.json');
+    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}vex.json`);
   }
 
   function downloadRawJson() {
     if (!report) return;
     const json = JSON.stringify(report, null, 2);
-    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${safeName(report.org.orgName)}.report.json`);
+    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}${safeName(report.org.orgName)}.report.json`);
   }
 
   function downloadCsv() {
     if (!report) return;
     const csv = buildFindingsCsv(report);
-    triggerDownload(new Blob([csv], { type: 'text/csv' }), 'quantum-shield-findings.csv');
+    triggerDownload(new Blob([csv], { type: 'text/csv' }), `quantum-shield-${filePrefix}findings.csv`);
   }
 
   function triggerDownload(blob: Blob, filename: string) {
@@ -238,13 +271,14 @@
 </script>
 
 {#if session && loaded}
-  <div class="app-frame">
+  <div class="app-frame" class:is-demo={demo}>
     <AppChrome
       session={session}
       active="findings"
-      crumb="Findings"
+      crumb={demo ? 'Sample report' : 'Findings'}
       findingsCount={report?.findings.length ?? 0}
       latestReportScanId={report ? scanId : null}
+      demo={demo}
     />
 
     <main style="min-width:0;">
@@ -355,15 +389,16 @@
               </div>
             </div>
 
-            <div class="toolbar">
+            <div class="toolbar" id="export" style="scroll-margin-top:110px;">
               <input
                 type="search"
+                aria-label="Search findings"
                 placeholder="Search by asset, algorithm, rule ID…"
                 bind:value={query}
               />
               <div class="segment">
-                <button class:active={sort === 'deadline'} onclick={() => (sort = 'deadline')}>Sort · Deadline</button>
-                <button class:active={sort === 'severity'} onclick={() => (sort = 'severity')}>Severity</button>
+                <button type="button" class:active={sort === 'deadline'} aria-pressed={sort === 'deadline'} onclick={() => (sort = 'deadline')}>Sort · Deadline</button>
+                <button type="button" class:active={sort === 'severity'} aria-pressed={sort === 'severity'} onclick={() => (sort = 'severity')}>Severity</button>
               </div>
               <div class="spacer"></div>
               <button type="button" class="qs-btn qs-btn-sm" onclick={downloadCsv}>CSV</button>
@@ -401,46 +436,46 @@
                 </div>
               {:else}
               <table class="tbl" data-testid="findings-list">
+                <caption class="sr-only">Findings — activate a finding's title to open its detail</caption>
                 <thead>
                   <tr>
-                    <th style="width:110px;">ID</th>
-                    <th>Finding</th>
-                    <th style="width:120px;">Asset</th>
-                    <th style="width:100px;">Severity</th>
-                    <th style="width:160px;">Status / Deadline</th>
-                    <th style="width:80px;">Flags</th>
+                    <th scope="col">Finding</th>
+                    <th scope="col" style="width:120px;">Category</th>
+                    <th scope="col" style="width:100px;">Severity</th>
+                    <th scope="col" style="width:150px;">Status / Deadline</th>
+                    <th scope="col" style="width:64px;">Flags</th>
                   </tr>
                 </thead>
                 <tbody>
                   {#each filteredFindings as f (f.id)}
-                    <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+                    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                     <tr
                       class:selected={selected?.id === f.id}
-                      role="button"
-                      tabindex="0"
-                      aria-expanded={selected?.id === f.id}
-                      onclick={() => toggleSelect(f.id)}
-                      onkeydown={(e) => onRowKeydown(e, f.id)}
+                      onclick={(e) => onRowClick(e, f.id)}
                       style="cursor:pointer;"
                     >
-                      <td class="mono" style="color:var(--muted);font-size:11px;">{f.id.slice(0, 18)}</td>
-                      <td>
-                        <div style="font-weight:600;color:var(--ink);">{f.title}</div>
-                        <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;">{f.asset.name}</div>
+                      <td class="finding-cell">
+                        <button
+                          type="button"
+                          class="row-open"
+                          aria-haspopup="dialog"
+                          aria-expanded={selected?.id === f.id}
+                          onclick={() => toggleSelect(f.id)}
+                          data-testid="finding-open"
+                        >{f.title}</button>
+                        <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;">
+                          {f.asset.name} · {ruleIdOf(f)}
+                        </div>
                       </td>
                       <td>
                         <span class="tag">{CATEGORY_LABELS[f.category]}</span>
                       </td>
                       <td><span class={`pill ${SEV_CLASS[f.severity]}`}>{f.severity}</span></td>
-                      <td>
+                      <td class="deadline-cell">
                         <div class="mono" style="font-size:11px;color:var(--ink-2);">{POSTURE_LABELS[f.migrationPosture]}</div>
-                        {#if f.deadline}
-                          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;">{f.deadline}</div>
-                        {/if}
+                        <div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;">{deadlineText(f)}</div>
                       </td>
-                      <td>
-                        {#if f.hndlExposure}<span class="pill hndl">HNDL</span>{/if}
-                      </td>
+                      <td>{#if f.hndlExposure}<span class="pill hndl">HNDL</span>{/if}</td>
                     </tr>
                   {/each}
                 </tbody>
@@ -451,7 +486,7 @@
           </div>
         </div>
 
-        <FindingDrawer finding={selected} onClose={() => (selectedId = null)} bind:height={drawerHeight} />
+        <FindingDrawer finding={selected} onClose={() => (selectedId = null)} bind:height={drawerHeight} sampleLabel={demo ? SAMPLE_BANNER_TEXT : undefined} />
 
         {#if selected}
           <div style={`height:${drawerHeight + 20}px;`}></div>

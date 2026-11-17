@@ -7,4 +7,13 @@ import ConnectWizardIsland from '../components/ConnectWizard.svelte';
 <Shell title="Browser setup — QuantumShield">
   <SiteHeader />
   <ConnectWizardIsland client:load />
+  <aside class="sample-strip" aria-label="Sample report">
+    <div class="qs-card">
+      <span>
+        <strong style="color:var(--ink);">No org to hand?</strong>
+        See what a report looks like using bundled sample data — no sign-in, and nothing leaves your browser.
+      </span>
+      <a class="qs-btn" href="/demo" data-testid="view-sample-report">View a sample report</a>
+    </div>
+  </aside>
 </Shell>

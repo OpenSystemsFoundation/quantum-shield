@@ -262,7 +262,7 @@
   <div class="app-frame">
     <AppChrome session={session} active="scan" crumb={`Scan ${scanId.slice(0, 14)}…`} latestReportScanId={latestReportScanId} />
 
-    <main style="padding:24px 28px 48px;min-width:0;">
+    <main class="app-main">
       {#if status === 'cors'}
         <div class="cors-panel" data-testid="cors-panel">
           <div class="head">

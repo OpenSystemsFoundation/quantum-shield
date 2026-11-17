@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { loadSession, type Session } from '@lib/auth';
   import { getScansForOrg, clearAll, type ScanSummary } from '@lib/persistence/db';
   import AppChrome from './AppChrome.svelte';
@@ -26,6 +26,12 @@
     session = s;
     ready = true;
     scans = await getScansForOrg(s.org.orgId);
+    // The sidebar's "Scans" item links here; the island renders after the
+    // browser's own fragment navigation, so scroll to it once it exists.
+    if (window.location.hash === '#scan-history') {
+      await tick();
+      document.getElementById('scan-history')?.scrollIntoView({ block: 'start' });
+    }
     try {
       const stored = localStorage.getItem('qs:regions');
       if (stored) selectedRegions = JSON.parse(stored);
@@ -58,12 +64,18 @@
     window.location.assign(`/app/scan/?${params.toString()}`);
   }
 
-  function openScan(s: ScanSummary) {
+  function scanHref(s: ScanSummary): string {
     // Completed scans open the report; failed/interrupted scans open the scan
     // page in status mode (ScanView never restarts a scan whose id already
     // has a persisted summary).
     const base = s.status === 'completed' ? '/app/report/' : '/app/scan/';
-    window.location.assign(`${base}?id=${encodeURIComponent(s.scanId)}`);
+    return `${base}?id=${encodeURIComponent(s.scanId)}`;
+  }
+
+  /** Mouse convenience: the whole row is clickable; the link in it is the real control. */
+  function onRowClick(e: MouseEvent, s: ScanSummary) {
+    if ((e.target as HTMLElement).closest('a')) return;
+    window.location.assign(scanHref(s));
   }
 
   const latestReportScanId = $derived(
@@ -82,7 +94,7 @@
   <div class="app-frame">
     <AppChrome session={session} active="overview" scanCount={scans.length} findingsCount={scans.reduce((acc, s) => acc + (s.totalFindings ?? 0), 0)} latestReportScanId={latestReportScanId} />
 
-    <main style="padding:24px 28px 48px;min-width:0;">
+    <main class="app-main">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
           <div class="tiny-caps" style="color:var(--navy-600);">Overview</div>
@@ -105,7 +117,7 @@
       </div>
 
       <section class="app-cols" style="margin-top:28px;">
-        <div class="qs-card">
+        <div class="qs-card" id="scan-history" style="scroll-margin-top:72px;">
           <div class="qs-card-head">
             <h3>Scan history</h3>
             <div style="margin-left:auto;display:flex;gap:8px;">
@@ -119,36 +131,26 @@
               No scans yet. Start your first scan to see findings here.
             </div>
           {:else}
-            <table class="tbl">
+            <div class="tbl-scroll">
+            <table class="tbl" style="min-width:520px;">
               <thead>
                 <tr>
-                  <th>Started</th>
-                  <th>Scan ID</th>
-                  <th style="width:120px;">Findings</th>
-                  <th style="width:120px;">Status</th>
-                  <th style="width:80px;"></th>
+                  <th scope="col">Started</th>
+                  <th scope="col">Scan ID</th>
+                  <th scope="col" style="width:100px;">Findings</th>
+                  <th scope="col" style="width:110px;">Status</th>
+                  <th scope="col" style="width:90px;"><span class="sr-only">Open</span></th>
                 </tr>
               </thead>
               <tbody>
                 {#each scans as s (s.scanId)}
-                  <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
-                  <tr
-                    role="button"
-                    tabindex="0"
-                    onclick={() => openScan(s)}
-                    onkeydown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openScan(s);
-                      }
-                    }}
-                    style="cursor:pointer;"
-                  >
+                  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+                  <tr onclick={(e) => onRowClick(e, s)} style="cursor:pointer;">
                     <td>
                       <div style="font-weight:600;">{fmtDate(s.startedAt)}</div>
                       <div class="mono" style="font-size:11px;color:var(--muted);">{fmtTime(s.startedAt)}</div>
                     </td>
-                    <td class="mono" style="font-size:11.5px;color:var(--ink-3);">{s.scanId}</td>
+                    <td class="mono" style="font-size:11.5px;color:var(--ink-3);overflow-wrap:anywhere;">{s.scanId}</td>
                     <td class="mono">{s.totalFindings ?? '—'}</td>
                     <td>
                       {#if s.status === 'completed'}
@@ -159,11 +161,14 @@
                         <span class="pill adv">Running</span>
                       {/if}
                     </td>
-                    <td class="mono" style="color:var(--navy-600);font-size:11.5px;">Open →</td>
+                    <td>
+                      <a class="mono" style="font-size:11.5px;white-space:nowrap;" href={scanHref(s)} aria-label={`Open scan from ${fmtDate(s.startedAt)} ${fmtTime(s.startedAt)}`}>Open →</a>
+                    </td>
                   </tr>
                 {/each}
               </tbody>
             </table>
+            </div>
           {/if}
         </div>
 
