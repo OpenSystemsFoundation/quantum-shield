@@ -9,6 +9,7 @@ import type {
 } from '@lib/pdf';
 import { evaluate, ruleCatalogFor } from '../rules/engine.js';
 import { tlsProbeRules } from '../rules/tls-rules.js';
+import { keyRotationRules } from '../rules/key-rotation-rules.js';
 import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '../rules/regulations.generated.js';
 import { QSHIELD_NAME, QSHIELD_VERSION } from '../version.js';
 import {
@@ -329,6 +330,7 @@ export async function runScan(
     const rules = [
       ...ruleCatalogFor(options.overlays, (options.regions ?? []) as string[]),
       ...tlsProbeRules(),
+      ...keyRotationRules(),
     ];
     const ctx = { scanId: options.scanId, now: new Date() };
     const findings: Finding[] = [];

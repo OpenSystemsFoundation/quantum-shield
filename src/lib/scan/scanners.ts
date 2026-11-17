@@ -415,6 +415,7 @@ function shieldEncryptionScanner(): Scanner {
           algorithm: 'AES',
           keySize: 256,
           location,
+          ...(latestCreated ? { lastRotatedAt: latestCreated } : {}),
         });
       }
     },

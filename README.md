@@ -99,9 +99,9 @@ All read-only, metadata and configuration only — never record data, field valu
 | Connected Apps & External Client Apps | Tooling API `ConnectedApplication`, `ExternalClientApplication` | **Inventory only.** Salesforce's API does not expose OAuth signing-key configuration, so no key-size claims are made — review JWT certificates manually in Setup |
 | Named Credentials & External Credentials | REST API `NamedCredential`, `ExternalCredential` | Non-HTTPS endpoints; configured authentication protocol as reported by the API |
 | Remote Site Settings | Tooling API `RemoteSiteSetting` | Non-HTTPS endpoints (active sites only) |
-| TLS endpoints (CLI only, `--probe-tls`) | Live `node:tls` handshake | Negotiated TLS version and key-exchange group; TLS 1.2 flagged as HNDL-exposed. Hybrid-KEM detection (X25519MLKEM768 etc.) requires a local OpenSSL ≥ 3.5 — on older stacks the verdict is recorded as *unknown*, not "no hybrid" |
+| TLS endpoints (CLI only, `--probe-tls`) | Live `node:tls` handshake | Negotiated TLS version, cipher and key-exchange group; TLS 1.2 flagged as HNDL-exposed, static RSA key exchange (no forward secrecy) flagged as critical. Probes run from your machine, not from Salesforce, so findings note that Salesforce callouts should still be assumed classical even when the endpoint supports a hybrid KEM. Hybrid-KEM detection (X25519MLKEM768 etc.) requires a local OpenSSL ≥ 3.5 — on older stacks the verdict is recorded as *unknown*, not "no hybrid" |
 | SAML SSO & Auth Providers | REST API `SamlSsoConfig`, `AuthProvider` | SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by type. IdP certificate key sizes are not exposed by the API and are not guessed |
-| Shield Platform Encryption | REST API `TenantSecret` | Tenant secret type, BYOK/EKM vs Salesforce-derived key material, rotation history. Orgs without Shield record the category as `skipped` with a note — not as clean |
+| Shield Platform Encryption | REST API `TenantSecret` | Tenant secret type, BYOK/EKM vs Salesforce-derived key material, rotation history; active secrets not rotated in over 365 days are flagged. Orgs without Shield record the category as `skipped` with a note — not as clean |
 | Apex classes | Tooling API `ApexClass.Body` (pattern analysis, comments stripped) | `Crypto.generateDigest` MD5/SHA-1, `Crypto.sign`/`signWithCertificate` incl. the `'RSA'`→RSA-SHA1 alias, `Crypto.generateMac` HMAC-MD5/HMAC-SHA1, AES-128/192 encrypt/decrypt, hardcoded AES key literals |
 | Installed managed packages | Tooling API `InstalledSubscriberPackage` | Inventory for supply-chain visibility (their crypto cannot be inspected) |
 | Session settings | Tooling API `SessionSettings` | Session timeout configuration |
@@ -115,7 +115,7 @@ Coverage semantics: every category ends a scan as `scanned`, `partial` (some que
 - **Cryptographic Bill of Materials:** OWASP CycloneDX v1.6 (ECMA-424), schema-valid, with `cryptoProperties` populated for each crypto asset.
 - **Exploitability:** OpenVEX v0.2.0, one statement per finding, consumable by Grype, Trivy, and Dependency-Track.
 - **NIST PQC:** FIPS 203 (ML-KEM / Kyber), FIPS 204 (ML-DSA / Dilithium), FIPS 205 (SLH-DSA / SPHINCS+).
-- **Regulatory sources** (23 of them, each as a canonical Markdown file under `src/content/regulations/`): NIST SP 800-131A r3, SP 800-52 r2, SP 800-53 r5, SP 800-57 Pt1 r5, IR 8547; NSA CNSA 2.0; BSI TR-02102; NCSC-NL PQC factsheet; ANSSI PQC; NCSC-UK PQC; ENISA PQC 2024; GDPR Art. 32; NIS 2 Art. 21; DORA Art. 9; eIDAS 2; PCI DSS 4.0; HIPAA Security Rule; CMMC 2.0; SWIFT CSP; FTC Safeguards Rule.
+- **Regulatory sources** (25 of them, each as a canonical Markdown file under `src/content/regulations/`): NIST SP 800-131A r3, SP 800-52 r2, SP 800-53 r5, SP 800-57 Pt1 r5, IR 8547; NSA CNSA 2.0; BSI TR-02102; NCSC-NL PQC factsheet; ANSSI PQC; NCSC-UK PQC; ENISA PQC 2024; NIS Cooperation Group PQC roadmap; GDPR Art. 32; NIS 2 Art. 21; DORA Art. 9; eIDAS 2; PCI DSS 4.0; HIPAA Security Rule; CMMC 2.0; SWIFT CSP; FTC Safeguards Rule. Salesforce's own PQC white paper (March 2026) is included as a vendor reference.
 
 Rules are generated from the Markdown frontmatter at build time (`npm run sync:regulations`); hand-edits to `src/lib/rules/*.generated.ts` are overwritten. Rules declare which regulatory overlays they map to; enabling overlays (`--overlay`) scopes the report's regulatory appendix and never changes which rules fire.
 
@@ -146,7 +146,7 @@ npm run check                   # astro check (TypeScript + Svelte + Astro diagn
 npx tsc --noEmit -p tsconfig.cli.json          # typecheck the CLI entry points
 ```
 
-CI (GitHub Actions) runs typechecks, unit tests, the production build, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`; Playwright e2e runs as an advisory job until it is stable in CI.
+CI (GitHub Actions) runs typechecks, unit tests, the production build, a generated-tables freshness check, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`. CI deliberately runs only cheap checks that need no Salesforce org, browser, or secrets; run the Playwright e2e suite locally with `npm run test:e2e`.
 
 Tests for the scan fixtures + a "poisoned" scratch-org bootstrap live under `salesforce/` — run `npm run capture:scan-fixtures` after standing the scratch org up to refresh the snapshot the browser uses for demo mode.
 

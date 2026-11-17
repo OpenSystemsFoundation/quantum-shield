@@ -82,6 +82,14 @@ export const GENERATED_CITATIONS = {
     "documentVersion": "2024",
     "retrievalUrl": "https://www.enisa.europa.eu/publications/post-quantum-cryptography-integration-study"
   },
+  "NIS_CG_PQC_ROADMAP": {
+    "sourceId": "NIS-CG-PQC-ROADMAP-2025",
+    "title": "A Coordinated Implementation Roadmap for the Transition to Post-Quantum Cryptography",
+    "jurisdiction": "EU",
+    "section": "Timeline and milestones",
+    "documentVersion": "2025-06",
+    "retrievalUrl": "https://digital-strategy.ec.europa.eu/en/library/coordinated-implementation-roadmap-transition-post-quantum-cryptography"
+  },
   "NCSC_NL_PQC": {
     "sourceId": "NCSC-NL-PQC-factsheet",
     "title": "Factsheet Post-Quantum Cryptography",
@@ -175,6 +183,14 @@ export const GENERATED_CITATIONS = {
     "section": "16 CFR 314.3, 314.4(c), 314.4(f)",
     "documentVersion": "16 CFR Part 314",
     "retrievalUrl": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-314"
+  },
+  "SALESFORCE_PQC_2026": {
+    "sourceId": "SALESFORCE-PQC-2026",
+    "title": "Cryptographic Agility: Securing the Salesforce Ecosystem Against the Quantum Threat",
+    "jurisdiction": "INTL",
+    "section": "Salesforce's Quantum Protection Strategy",
+    "documentVersion": "2026-03-18",
+    "retrievalUrl": "https://compliance.salesforce.com/en/documents/a00Kd00000z7HMjIAM"
   }
 } as const satisfies Record<string, Citation>;
 
@@ -265,6 +281,11 @@ export const GENERATED_SOURCE_VERSIONS = [
     "retrievedAt": "2026-04-21"
   },
   {
+    "sourceId": "NIS-CG-PQC-ROADMAP-2025",
+    "documentVersion": "2025-06",
+    "retrievedAt": "2026-11-17"
+  },
+  {
     "sourceId": "NCSC-NL-PQC-factsheet",
     "documentVersion": "2024",
     "retrievedAt": "2026-04-21"
@@ -328,5 +349,10 @@ export const GENERATED_SOURCE_VERSIONS = [
     "sourceId": "FTC-Safeguards-Rule",
     "documentVersion": "16 CFR Part 314",
     "retrievedAt": "2026-04-21"
+  },
+  {
+    "sourceId": "SALESFORCE-PQC-2026",
+    "documentVersion": "2026-03-18",
+    "retrievedAt": "2026-11-17"
   }
 ] as const satisfies Report['sourceVersions'];
