@@ -204,9 +204,7 @@ comparing against older reports.
 
 ## [0.1.0] — 2026-08-13
 
-First versioned release: the production-readiness wave. Findings and
-verification detail live in
-[docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md).
+First versioned release: the production-readiness wave.
 
 ### Added
 
