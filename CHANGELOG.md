@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   run on `main`; Dependabot updates npm packages and GitHub Actions (pinned by
   commit SHA); tagged releases publish the built site, source and SBOM with
   signed build-provenance attestations.
+- The build's CSP inline-script hashing now recognises end tags with
+  attributes or whitespace (`</script >`), and blanks out scripts, styles and
+  comments before checking for inline event handlers (CodeQL findings).
 - Internal review notes and local tool settings removed from the repository;
   `ARCHITECTURE.md`, `AGENTS.md` and the `/security` page updated for the
   current app (Cloudflare Workers hosting, My Domain sign-in, OAuth CORS
