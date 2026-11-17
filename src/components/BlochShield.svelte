@@ -9,15 +9,18 @@
     variant?: 'primary' | 'onDark' | 'mono';
   }
   const { size = 24, variant = 'primary' }: Props = $props();
+  // Unique per instance: several logos can share a page.
+  const uid = $props.id();
+  const skyId = `qs-sky-${uid}`;
 
   const palette = $derived.by(() => {
     if (variant === 'onDark') {
-      return { border: '#9FD8F5', fill: '#EAF5FE', cloud: '#00A1E0', key: '#032D60' };
+      return { border: '#9FD8F5', fill: 'sky', cloud: '#00A1E0', key: '#032D60' };
     }
     if (variant === 'mono') {
       return { border: 'currentColor', fill: 'none', cloud: 'currentColor', key: 'var(--qs-mono-bg, #fff)' };
     }
-    return { border: '#032D60', fill: '#EAF5FE', cloud: '#00A1E0', key: '#032D60' };
+    return { border: '#032D60', fill: 'sky', cloud: '#00A1E0', key: '#032D60' };
   });
 </script>
 
@@ -31,9 +34,15 @@
   aria-label="QuantumShield"
   style="display: block"
 >
+  <defs>
+    <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DDF2FD" />
+      <stop offset="1" stop-color="#A8DBF7" />
+    </linearGradient>
+  </defs>
   <path
     d="M32 3.5 L56.5 11.5 V30 C56.5 44.5 46.5 54.8 32 60.5 C17.5 54.8 7.5 44.5 7.5 30 V11.5 Z"
-    fill={palette.fill}
+    fill={palette.fill === 'sky' ? `url(#${skyId})` : palette.fill}
     stroke={palette.border}
     stroke-width="3.5"
     stroke-linejoin="round"
