@@ -1,0 +1,49 @@
+---
+/**
+ * Public-site footer, modelled on the opensf.foundation footer: a tonal bed,
+ * the project line, three link columns and the OpenSF motto.
+ */
+import BlochShield from './BlochShield.svelte';
+
+const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark"><BlochShield size={28} /> QuantumShield</span>
+      <p>
+        An <a href="https://opensf.foundation" rel="noopener">Open Systems Foundation</a> project.
+        Free for everyone and open source under the Apache 2.0 licence. No accounts, no paid tiers,
+        no data leaving your machine.
+      </p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div class="footer-col">
+        <h2 class="footer-heading">Use it</h2>
+        <a href="/install#cli">CLI quickstart</a>
+        <a href="/connect">Browser setup</a>
+        <a href="/docs/rules">Rule catalog</a>
+        <a href="/docs/regulations">Regulations</a>
+      </div>
+      <div class="footer-col">
+        <h2 class="footer-heading">Open source</h2>
+        <a href={repo} rel="noopener">Source on GitHub</a>
+        <a href={`${repo}/issues`} rel="noopener">Issues &amp; ideas</a>
+        <a href={`${repo}/blob/main/LICENSE`} rel="noopener">Apache 2.0 licence</a>
+        <a href="https://opensf.foundation" rel="noopener">opensf.foundation</a>
+      </div>
+      <div class="footer-col">
+        <h2 class="footer-heading">Trust</h2>
+        <a href="/security">Security</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </nav>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; {year} Open Systems Foundation</p>
+    <p class="footer-motto">Open Systems. For All.</p>
+  </div>
+</footer>

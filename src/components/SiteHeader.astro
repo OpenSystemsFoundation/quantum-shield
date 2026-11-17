@@ -1,0 +1,36 @@
+---
+/**
+ * Public-site header, modelled on the opensf.foundation header: a light,
+ * glassy bar with the QuantumShield mark, an "OpenSF" provenance chip,
+ * the primary pages, and the two ways in (source code and the CLI).
+ */
+import BlochShield from './BlochShield.svelte';
+
+const nav = [
+  { href: '/install', label: 'Install' },
+  { href: '/docs/rules', label: 'Rule catalog' },
+  { href: '/docs/regulations', label: 'Regulations' },
+  { href: '/security', label: 'Security' },
+];
+const path = Astro.url.pathname;
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+
+<header class="site-header">
+  <div class="container site-header-inner">
+    <a href="/" class="site-brand" aria-label="QuantumShield home">
+      <BlochShield size={30} />
+      <span>QuantumShield</span>
+    </a>
+    <a class="by-opensf" href="https://opensf.foundation" rel="noopener">by OpenSF</a>
+    <nav class="site-nav" aria-label="Primary">
+      {nav.map((item) => (
+        <a href={item.href} class:list={{ active: isActive(item.href) }}>{item.label}</a>
+      ))}
+    </nav>
+    <div class="right">
+      <a class="qs-btn qs-btn-ghost" href="https://github.com/OpenSystemsFoundation/quantum-shield" rel="noopener">GitHub</a>
+      <a class="qs-btn qs-btn-primary" href="/install#cli">Get started</a>
+    </div>
+  </div>
+</header>

@@ -3,7 +3,7 @@
 A post-quantum readiness scanner for Salesforce organizations. Ships as **two front-ends sharing one scan engine**:
 
 1. **Local Node CLI (`qshield`)**. Recommended path for day-to-day use. Reuses the Salesforce CLI's own authenticated session on macOS, Windows, and Linux — no Connected App, no CORS, no QuantumShield auth infrastructure in the path.
-2. **Static browser app** (Astro + Svelte, zero backend). Optional UI for demos, in-browser scans, and report review. Uses an External Client App or Connected App the customer owns; the browser queries their org directly.
+2. **Static browser app** (Astro + Svelte, zero backend). Optional UI for demos, in-browser scans, and report review. Uses an External Client App or Connected App the user owns; the browser queries their org directly.
 
 Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX builder, and PDF renderer, all of which live under `src/lib/` and are pure TypeScript with no browser- or Node-specific globals.
 
@@ -14,12 +14,12 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 - **External website, not a Salesforce-distributed app.** Skips AppExchange Security Review and managed-package release cycle. Trust and discovery become our job, not Salesforce's.
 - **Zero infrastructure beyond Cloudflare Pages.** No Workers, no KV, no D1, no R2, no proxy. Static assets only.
 - **CLI first for operational scans.** The local terminal flow is the default recommendation. The browser app stays available for demos, in-tab review, and teams that prefer to own the OAuth app themselves.
-- **All scan traffic goes directly client runtime → customer org.** In browser mode that means browser → customer org. In CLI mode that means local Node process → customer org. No middle layer, no org data touching our infrastructure.
-- **No shared QuantumShield Connected App.** Browser mode uses an External Client App or Connected App the customer creates in their own org. CLI mode reuses the local `sf` session already on the machine.
+- **All scan traffic goes directly client runtime → the user's org.** In browser mode that means browser → org. In CLI mode that means local Node process → org. No middle layer, no org data touching our infrastructure.
+- **No shared QuantumShield Connected App.** Browser mode uses an External Client App or Connected App the user creates in their own org. CLI mode reuses the local `sf` session already on the machine.
 - **CORS whitelist is browser-only.** Customers add our domain to their org's CORS allowlist for the web flow once. The CLI bypasses this entirely.
 - **Direct onboarding, not account-driven onboarding.** No QuantumShield account, no email capture, no backend tenant model. Landing page points first to the CLI, with browser setup as an explicit secondary path.
 - **Direct-to-government-source rules, not a third-party maturity framework.** We build our own rules engine mapped to the canonical documents rather than inheriting QRAMM or similar. Auditor-credible language; no dependency on a small nonprofit's roadmap.
-- **Svelte + Astro, not React.** Matches existing Andelas stack, smaller bundle, aligns with the static-first philosophy. PDF generation via pure TypeScript library, not a framework-specific renderer.
+- **Svelte + Astro, not React.** Matches the Open Systems Foundation web stack, smaller bundle, aligns with the static-first philosophy. PDF generation via pure TypeScript library, not a framework-specific renderer.
 - **Read-only scanning.** We never modify any Salesforce configuration. Customer data never leaves the local execution environment.
 
 ---
@@ -65,7 +65,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 1. User picks environment on `/connect`. Production uses `login.salesforce.com`; Sandbox uses `test.salesforce.com`; Custom Domain takes a `my.salesforce.com` URL.
 2. User creates an External Client App or Connected App in their own org and pastes its Consumer Key into the setup wizard. The client ID can also be preconfigured via environment variable for local development.
-3. The app generates a PKCE code verifier and a short-lived `state` token, then redirects to Salesforce `/services/oauth2/authorize` with `response_type=code`, the customer-owned `client_id`, `redirect_uri=https://our-domain/callback`, the requested scopes, and the S256 `code_challenge` (**authorization code + PKCE** — no implicit grant; External Client Apps require PKCE and offer no implicit flow).
+3. The app generates a PKCE code verifier and a short-lived `state` token, then redirects to Salesforce `/services/oauth2/authorize` with `response_type=code`, the user-owned `client_id`, `redirect_uri=https://our-domain/callback`, the requested scopes, and the S256 `code_challenge` (**authorization code + PKCE** — no implicit grant; External Client Apps require PKCE and offer no implicit flow).
 4. User authenticates in Salesforce's own UI and approves the requested scopes.
 5. Salesforce redirects to `/callback` with an authorization code and state. The browser validates state, exchanges the code (plus the PKCE verifier) at `/services/oauth2/token` directly from the browser, normalizes the returned identity information into a `Session`, and stores it locally.
 6. The browser stores the active session in `sessionStorage`; the remembered environment and optional client ID live in `localStorage`.
@@ -73,7 +73,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 **Scopes requested (browser mode):** `api`, `id`. We do not request `refresh_token` (nothing consumes it — sessions intentionally die with the tab), `full`, or `web`.
 
-**Client ownership:** Browser mode uses an External Client App or Connected App the customer owns. QuantumShield does not operate a shared Connected App.
+**Client ownership:** Browser mode uses an External Client App or Connected App the user owns. QuantumShield does not operate a shared Connected App.
 
 ---
 
@@ -88,7 +88,7 @@ Both consume the same scanners, rule catalog, CycloneDX CBOM builder, OpenVEX bu
 
 ## CORS handling
 
-Salesforce requires each customer org to explicitly whitelist our domain in Setup → CORS before the browser can make cross-origin API calls to their instance. This applies to browser mode only; the CLI path bypasses it entirely.
+Salesforce requires each org to explicitly whitelist our domain in Setup → CORS before the browser can make cross-origin API calls to their instance. This applies to browser mode only; the CLI path bypasses it entirely.
 
 Strategy:
 
@@ -189,11 +189,11 @@ Every finding in the report cites at least one primary source below. The rules e
 - **NIST SP 800-131A Rev 3 — Transitioning the Use of Cryptographic Algorithms and Key Lengths.** Already-live transitions. SHA-1 disallowed, 1024-bit RSA disallowed, legacy modes retired. Catches compliance gaps that exist today, independent of PQC.
 - **NIST SP 800-57 Part 1 — Recommendation for Key Management.** Key length recommendations, crypto period guidance. Used for key-rotation findings.
 - **NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA).** The approved replacements. Cited in every migration recommendation.
-- **NSA CNSA 2.0 — Commercial National Security Algorithm Suite 2.0.** Binding deadlines for US federal and defense. Pre-2027 prepare, 2027 start deploying PQC, 2030 deprecate classical, 2033 prohibit. Cited whenever a customer's output needs federal-grade language.
+- **NSA CNSA 2.0 — Commercial National Security Algorithm Suite 2.0.** Binding deadlines for US federal and defense. Pre-2027 prepare, 2027 start deploying PQC, 2030 deprecate classical, 2033 prohibit. Cited whenever a report needs federal-grade language.
 
-**Europe — secondary, enabled per-customer**
+**Europe — secondary, enabled per org**
 
-- **BSI TR-02102 (Germany).** Most concrete European crypto technical guideline. Minimum key sizes, approved algorithms, PQC guidance. Needed for DACH customers.
+- **BSI TR-02102 (Germany).** Most concrete European crypto technical guideline. Minimum key sizes, approved algorithms, PQC guidance. Needed for organisations in the DACH region.
 - **UK NCSC — Preparing for Quantum-Safe Cryptography.** Lighter but authoritative for UK government-adjacent buyers.
 - **ANSSI (France) — Post-Quantum Cryptography Transition Notes.** For French regulated sectors.
 

@@ -145,7 +145,7 @@
   .pdf-preview h1 {
     margin: 0;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--ink);
   }
 

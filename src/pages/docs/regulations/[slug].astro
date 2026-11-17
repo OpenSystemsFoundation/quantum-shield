@@ -1,6 +1,8 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Shell from '../../../layouts/Shell.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
 
 export async function getStaticPaths() {
   const docs = await getCollection('regulations');
@@ -23,6 +25,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
 ---
 
 <Shell title={`${entry.data.title} — QuantumShield`} description={entry.data.summary}>
+  <SiteHeader />
   <main style="max-width:920px;margin:0 auto;padding:40px 28px 80px;display:grid;gap:28px;">
     <a href="/docs/regulations" class="tiny-caps" style="color:var(--navy-600);text-decoration:none;">← Back to regulations index</a>
 
@@ -33,7 +36,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
           {entry.data.implementationStatus}
         </span>
       </div>
-      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
+      <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
       <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;max-width:760px;">{entry.data.summary}</p>
     </section>
 
@@ -72,7 +75,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
 
     {entry.data.requirements.length > 0 && (
       <section style="display:grid;gap:12px;">
-        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Machine-readable mapping points</h2>
+        <h2 class="display" style="font-size:24px;font-weight:600;margin:0;">Machine-readable mapping points</h2>
         <div class="qs-card" style="padding:8px 0;overflow:hidden;">
           {entry.data.requirements.map((item: (typeof entry.data.requirements)[number]) => (
             <div style="padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:4px;">
@@ -88,4 +91,5 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
       <Content />
     </article>
   </main>
+  <SiteFooter />
 </Shell>

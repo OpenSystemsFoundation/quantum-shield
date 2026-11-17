@@ -1,6 +1,8 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import Shell from '../../../layouts/Shell.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
 
 const rules = (await getCollection('rules')).sort(
   (left: CollectionEntry<'rules'>, right: CollectionEntry<'rules'>) =>
@@ -27,10 +29,11 @@ function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
 ---
 
 <Shell title="Rule Catalog — QuantumShield" description="Browsable rule catalog generated from the same Markdown documents that define QuantumShield business logic.">
+  <SiteHeader />
   <main style="max-width:1100px;margin:0 auto;padding:40px 28px 72px;display:grid;gap:28px;">
     <section style="display:grid;gap:10px;max-width:820px;">
       <div class="tiny-caps" style="color:var(--navy-600);">Business logic source of truth</div>
-      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">Rule catalog</h1>
+      <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:0;">Rule catalog</h1>
       <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;">
         These rule documents are the authoritative source for QuantumShield findings. The scanner engine interprets the generated catalog from this Markdown collection, so reviewers can inspect the same conditions, severities, deadlines, and citations that ship in the app.
       </p>
@@ -44,7 +47,7 @@ function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
       {(['active', 'draft', 'disabled'] as const).map((status) => (
         <div class="qs-card" style="padding:18px;display:grid;gap:6px;">
           <div class="tiny-caps" style={`color:${badgeColor(status)};`}>{status}</div>
-          <strong class="serif" style="font-size:28px;font-weight:500;">{byStatus[status].length}</strong>
+          <strong class="display" style="font-size:28px;font-weight:500;">{byStatus[status].length}</strong>
           <span style="font-size:12.5px;color:var(--ink-3);line-height:1.5;">Rule documents currently marked {status}.</span>
         </div>
       ))}
@@ -52,7 +55,7 @@ function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
 
     <section style="display:grid;gap:14px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Rule definitions</h2>
+        <h2 class="display" style="font-size:24px;font-weight:600;margin:0;">Rule definitions</h2>
         <span class="tiny-caps" style="color:var(--muted);">Ordered in evaluation priority</span>
       </div>
       <div class="qs-card" style="padding:6px 0;overflow:hidden;">
@@ -77,4 +80,5 @@ function badgeColor(status: 'active' | 'draft' | 'disabled'): string {
       </div>
     </section>
   </main>
+  <SiteFooter />
 </Shell>

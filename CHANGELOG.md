@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Rebranded as a free, open-source OpenSF project.** All references to the
+  former commercial entity are gone; the site now presents QuantumShield as an
+  Open Systems Foundation project, free for everyone under Apache 2.0, with a
+  new "Free for everyone. Built in the open." section and an OpenSF-style
+  header and footer on every public page.
+- **Visual design aligned with the OpenSF design system**: OpenSF blue palette
+  and CTA gradient, tonal layering and ambient shadows instead of hard
+  borders, Poppins (display) + Inter (UI) replacing Source Serif 4 + Inter
+  Tight (JetBrains Mono kept for evidence), rounder cards, pill chips, and
+  links that no longer render with default browser underlines.
+
 ### Added
 
 - **`R-TLS-RSA-KEX`** (critical): flags probed TLS 1.2 endpoints that negotiate

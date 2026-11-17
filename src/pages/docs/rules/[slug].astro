@@ -1,6 +1,8 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Shell from '../../../layouts/Shell.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
 import { GENERATED_CITATIONS } from '@lib/rules/regulations.generated.js';
 
 export async function getStaticPaths() {
@@ -68,6 +70,7 @@ function resultTone(result: RuleResult): string {
 ---
 
 <Shell title={`${entry.data.id} — QuantumShield`} description={entry.data.summary}>
+  <SiteHeader />
   <main style="max-width:980px;margin:0 auto;padding:40px 28px 80px;display:grid;gap:28px;">
     <a href="/docs/rules" class="tiny-caps" style="color:var(--navy-600);text-decoration:none;">← Back to rule catalog</a>
 
@@ -78,7 +81,7 @@ function resultTone(result: RuleResult): string {
           {entry.data.implementationStatus}
         </span>
       </div>
-      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
+      <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:0;">{entry.data.title}</h1>
       <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;max-width:760px;">{entry.data.summary}</p>
     </section>
 
@@ -114,7 +117,7 @@ function resultTone(result: RuleResult): string {
     </section>
 
     <section style="display:grid;gap:12px;">
-      <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Match cases</h2>
+      <h2 class="display" style="font-size:24px;font-weight:600;margin:0;">Match cases</h2>
       <div style="display:grid;gap:12px;">
         {entry.data.cases.map((ruleCase: (typeof entry.data.cases)[number], index: number) => (
           <article class="qs-card" style="padding:18px;display:grid;gap:14px;">
@@ -180,4 +183,5 @@ function resultTone(result: RuleResult): string {
       <Content />
     </article>
   </main>
+  <SiteFooter />
 </Shell>
