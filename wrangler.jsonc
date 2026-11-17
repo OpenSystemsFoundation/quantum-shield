@@ -15,5 +15,8 @@
     { "pattern": "quantumshield.opensf.foundation", "custom_domain": true }
   ],
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  // Non-production branch builds run `wrangler preview`, which requires this
+  // block (it may be empty). Assets and compatibility settings stay top-level.
+  "previews": {}
 }

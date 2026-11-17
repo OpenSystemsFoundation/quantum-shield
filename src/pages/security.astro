@@ -1,22 +1,15 @@
 ---
 import Shell from '../layouts/Shell.astro';
-import BlochShield from '../components/BlochShield.svelte';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 ---
 
 <Shell title="Security — QuantumShield">
-  <div style="border-bottom:1px solid var(--line);background:var(--surface);">
-    <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
-      <a href="/" class="brand hstack" style="font-weight:600;color:var(--ink);">
-        <BlochShield size={24} />
-        <span>QuantumShield</span>
-      </a>
-      <a href="/connect" style="font-size:12.5px;color:var(--muted);">Browser setup →</a>
-    </div>
-  </div>
+  <SiteHeader />
 
   <main style="max-width:960px;margin:0 auto;padding:48px 32px 80px;">
     <div class="tiny-caps" style="color:var(--navy-600);">Security & trust</div>
-    <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:6px 0 10px;">
+    <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:6px 0 10px;">
       How QuantumShield keeps your org's data yours.
     </h1>
     <p style="font-size:14.5px;color:var(--ink-3);max-width:680px;">
@@ -26,21 +19,21 @@ import BlochShield from '../components/BlochShield.svelte';
     <section style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px;">
       <div class="qs-card qs-card-body">
         <div class="tiny-caps" style="color:var(--navy-600);">Recommended path</div>
-        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Local qshield CLI</h3>
+        <h3 class="display" style="font-size:16px;font-weight:600;margin:6px 0 6px;">Local qshield CLI</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
           Reuses the <span class="mono">sf</span> session you already authorised on macOS, Windows, or Linux. No Connected App, no callback URL, and no CORS allowlist required.
         </p>
       </div>
       <div class="qs-card qs-card-body">
         <div class="tiny-caps" style="color:var(--navy-600);">Browser mode</div>
-        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">Static site, customer-owned OAuth</h3>
+        <h3 class="display" style="font-size:16px;font-weight:600;margin:6px 0 6px;">Static site, your own OAuth app</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
           Cloudflare Pages serves static HTML and JS only. The browser talks directly to your Salesforce instance, and the client ID comes from an External Client App or Connected App you created in your own org.
         </p>
       </div>
       <div class="qs-card qs-card-body">
         <div class="tiny-caps" style="color:var(--navy-600);">Write access</div>
-        <h3 class="serif" style="font-size:16px;font-weight:500;margin:6px 0 6px;">None, ever</h3>
+        <h3 class="display" style="font-size:16px;font-weight:600;margin:6px 0 6px;">None, ever</h3>
         <p style="margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5;">
           QuantumShield never modifies org configuration. Browser mode requests only <span class="mono">api</span> and <span class="mono">id</span>; CLI mode reuses the permissions already granted to your local <span class="mono">sf</span> session.
         </p>
@@ -84,4 +77,5 @@ worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 's
       </div>
     </section>
   </main>
+  <SiteFooter />
 </Shell>

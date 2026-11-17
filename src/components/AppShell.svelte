@@ -86,7 +86,7 @@
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div>
           <div class="tiny-caps" style="color:var(--navy-600);">Overview</div>
-          <h1 class="serif" style="font-size:30px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;" data-testid="session-org-name">
+          <h1 class="display" style="font-size:30px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;" data-testid="session-org-name">
             {session.org.orgName ?? session.org.orgId}
           </h1>
           <p style="margin:6px 0 0;color:var(--ink-3);font-size:13px;">

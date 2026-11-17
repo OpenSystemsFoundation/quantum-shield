@@ -2,7 +2,9 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
-Post-quantum readiness scanner for Salesforce orgs. One TypeScript scan engine, two front-ends:
+Free, open-source post-quantum readiness scanner for Salesforce orgs, from the [Open Systems Foundation](https://opensf.foundation). No accounts, no paid tiers: everything here is free for everyone under the Apache 2.0 licence. Try the browser app at [quantumshield.opensf.foundation](https://quantumshield.opensf.foundation).
+
+One TypeScript scan engine, two front-ends:
 
 - **Local CLI (`qshield`)** — recommended for real orgs. Reuses the `sf` CLI session you already have on macOS, Windows, or Linux. No Connected App, no CORS setup, and no QuantumShield auth infrastructure in the path.
 - **Browser app** — optional static UI for in-browser scans, demos, and report review. Uses an External Client App or Connected App you own plus a one-time CORS allowlist entry in the org.
@@ -148,7 +150,7 @@ Cloudflare builds from GitHub (Workers Builds) with:
 | Build variable `PUBLIC_APP_ORIGIN` | `https://quantumshield.opensf.foundation` |
 | Build variable `PUBLIC_SF_API_VERSION` | `66.0` |
 
-Leave `PUBLIC_SF_CLIENT_ID` and `PUBLIC_DEV_MOCK` unset in production: customers bring their own Consumer Key, and the mock login is disabled in production builds regardless. Security headers (CSP, HSTS, caching) ship in `public/_headers`. Unknown paths serve `src/pages/404.astro`.
+Leave `PUBLIC_SF_CLIENT_ID` and `PUBLIC_DEV_MOCK` unset in production: each user brings their own Consumer Key, and the mock login is disabled in production builds regardless. Security headers (CSP, HSTS, caching) ship in `public/_headers`. Unknown paths serve `src/pages/404.astro`.
 
 ---
 

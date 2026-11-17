@@ -1,26 +1,19 @@
 ---
 import Shell from '../layouts/Shell.astro';
-import BlochShield from '../components/BlochShield.svelte';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 ---
 
 <Shell
   title="Terms — QuantumShield"
-  description="QuantumShield beta terms and usage limits."
+  description="QuantumShield is free, open-source beta software under the Apache 2.0 licence."
 >
-  <div style="border-bottom:1px solid var(--line);background:var(--surface);">
-    <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
-      <a href="/" class="brand hstack" style="font-weight:600;color:var(--ink);">
-        <BlochShield size={24} />
-        <span>QuantumShield</span>
-      </a>
-      <a href="/privacy" style="font-size:12.5px;color:var(--muted);">Privacy</a>
-    </div>
-  </div>
+  <SiteHeader />
 
   <main style="max-width:820px;margin:0 auto;padding:48px 32px 80px;">
-    <div class="tiny-caps" style="color:var(--navy-600);">Beta terms</div>
-    <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:6px 0 10px;">
-      QuantumShield is beta advisory software.
+    <div class="tiny-caps" style="color:var(--navy-600);">Terms</div>
+    <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:6px 0 10px;">
+      QuantumShield is free, open-source beta software.
     </h1>
     <p style="font-size:14.5px;color:var(--ink-3);line-height:1.65;max-width:700px;">
       QuantumShield provides technical findings, evidence, and standards mappings
@@ -30,7 +23,16 @@ import BlochShield from '../components/BlochShield.svelte';
 
     <section style="display:grid;gap:16px;margin-top:32px;">
       <article class="qs-card qs-card-body">
-        <h2 class="serif" style="font-size:22px;font-weight:500;margin:0 0 8px;">Read-only scanner</h2>
+        <h2 class="display" style="font-size:22px;font-weight:600;margin:0 0 8px;">Free and open source</h2>
+        <p style="margin:0;color:var(--ink-3);font-size:13px;line-height:1.65;">
+          QuantumShield is an Open Systems Foundation project, free for everyone and
+          licensed under the <a href="https://github.com/OpenSystemsFoundation/quantum-shield/blob/main/LICENSE" rel="noopener">Apache License 2.0</a>.
+          You may use, modify and redistribute it under that licence. As the licence
+          states, it is provided "as is", without warranties or conditions of any kind.
+        </p>
+      </article>
+      <article class="qs-card qs-card-body">
+        <h2 class="display" style="font-size:22px;font-weight:600;margin:0 0 8px;">Read-only scanner</h2>
         <p style="margin:0;color:var(--ink-3);font-size:13px;line-height:1.65;">
           QuantumShield is intended to read Salesforce metadata and configuration.
           It is not a migration, remediation, or configuration-management tool.
@@ -38,7 +40,7 @@ import BlochShield from '../components/BlochShield.svelte';
       </article>
 
       <article class="qs-card qs-card-body">
-        <h2 class="serif" style="font-size:22px;font-weight:500;margin:0 0 8px;">Beta limitations</h2>
+        <h2 class="display" style="font-size:22px;font-weight:600;margin:0 0 8px;">Beta limitations</h2>
         <p style="margin:0;color:var(--ink-3);font-size:13px;line-height:1.65;">
           Detection is best-effort and depends on Salesforce API access, org
           permissions, exposed metadata, and rule coverage. Pattern-based Apex
@@ -47,13 +49,14 @@ import BlochShield from '../components/BlochShield.svelte';
       </article>
 
       <article class="qs-card qs-card-body">
-        <h2 class="serif" style="font-size:22px;font-weight:500;margin:0 0 8px;">Human review required</h2>
+        <h2 class="display" style="font-size:22px;font-weight:600;margin:0 0 8px;">Human review required</h2>
         <p style="margin:0;color:var(--ink-3);font-size:13px;line-height:1.65;">
           Treat reports as decision support. Final compliance conclusions,
-          remediation priorities, and customer-specific regulatory positions require
+          remediation priorities, and organisation-specific regulatory positions require
           review by qualified internal owners or external advisors.
         </p>
       </article>
     </section>
   </main>
+  <SiteFooter />
 </Shell>

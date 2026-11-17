@@ -15,8 +15,8 @@ export const COLORS = {
   muted: rgb(0.36, 0.42, 0.49),
   hairline: rgb(0.86, 0.88, 0.91),
   panel: rgb(0.96, 0.97, 0.98),
-  accent: rgb(1.0, 0.294, 0.122),
-  accentSoft: rgb(1.0, 0.898, 0.863),
+  accent: rgb(0.0, 0.341, 0.624), // OpenSF primary #00579f
+  accentSoft: rgb(0.902, 0.945, 0.984), // OpenSF primary-soft #e6f1fb
   white: rgb(1, 1, 1),
   critical: rgb(0.69, 0.0, 0.125),
   high: rgb(0.85, 0.369, 0.0),

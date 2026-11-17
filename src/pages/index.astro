@@ -1,161 +1,165 @@
 ---
 import Shell from '../layouts/Shell.astro';
-import BlochShield from '../components/BlochShield.svelte';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { QSHIELD_VERSION } from '../lib/version';
+
+const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
 ---
 
-<Shell title="QuantumShield — post-quantum readiness for Salesforce">
+<Shell title="QuantumShield, free post-quantum readiness for Salesforce · OpenSF">
   <div class="landing">
-    <div class="landing-nav">
-      <a href="/" class="brand">
-        <BlochShield size={30} />
-        <span>QuantumShield</span>
-      </a>
-      <nav>
-        <a href="/docs/rules">Rule catalog</a>
-        <a href="/docs/regulations">Regulations</a>
-        <a href="/security">Security</a>
-        <a href="/install">Install</a>
-      </nav>
-      <div class="right">
-        <a class="qs-btn qs-btn-ghost qs-btn-sm" href="https://github.com/OpenSystemsFoundation/quantum-shield">View source</a>
-        <a class="qs-btn qs-btn-primary" href="/connect">Browser setup</a>
-      </div>
-    </div>
+    <SiteHeader />
 
-    <div class="hero">
-      <div>
-        <div class="hero-badge">
-          <span class="swatch">Q</span>
-          <span>v0.2 · CLI + browser · rules-engine 2026-Q2</span>
-        </div>
-        <h1>
-          Post-quantum readiness for your <em>Salesforce</em> org. Run it locally first.
-        </h1>
-        <p class="lede">
-          QuantumShield ships as a local <span class="mono">qshield</span> CLI for admins who already use the Salesforce CLI, plus a static browser app for in-tab scans and demos. Both paths scan your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards — and produce PDF, CBOM, OpenVEX, CSV, and raw JSON artifacts.
-        </p>
-        <div class="cta-row">
-          <a class="qs-btn qs-btn-primary qs-btn-lg" href="/install#cli">
-            CLI quickstart
-          </a>
-          <a class="qs-btn qs-btn-lg" href="/connect">Browser setup</a>
-        </div>
-        <div class="fineprint">
-          macOS · Windows · Linux CLI · Browser mode uses your own OAuth app · Source on GitHub
+    <section class="sky-wash">
+      <div class="container hero">
+        <div>
+          <div class="eyebrow">Free &amp; open source · An OpenSF project</div>
+          <h1>
+            Post-quantum readiness for your <span class="accent">Salesforce</span> org.
+          </h1>
+          <p class="lede">
+            QuantumShield scans your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards, and hands you PDF, CBOM, OpenVEX, CSV and JSON reports. Run it as a local <span class="mono">qshield</span> CLI on top of the Salesforce CLI you already use, or in this browser. Free for everyone, forever.
+          </p>
+          <div class="cta-row">
+            <a class="qs-btn qs-btn-primary qs-btn-lg" href="/install#cli">CLI quickstart</a>
+            <a class="qs-btn qs-btn-lg" href="/connect">Browser setup</a>
+            <a class="qs-btn qs-btn-ghost qs-btn-lg" href={repo} rel="noopener">View source</a>
+          </div>
+          <div class="fineprint">
+            v{QSHIELD_VERSION} · Apache 2.0 · macOS, Windows and Linux · No account needed
+          </div>
+
+          <div class="trust-strip">
+            <div>
+              <div class="label">Price</div>
+              <div class="value">Free, for everyone</div>
+            </div>
+            <div>
+              <div class="label">Licence</div>
+              <div class="value">Apache 2.0</div>
+            </div>
+            <div>
+              <div class="label">Cloud proxy</div>
+              <div class="value">None</div>
+            </div>
+            <div>
+              <div class="label">Write access</div>
+              <div class="value">None, ever</div>
+            </div>
+          </div>
         </div>
 
-        <div class="trust-strip">
-          <div>
-            <div class="label">Recommended path</div>
-            <div class="value">Local qshield CLI</div>
+        <div class="hero-preview" aria-label="Sample report summary">
+          <div class="bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="t">sample report · nl-acme.my.salesforce.com</span>
           </div>
-          <div>
-            <div class="label">Browser auth</div>
-            <div class="value">Your External Client App</div>
-          </div>
-          <div>
-            <div class="label">Cloud proxy</div>
-            <div class="value">None</div>
-          </div>
-          <div>
-            <div class="label">Write access</div>
-            <div class="value">None, ever</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-preview">
-        <div class="bar">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="t">sample report · QS-0424 · nl-acme.my.salesforce.com</span>
-        </div>
-        <div style="padding: 20px 22px">
-          <div class="tiny-caps" style="color: var(--navy-600)">Sample executive summary</div>
-          <div class="serif" style="font-size:22px;font-weight:500;letter-spacing:-0.01em;margin-top:4px;margin-bottom:12px;">
-            47 findings across 9 categories
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
-              <div class="serif" style="font-size:20px;font-weight:500;color:var(--crit);line-height:1;">4</div>
-              <div class="tiny-caps" style="margin-top:4px">Critical</div>
+          <div style="padding: 22px 24px">
+            <div class="eyebrow">Sample executive summary</div>
+            <div class="display" style="font-size:22px;font-weight:600;letter-spacing:-0.01em;margin-top:6px;margin-bottom:16px;">
+              47 findings across 9 categories
             </div>
-            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
-              <div class="serif" style="font-size:20px;font-weight:500;color:var(--high);line-height:1;">9</div>
-              <div class="tiny-caps" style="margin-top:4px">High</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+              <div class="stat">
+                <div class="n" style="color:var(--crit);">4</div>
+                <div class="tiny-caps" style="margin-top:6px">Critical</div>
+              </div>
+              <div class="stat">
+                <div class="n" style="color:var(--high);">9</div>
+                <div class="tiny-caps" style="margin-top:6px">High</div>
+              </div>
+              <div class="stat">
+                <div class="n" style="color:var(--warn);">18</div>
+                <div class="tiny-caps" style="margin-top:6px">Medium</div>
+              </div>
+              <div class="stat">
+                <div class="n" style="color:var(--adv);">16</div>
+                <div class="tiny-caps" style="margin-top:6px">Advisory</div>
+              </div>
             </div>
-            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
-              <div class="serif" style="font-size:20px;font-weight:500;color:var(--warn);line-height:1;">18</div>
-              <div class="tiny-caps" style="margin-top:4px">Medium</div>
-            </div>
-            <div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;">
-              <div class="serif" style="font-size:20px;font-weight:500;color:var(--adv);line-height:1;">16</div>
-              <div class="tiny-caps" style="margin-top:4px">Advisory</div>
-            </div>
-          </div>
-          <div style="border-top:1px dashed var(--line);padding-top:12px;">
             <div class="tiny-caps">Earliest deadline</div>
             <div class="mono" style="font-size:12px;margin-top:4px;">
               2023-12-31 · SHA-1 disallowed · 3 findings already past due
             </div>
-          </div>
-          <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11.5px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
-              <span style="color:var(--muted)">Certificates</span><span class="mono">14</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
-              <span style="color:var(--muted)">Connected Apps</span><span class="mono">22</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
-              <span style="color:var(--muted)">Named Credentials</span><span class="mono">31</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line-2);">
-              <span style="color:var(--muted)">Apex classes</span><span class="mono">612</span>
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
+                <span style="color:var(--muted)">Certificates</span><span class="mono">14</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
+                <span style="color:var(--muted)">Connected Apps</span><span class="mono">22</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
+                <span style="color:var(--muted)">Named Credentials</span><span class="mono">31</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
+                <span style="color:var(--muted)">Apex classes</span><span class="mono">612</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div style="max-width:1200px;margin:0 auto;padding:0 32px 72px;">
-      <div class="landing-features">
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
-          <div class="mono tiny-caps" style="color:var(--navy-600)">01</div>
-          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Direct-to-source rules</div>
-          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
-            Every finding cites a primary document — BSI TR-02102, ENISA PQC, NCSC-NL factsheet, NIST FIPS 203/204/205 — not a third-party maturity framework. Quarterly revision tracked in the rules engine.
-          </div>
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="eyebrow">How it works</div>
+          <h2>Evidence you can check, from tools you control.</h2>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
-          <div class="mono tiny-caps" style="color:var(--navy-600)">02</div>
-          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">CLI first, static browser second</div>
-          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
-            Use the local CLI for repeatable operational scans. The website remains a static browser UI for demos, in-tab review, and teams that prefer to own the OAuth app themselves.
-          </div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;">
-          <div class="mono tiny-caps" style="color:var(--navy-600)">03</div>
-          <div class="serif" style="font-size:18px;font-weight:500;margin:8px 0;letter-spacing:-0.005em;">Owned auth surface</div>
-          <div style="font-size:13px;color:var(--ink-3);line-height:1.5;">
-            The CLI reuses the <span class="mono">sf</span> session already on your machine. Browser mode uses an External Client App or Connected App you create in your own org. No shared QuantumShield Connected App.
-          </div>
+        <div class="landing-features">
+          <article class="tile">
+            <h3>Direct-to-source rules</h3>
+            <p>
+              Every finding cites a primary document (BSI TR-02102, ENISA PQC, the NCSC-NL factsheet, NIST FIPS 203/204/205), not a third-party maturity framework. The rules are Markdown in the repo, revised each quarter.
+            </p>
+          </article>
+          <article class="tile">
+            <h3>CLI first, browser second</h3>
+            <p>
+              Use the local CLI for repeatable scans. This website is a static browser app for demos, in-tab review, and teams that prefer to own the OAuth app themselves.
+            </p>
+          </article>
+          <article class="tile">
+            <h3>Your auth, your data</h3>
+            <p>
+              The CLI reuses the <span class="mono">sf</span> session already on your machine. Browser mode uses an External Client App or Connected App you create in your own org. Nothing is proxied and nothing is stored on our side.
+            </p>
+          </article>
         </div>
       </div>
-    </div>
+    </section>
 
-    <footer style="border-top:1px solid var(--line);background:var(--surface);">
-      <div style="max-width:1200px;margin:0 auto;padding:24px 32px;display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;font-size:12px;color:var(--muted);">
-        <div class="hstack">
-          <BlochShield size={20} />
-          <span style="font-weight:600;color:var(--ink-2)">QuantumShield</span>
+    <section class="section section-tinted">
+      <div class="container open-grid">
+        <div class="section-head" style="margin-bottom:0">
+          <div class="eyebrow">Open Systems. For All.</div>
+          <h2>Free for everyone. Built in the open.</h2>
+          <p>
+            QuantumShield is an <a href="https://opensf.foundation" rel="noopener">Open Systems Foundation</a> project. Every organisation running Salesforce has to get through the post-quantum migration, so the scanner, the rule catalog and the reports are free to use, study, change and share.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;">
+            <a class="qs-btn qs-btn-primary" href={repo} rel="noopener">Star or fork on GitHub</a>
+            <a class="qs-btn" href={`${repo}/issues`} rel="noopener">Suggest a rule</a>
+          </div>
         </div>
-        <span>·  Andelas B.V.</span>
-        <span>·  Amsterdam, NL</span>
-        <span class="mono">·  EU-first</span>
-        <div style="flex:1"></div>
-        <a href="/security">Security</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
+        <div class="open-points">
+          <div class="open-point">
+            <strong>Apache 2.0, all of it</strong>
+            <span>Scanner, CLI, browser app, rules and report generators. Use it at work, ship it inside your own tooling, no strings.</span>
+          </div>
+          <div class="open-point">
+            <strong>No accounts, no paid tier</strong>
+            <span>There is nothing to sign up for and nothing to upgrade to. Every feature is in the free version because there is only the free version.</span>
+          </div>
+          <div class="open-point">
+            <strong>Rules anyone can review</strong>
+            <span>Each rule cites its source and lives as a readable document. Spot a gap or a new regulation? Open an issue or a pull request.</span>
+          </div>
+        </div>
       </div>
-    </footer>
+    </section>
+
+    <SiteFooter />
   </div>
 </Shell>

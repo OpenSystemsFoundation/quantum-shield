@@ -287,7 +287,7 @@
       {:else if status === 'auth'}
         <div class="qs-card">
           <div class="qs-card-body">
-            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Session expired</h2>
+            <h2 class="display" style="font-size:22px;font-weight:500;margin:0;">Session expired</h2>
             <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">{errorMessage ?? 'Your Salesforce session is no longer valid.'}</p>
             <a href="/connect" class="qs-btn qs-btn-primary" style="margin-top:14px;">Reconnect</a>
           </div>
@@ -295,7 +295,7 @@
       {:else if status === 'failed'}
         <div class="qs-card">
           <div class="qs-card-body">
-            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Scan failed</h2>
+            <h2 class="display" style="font-size:22px;font-weight:500;margin:0;">Scan failed</h2>
             <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">{errorMessage ?? 'Unknown error.'}</p>
             <a href="/app" class="qs-btn qs-btn-primary" style="margin-top:14px;">Back to app</a>
           </div>
@@ -303,7 +303,7 @@
       {:else if status === 'interrupted'}
         <div class="qs-card" data-testid="scan-interrupted">
           <div class="qs-card-body">
-            <h2 class="serif" style="font-size:22px;font-weight:500;margin:0;">Scan interrupted</h2>
+            <h2 class="display" style="font-size:22px;font-weight:500;margin:0;">Scan interrupted</h2>
             <p style="margin-top:8px;color:var(--ink-3);font-size:13px;">
               This scan started{startedAt ? ` at ${startedAt.slice(0, 10)} ${startedAt.slice(11, 19)}` : ''} but never
               finished — most likely the tab was closed mid-scan. Its results are incomplete and it will not be
@@ -316,7 +316,7 @@
         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div>
             <div class="tiny-caps" style="color:var(--navy-600);">{status === 'complete' ? 'Complete' : 'Running scan'}</div>
-            <h1 class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;">
+            <h1 class="display" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;margin:4px 0 0;">
               {session.org.orgName ?? 'Scanning org'}
             </h1>
             <p style="margin:4px 0 0;color:var(--muted);font-size:12px;font-family:var(--mono);">
@@ -325,11 +325,11 @@
           </div>
           <div style="display:flex;gap:14px;align-items:baseline;">
             <div>
-              <div class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;" data-testid="scan-asset-count">{assetCount}</div>
+              <div class="display" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;" data-testid="scan-asset-count">{assetCount}</div>
               <div class="tiny-caps" style="margin-top:4px;">Assets</div>
             </div>
             <div>
-              <div class="serif" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;color:var(--navy-600);" data-testid="scan-finding-count">{findings.length}</div>
+              <div class="display" style="font-size:28px;font-weight:500;letter-spacing:-0.01em;line-height:1;color:var(--navy-600);" data-testid="scan-finding-count">{findings.length}</div>
               <div class="tiny-caps" style="margin-top:4px;">Findings</div>
             </div>
           </div>

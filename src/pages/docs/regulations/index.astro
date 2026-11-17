@@ -1,6 +1,8 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import Shell from '../../../layouts/Shell.astro';
+import SiteHeader from '../../../components/SiteHeader.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
 
 const docs = (await getCollection('regulations')).sort(
   (left: CollectionEntry<'regulations'>, right: CollectionEntry<'regulations'>) =>
@@ -23,10 +25,11 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
 ---
 
 <Shell title="Regulation Sources — QuantumShield" description="Indexed regulatory and standards source documents that drive QuantumShield mappings.">
+  <SiteHeader />
   <main style="max-width:1100px;margin:0 auto;padding:40px 28px 72px;display:grid;gap:28px;">
     <section style="display:grid;gap:10px;max-width:760px;">
       <div class="tiny-caps" style="color:var(--navy-600);">Source of truth</div>
-      <h1 class="serif" style="font-size:34px;font-weight:500;letter-spacing:-0.015em;margin:0;">Regulation and standards index</h1>
+      <h1 class="display" style="font-size:34px;font-weight:600;letter-spacing:-0.015em;margin:0;">Regulation and standards index</h1>
       <p style="margin:0;color:var(--ink-3);font-size:14px;line-height:1.65;">
         Each regulation or technical source lives in its own Markdown file with machine-readable frontmatter. A build-time sync step turns those documents into the runtime citation and overlay manifest used by the scanner and report layers.
       </p>
@@ -34,7 +37,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
 
     <section style="display:grid;gap:14px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Regulatory overlays</h2>
+        <h2 class="display" style="font-size:24px;font-weight:600;margin:0;">Regulatory overlays</h2>
         <span class="tiny-caps" style="color:var(--muted);">One document per overlay</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
@@ -59,7 +62,7 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
 
     <section style="display:grid;gap:14px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <h2 class="serif" style="font-size:24px;font-weight:500;margin:0;">Reference standards</h2>
+        <h2 class="display" style="font-size:24px;font-weight:600;margin:0;">Reference standards</h2>
         <span class="tiny-caps" style="color:var(--muted);">Technical guidance cited by rules</span>
       </div>
       <div class="qs-card" style="padding:6px 0;overflow:hidden;">
@@ -78,4 +81,5 @@ function badgeColor(status: 'active' | 'reference-only' | 'planned'): string {
       </div>
     </section>
   </main>
+  <SiteFooter />
 </Shell>

@@ -96,7 +96,7 @@
 
     {#if status === 'working'}
       <div class="tiny-caps" style="color:var(--navy-600);">Finishing sign-in</div>
-      <h1 class="serif" style="font-size:22px;font-weight:500;margin:8px 0 6px;letter-spacing:-0.005em;">
+      <h1 class="display" style="font-size:22px;font-weight:500;margin:8px 0 6px;letter-spacing:-0.005em;">
         Completing authentication…
       </h1>
       <p style="margin:0;color:var(--ink-3);font-size:12.5px;">
@@ -107,10 +107,10 @@
       </div>
     {:else if status === 'success'}
       <div class="tiny-caps" style="color:var(--ok);">Signed in</div>
-      <h1 class="serif" style="font-size:22px;font-weight:500;margin:8px 0 6px;">Redirecting to your org…</h1>
+      <h1 class="display" style="font-size:22px;font-weight:500;margin:8px 0 6px;">Redirecting to your org…</h1>
     {:else}
       <div class="tiny-caps" style="color:var(--crit);">Authentication failed</div>
-      <h1 class="serif" style="font-size:22px;font-weight:500;margin:8px 0 6px;" data-testid="callback-error-title">
+      <h1 class="display" style="font-size:22px;font-weight:500;margin:8px 0 6px;" data-testid="callback-error-title">
         {errorTitle}
       </h1>
       {#if errorDetail}

@@ -179,7 +179,7 @@
         <span class="pill adv">{POSTURE_LABELS[finding.migrationPosture]}</span>
         {#if finding.hndlExposure}<span class="pill hndl">HNDL</span>{/if}
         <span class="tag">{CATEGORY_LABELS[finding.category]}</span>
-        <h3 style="margin:0 0 0 8px;font-family:var(--serif);font-size:16px;font-weight:500;letter-spacing:-0.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">
+        <h3 style="margin:0 0 0 8px;font-family:var(--display);font-size:16px;font-weight:500;letter-spacing:-0.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">
           {finding.title}
         </h3>
       </div>
