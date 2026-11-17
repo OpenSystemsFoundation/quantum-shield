@@ -181,9 +181,8 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 - [ ] Rotate the committed scratch-org ECA consumer key under `salesforce/`
   and keep seed metadata credential-free. (A consumer key is not a secret and
   only exists in short-lived scratch orgs, so this is hygiene, not a leak.)
-- [ ] The GitHub repository is private, so every "source", licence, issues and
-  `git clone` link on the site and in the README returns 404 for the public.
-  Make it public or change the links before promoting the site.
+- [x] The GitHub repository is public (2026-11-17), so the site's source,
+  licence, issues and `git clone` links resolve.
 
 ## Release Readiness Definition
 
@@ -192,8 +191,8 @@ Beta is ready when:
 - [ ] Clean clone setup succeeds from README instructions.
 - [x] CLI scan works against at least one real Salesforce org.
 - [x] Browser setup and scan work against at least one real Salesforce org.
-- [ ] All public links resolve. (2026-11-17: GitHub links 404 while the repo
-  is private; a few regulator sites block automated checks with 403.)
+- [x] All public links resolve (2026-11-17; a few regulator sites block
+  automated checks with 403 but load in a browser).
 - [x] README, architecture, install, and security docs match the implemented app
   (reconciled 2026-08-13).
 - [x] Legal/privacy posture is explicit (LICENSE, NOTICE, /privacy, /terms).
