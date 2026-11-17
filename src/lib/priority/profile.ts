@@ -14,8 +14,14 @@ const OBJECT_BATCH = 40;
 /** Upper bound on custom objects inspected, so huge orgs do not stall a scan. */
 const MAX_CUSTOM_OBJECTS = 400;
 
+/** API names are letters, digits and underscores; anything else is dropped, never quoted. */
+const API_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
+
 function soqlList(names: string[]): string {
-  return names.map((n) => `'${n.replace(/'/g, "\\'")}'`).join(',');
+  return names
+    .filter((n) => API_NAME.test(n))
+    .map((n) => `'${n}'`)
+    .join(',');
 }
 
 function batches<T>(items: T[], size: number): T[][] {
@@ -125,7 +131,7 @@ export async function buildDataProfile(client: ScanClient): Promise<DataProfileR
   const customAll =
     (await tryQuery<EntityRecord>('custom objects', DATA_PROFILE_QUERIES.customObjects))
       ?.map((r) => r.QualifiedApiName)
-      .filter((n) => n.endsWith('__c'))
+      .filter((n) => n.endsWith('__c') && API_NAME.test(n))
       .sort() ?? [];
   const custom = customAll.slice(0, MAX_CUSTOM_OBJECTS);
   const objects = [...new Set([...standard, ...custom])];
