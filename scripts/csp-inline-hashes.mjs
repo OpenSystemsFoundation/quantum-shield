@@ -38,10 +38,16 @@ export function inlineScriptHashes(html) {
 /** Tags carrying inline event-handler attributes, which hashes cannot allow. */
 export function inlineEventHandlers(html) {
   // Strip script/style bodies and comments first so their text is not scanned.
-  const markup = html
-    .replace(SCRIPT_RE, '')
-    .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '');
+  // Repeat until nothing changes, so a removal cannot splice together a new
+  // <script, <style or <!-- opener from the text around it.
+  let markup = html;
+  for (let previous = ''; previous !== markup; ) {
+    previous = markup;
+    markup = markup
+      .replace(SCRIPT_RE, '')
+      .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '');
+  }
   return markup.match(INLINE_HANDLER_RE) ?? [];
 }
 
