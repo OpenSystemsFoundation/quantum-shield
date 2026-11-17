@@ -88,8 +88,8 @@
   });
 </script>
 
-<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg);">
-  <div class="qs-card" style="max-width:480px;width:100%;margin:24px;padding:32px 28px;text-align:center;">
+<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg);padding:24px 16px;box-sizing:border-box;">
+  <div class="qs-card" style="max-width:480px;width:100%;box-sizing:border-box;padding:32px 28px;text-align:center;overflow-wrap:anywhere;">
     <div style="display:flex;justify-content:center;margin-bottom:18px;">
       <BlochShield size={48} />
     </div>
