@@ -32,7 +32,7 @@ const PROD_ORIGIN = 'https://quantumshield.opensf.foundation';
             <li class="cors-step">
               <div class="num">1</div>
               <div class="body">
-                Clone the repo and install dependencies: <span class="mono" style="color:var(--ink);overflow-wrap:anywhere;">git clone https://github.com/OpenSystemsFoundation/quantum-shield.git && cd quantum-shield && npm install</span> (Node 22.23.4 or newer).
+                Clone the repo and install dependencies: <span class="mono" style="color:var(--ink);overflow-wrap:anywhere;">git clone https://github.com/OpenSystemsFoundation/quantum-shield.git && cd quantum-shield && npm install</span> (Node 22.23.4 or newer). No clone needed for a one-off run: <span class="mono" style="color:var(--ink);overflow-wrap:anywhere;">npx -y github:OpenSystemsFoundation/quantum-shield scan</span>.
               </div>
             </li>
             <li class="cors-step">
@@ -54,6 +54,38 @@ const PROD_ORIGIN = 'https://quantumshield.opensf.foundation';
               </div>
             </li>
           </ol>
+        </div>
+      </article>
+
+      <article class="qs-card" id="agents">
+        <div class="qs-card-head"><h3>With an AI agent · skill included</h3></div>
+        <div class="qs-card-body">
+          <p class="sub" style="margin-top:0;">
+            The repo ships an agent skill at <span class="mono" style="color:var(--ink)">.agents/skills/quantumshield/SKILL.md</span> (also linked under <span class="mono" style="color:var(--ink)">.claude/skills</span>). It teaches an agent how to check readiness, run a scan, read the JSON result and exit codes, and report the findings that matter, without touching the org.
+          </p>
+          <ol class="cors-steps" style="list-style:none;padding:0;">
+            <li class="cors-step">
+              <div class="num">1</div>
+              <div class="body">
+                Open your agent in a clone of the repo and it picks the skill up. Working in your own Salesforce project instead? Copy the <span class="mono" style="color:var(--ink)">quantumshield</span> skill folder into that project's <span class="mono" style="color:var(--ink)">.agents/skills/</span> (or <span class="mono" style="color:var(--ink)">.claude/skills/</span>); the skill runs the CLI through <span class="mono" style="color:var(--ink)">npx</span>, so nothing else needs installing.
+              </div>
+            </li>
+            <li class="cors-step">
+              <div class="num">2</div>
+              <div class="body">
+                Make sure <span class="mono" style="color:var(--ink)">sf</span> is logged in to the org (a browser login is a step for you, not the agent). Scratch orgs from <span class="mono" style="color:var(--ink)">sf org create scratch</span> work as they are.
+              </div>
+            </li>
+            <li class="cors-step">
+              <div class="num">3</div>
+              <div class="body">
+                Ask in plain words, for example: "Scan my scratch org for post-quantum risk and tell me what to fix first." The agent runs <span class="mono" style="color:var(--ink)">qshield doctor --json</span> and <span class="mono" style="color:var(--ink)">qshield scan --json</span>, then reads the result.
+              </div>
+            </li>
+          </ol>
+          <p class="sub" style="margin-bottom:0;">
+            Every command takes <span class="mono" style="color:var(--ink)">--json</span> and prints one JSON document on stdout, errors included. Exit codes are stable: 0 clean run, 2 usage, 3 partial coverage, 4 <span class="mono" style="color:var(--ink)">--fail-on</span> threshold met, 10 authentication, 20 scan failed.
+          </p>
         </div>
       </article>
 

@@ -30,7 +30,7 @@ const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
             Post-quantum readiness for your <span class="accent">Salesforce</span> org.
           </h1>
           <p class="lede">
-            QuantumShield scans your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards, and hands you PDF, CBOM, OpenVEX, CSV and JSON reports. Run it as a local <span class="mono">qshield</span> CLI on top of the Salesforce CLI you already use, or in this browser. Free for everyone, forever.
+            QuantumShield scans your org's cryptographic configuration against BSI TR-02102, ENISA, NCSC-NL and the NIST PQC standards, and hands you PDF, CBOM, OpenVEX, CSV and JSON reports. Run it as a local <span class="mono">qshield</span> CLI on top of the Salesforce CLI you already use, hand it to your AI coding agent, or use it in this browser. Free for everyone, forever.
           </p>
           <div class="cta-row">
             <a class="qs-btn qs-btn-primary qs-btn-lg" href="/install#cli">CLI quickstart</a>
@@ -39,7 +39,7 @@ const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
             <a class="qs-btn qs-btn-ghost qs-btn-lg" href={repo} rel="noopener">View source</a>
           </div>
           <div class="fineprint">
-            v{QSHIELD_VERSION} · Apache 2.0 · macOS, Windows and Linux · No account needed
+            v{QSHIELD_VERSION} · Apache 2.0 · macOS, Windows and Linux · Agent skill included · No account needed
           </div>
 
           <div class="trust-strip">
@@ -109,6 +109,39 @@ const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
             <div style="margin-top:14px;font-size:12.5px;font-weight:600;color:var(--primary);">Open the sample report →</div>
           </div>
         </a>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="agents">
+      <div class="container open-grid">
+        <div class="section-head" style="margin-bottom:0">
+          <div class="eyebrow">Built for AI agents</div>
+          <h2>Ask your agent to scan the org. It already knows how.</h2>
+          <p>
+            Most Salesforce developers now run an AI coding agent next to the <span class="mono">sf</span> CLI. QuantumShield ships an agent skill in the repo at <span class="mono">.agents/skills/quantumshield</span>, so agents that read skills, such as Claude Code and Codex, can run a scan and explain the findings without you writing a prompt. Any other agent can be pointed at the same file.
+          </p>
+          <p style="margin-top:12px;">
+            The CLI is made for it: no prompts, <span class="mono">--json</span> on every command, stable exit codes, a <span class="mono">doctor</span> check, and a scan of a small org in under a minute. It uses the <span class="mono">sf</span> session your agent already has, scratch orgs included.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;">
+            <a class="qs-btn qs-btn-primary" href="/install#agents">Set up your agent</a>
+            <a class="qs-btn" href={`${repo}/blob/main/.agents/skills/quantumshield/SKILL.md`} rel="noopener">Read the skill</a>
+          </div>
+        </div>
+        <div class="open-points">
+          <div class="open-point">
+            <strong>You ask</strong>
+            <span>"Check my scratch org for post-quantum risk and tell me what to fix first."</span>
+          </div>
+          <div class="open-point">
+            <strong>Your agent runs</strong>
+            <span class="mono" style="display:block;font-size:12.5px;overflow-wrap:anywhere;">qshield doctor --json<br />qshield scan -o my-scratch --json --fail-on high</span>
+          </div>
+          <div class="open-point">
+            <strong>You get</strong>
+            <span>The posture in one line, the top findings with the replacement for each, any category it could not check, and the PDF, CBOM and OpenVEX files on disk.</span>
+          </div>
+        </div>
       </div>
     </section>
 

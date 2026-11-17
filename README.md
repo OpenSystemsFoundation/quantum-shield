@@ -9,11 +9,12 @@ Free, open-source post-quantum readiness scanner for Salesforce orgs, from the [
 One TypeScript scan engine, two front-ends:
 
 - **Local CLI (`qshield`)** — recommended for real orgs. Reuses the `sf` CLI session you already have on macOS, Windows, or Linux. No Connected App, no CORS setup, and no QuantumShield auth infrastructure in the path.
+- **AI agents** — the CLI is built to be driven by an agent (no prompts, `--json` on every command, stable exit codes), and the repo ships an [agent skill](./.agents/skills/quantumshield/SKILL.md) so Claude Code, Codex and other skill-aware agents can scan an org and explain the results out of the box. See [Use with AI agents](#use-with-ai-agents).
 - **Browser app** — optional static UI for in-browser scans, demos, and report review. Uses an External Client App or Connected App you own plus one-time CORS settings in the org.
 
 Both produce the same artifacts: a PDF executive report, a CycloneDX v1.6 CBOM, an OpenVEX document, a findings CSV, and a raw report JSON. Every artifact records **per-category coverage** (`scanned` / `partial` / `failed` / `skipped`), so "we could not check" is never presented as "clean."
 
-QuantumShield is beta software distributed **from source**: it is not published to npm. Install is `git clone` + `npm install` (see below).
+QuantumShield is beta software distributed **from source**: it is not published to npm. Install is `git clone` + `npm install`, or run it straight from GitHub with `npx -y github:OpenSystemsFoundation/quantum-shield` (see below).
 
 ---
 
@@ -45,6 +46,12 @@ npm run qshield -- scan --target-org prod-eu --probe-tls --region NL,EU
 #   qshield-<org>-<timestamp>.report.json
 ```
 
+No clone needed for a one-off run (the first run downloads and caches the package, roughly 30 seconds):
+
+```sh
+npx -y github:OpenSystemsFoundation/quantum-shield scan --target-org prod-eu
+```
+
 ### Useful flags
 
 ```sh
@@ -54,8 +61,11 @@ qshield scan --overlay nis2,dora,pci-dss-4                  # enable regulatory 
 qshield scan --out ./audit-2026Q2                           # custom output directory
 qshield scan --allow-partial                                # CI-friendly: partial coverage exits 0
 qshield scan --quiet                                        # suppress scanner progress lines
+qshield scan --json --fail-on high                          # one JSON result on stdout; exit 4 on high or critical
+qshield doctor                                              # check Node, sf CLI and the target org before scanning
 qshield orgs                                                # list orgs the sf CLI knows
-qshield help                                                # all flags
+qshield --version                                           # print the version
+qshield help scan                                           # all scan flags
 ```
 
 ### Exit codes
@@ -63,10 +73,33 @@ qshield help                                                # all flags
 | Code | Meaning |
 |---|---|
 | `0` | Success. Full coverage — categories `skipped` because the feature is not available to the scanning user (e.g. Shield not provisioned) still count as success. |
+| `1` | Unexpected internal error (set `QSHIELD_DEBUG=1` for a stack trace). |
 | `2` | Usage error: unknown command/flag, missing or invalid flag value. |
 | `3` | Partial scan: the report was written, but at least one category has coverage `partial` or `failed`. Pass `--allow-partial` to downgrade to `0`. |
+| `4` | `--fail-on` threshold met: the report was written and at least one finding is at or above that severity. |
 | `10` | Authentication failure: `sf` CLI missing, unknown org alias, or expired session. |
 | `20` | Scan aborted, or every requested output format failed to write. |
+
+These codes are a stable contract: new codes may be added, existing ones never change meaning.
+
+## Use with AI agents
+
+Most Salesforce developers now work with an AI coding agent next to the `sf` CLI. QuantumShield is built for that:
+
+- **Skill included.** [`.agents/skills/quantumshield/SKILL.md`](./.agents/skills/quantumshield/SKILL.md) teaches an agent how to check readiness, run a scan, read the result and exit codes, and report what matters, without writing to the org or leaking the session. It is also linked at `.claude/skills/quantumshield` for Claude Code. To use it in your own Salesforce project, copy the `quantumshield` folder into that project's `.agents/skills/` (or `.claude/skills/`); it runs the CLI through `npx`, so nothing else needs installing.
+- **Non-interactive.** No command ever prompts. Authentication is whatever `sf` already has: `sf org login web` (a human runs it once), `sf org login jwt` / `sfdx-url` for headless setups, or scratch orgs from `sf org create scratch`.
+- **JSON in, JSON out.** Every command takes `--json` and prints exactly one JSON document on stdout, including errors (`qshield.error/v1` with a `code`, `message` and `hint`). Progress and logs go to stderr, and `--json` silences them.
+- **A result an agent can act on.** `qshield scan --json` returns `qshield.scan-result/v1`: the org, a summary with a one-line `postureSentence`, `coverage` (what could not be checked), the ten most urgent findings in `topFindings` with the recommended replacement for each, and the paths of the PDF, CBOM, OpenVEX, CSV and full report JSON. Fields are only ever added, never renamed.
+- **A readiness check.** `qshield doctor --json` reports Node, the `sf` CLI, the authenticated orgs and whether the target org resolves, with a `fix` for each failed check.
+- **Fast.** A scan of a small org takes about 15 seconds.
+
+A typical agent loop:
+
+```sh
+npm run --silent qshield -- doctor --json                          # in a clone (use --silent to keep npm's banner off stdout)
+npx -y github:OpenSystemsFoundation/quantum-shield doctor --json   # anywhere else
+qshield scan --target-org my-scratch --json --fail-on high
+```
 
 ### Global install
 
