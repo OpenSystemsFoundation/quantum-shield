@@ -1,4 +1,9 @@
 <script lang="ts">
+  /**
+   * QuantumShield brand mark: a shield holding a cloud with a keyhole.
+   * Kept under its historical name so every page picks it up unchanged.
+   * The same artwork lives in public/favicon.svg — keep the two in sync.
+   */
   interface Props {
     size?: number;
     variant?: 'primary' | 'onDark' | 'mono';
@@ -7,15 +12,13 @@
 
   const palette = $derived.by(() => {
     if (variant === 'onDark') {
-      return { stroke: '#cfe0fa', fill: 'rgba(143,183,238,0.08)', vec: '#6bb4ff', dot: '#cfe0fa' };
+      return { border: '#9FD8F5', fill: '#EAF5FE', cloud: '#00A1E0', key: '#032D60' };
     }
     if (variant === 'mono') {
-      return { stroke: 'currentColor', fill: 'none', vec: 'currentColor', dot: 'currentColor' };
+      return { border: 'currentColor', fill: 'none', cloud: 'currentColor', key: 'var(--qs-mono-bg, #fff)' };
     }
-    return { stroke: '#0b3a7a', fill: '#eef4fc', vec: '#1575d1', dot: '#0b3a7a' };
+    return { border: '#032D60', fill: '#EAF5FE', cloud: '#00A1E0', key: '#032D60' };
   });
-
-  const scale = $derived(size < 20 ? 1.4 : 1);
 </script>
 
 <svg
@@ -24,32 +27,23 @@
   viewBox="0 0 64 64"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
+  role="img"
   aria-label="QuantumShield"
   style="display: block"
 >
   <path
-    d="M32 4 L56 12 V30 C56 44 46.2 54.2 32 60 C17.8 54.2 8 44 8 30 V12 Z"
-    stroke={palette.stroke}
-    stroke-width={2.2 * scale}
+    d="M32 3.5 L56.5 11.5 V30 C56.5 44.5 46.5 54.8 32 60.5 C17.5 54.8 7.5 44.5 7.5 30 V11.5 Z"
     fill={palette.fill}
+    stroke={palette.border}
+    stroke-width="3.5"
     stroke-linejoin="round"
   />
-  <g transform="translate(32 32)">
-    <circle r="14" stroke={palette.stroke} stroke-width={1.6 * scale} fill="none" />
-    {#if size >= 20}
-      <ellipse rx="14" ry="4.2" stroke={palette.stroke} stroke-width="1.1" fill="none" opacity="0.45" stroke-dasharray="2 2" />
-    {/if}
-    <ellipse rx="14" ry="4.2" stroke={palette.stroke} stroke-width={1.2 * scale} fill="none" />
-    {#if size >= 20}
-      <ellipse rx="4.2" ry="14" stroke={palette.stroke} stroke-width="1.1" fill="none" opacity="0.45" stroke-dasharray="2 2" />
-    {/if}
-    <line x1="0" y1="-17" x2="0" y2="17" stroke={palette.stroke} stroke-width={1 * scale} stroke-dasharray="1.5 1.5" opacity="0.55" />
-    <line x1="0" y1="0" x2="9.2" y2="-8" stroke={palette.vec} stroke-width={2 * scale} stroke-linecap="round" />
-    <circle cx="9.2" cy="-8" r={1.9 * scale} fill={palette.vec} />
-    <circle r={1.2 * scale} fill={palette.dot} />
-    {#if size >= 20}
-      <circle cx="0" cy="-14" r="1.3" fill={palette.dot} />
-      <circle cx="0" cy="14" r="1.3" fill={palette.dot} />
-    {/if}
+  <g fill={palette.cloud}>
+    <circle cx="23" cy="35.5" r="6.5" />
+    <circle cx="31.5" cy="30" r="9" />
+    <circle cx="41" cy="34.5" r="7.5" />
+    <rect x="23" y="33" width="18" height="9" />
   </g>
+  <circle cx="32" cy="33" r="3" fill={palette.key} />
+  <path d="M30.6 34.5 h2.8 l0.9 5 h-4.6 z" fill={palette.key} />
 </svg>
