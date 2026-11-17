@@ -267,6 +267,7 @@ export const GENERATED_RULE_DEFS = ${JSON.stringify(generatedRules, null, 2)} as
 await writeFile(regulationsOutputFile, generatedRegulations);
 await writeFile(rulesOutputFile, generatedRuleCatalog);
 
-console.log(
+// stderr, so `npm run --silent qshield -- ... --json` keeps stdout pure JSON.
+console.error(
   `Synced ${regulationDocs.length} regulation docs -> ${path.relative(rootDir, regulationsOutputFile)}; ${ruleDocs.length} rule docs -> ${path.relative(rootDir, rulesOutputFile)}`,
 );

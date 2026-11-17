@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateCoverage } from './scan.js';
-import type { CategoryCoverage } from '../../src/lib/pdf/types.js';
+import type { CategoryCoverage, Finding } from '../../src/lib/pdf/types.js';
 
 function cov(
   status: CategoryCoverage['status'],
@@ -70,5 +70,62 @@ describe('normaliseApiVersion', () => {
     for (const bad of ['', 'latest', '62.5', '6', '62.0/../x', 'v']) {
       expect(normaliseApiVersion(bad), bad).toBeUndefined();
     }
+  });
+});
+
+function finding(id: string, severity: Finding['severity'], extra: Partial<Finding> = {}): Finding {
+  return {
+    id,
+    category: 'certificates',
+    severity,
+    regulatoryStatus: 'advisory',
+    migrationPosture: 'plan-2030',
+    effort: 'low',
+    hndlExposure: false,
+    title: `finding ${id}`,
+    asset: { kind: 'certificate', name: `cert-${id}`, identifier: id },
+    currentCrypto: 'RSA-2048',
+    recommendedReplacement: 'ML-DSA-65',
+    rationale: '',
+    citations: [],
+    ...extra,
+  };
+}
+
+describe('parseSeverity / findingsAtOrAbove', () => {
+  it('accepts severities case-insensitively and rejects others', async () => {
+    const { parseSeverity } = await import('./scan.js');
+    expect(parseSeverity('HIGH')).toBe('high');
+    expect(parseSeverity(' critical ')).toBe('critical');
+    expect(parseSeverity('severe')).toBeUndefined();
+  });
+
+  it('treats the threshold as inclusive, with critical highest', async () => {
+    const { findingsAtOrAbove } = await import('./scan.js');
+    const all = [finding('a', 'low'), finding('b', 'medium'), finding('c', 'high'), finding('d', 'critical')];
+    expect(findingsAtOrAbove(all, 'high').map((f) => f.id)).toEqual(['c', 'd']);
+    expect(findingsAtOrAbove(all, 'low')).toHaveLength(4);
+    expect(findingsAtOrAbove(all, 'critical').map((f) => f.id)).toEqual(['d']);
+  });
+});
+
+describe('rankFindings', () => {
+  it('orders by severity, then HNDL exposure, then deadline', async () => {
+    const { rankFindings } = await import('./scan.js');
+    const ranked = rankFindings([
+      finding('low', 'low'),
+      finding('high-late', 'high', { deadline: '2035-01-01' }),
+      finding('high-early', 'high', { deadline: '2030-01-01' }),
+      finding('high-hndl', 'high', { hndlExposure: true, deadline: '2040-01-01' }),
+      finding('crit', 'critical'),
+    ]);
+    expect(ranked.map((f) => f.id)).toEqual(['crit', 'high-hndl', 'high-early', 'high-late', 'low']);
+  });
+
+  it('prefers an explicit priority rank when findings carry one', async () => {
+    const { rankFindings } = await import('./scan.js');
+    const a = { ...finding('a', 'critical'), priority: { rank: 2 } };
+    const b = { ...finding('b', 'low'), priority: { rank: 1 } };
+    expect(rankFindings([a, b]).map((f) => f.id)).toEqual(['b', 'a']);
   });
 });

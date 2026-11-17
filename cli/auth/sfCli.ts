@@ -265,3 +265,26 @@ export async function listAuthenticatedOrgs(): Promise<OrgListEntry[]> {
     ...(list.other ?? []),
   ];
 }
+
+/**
+ * Returns the installed sf CLI version (e.g. "@salesforce/cli/2.66.7").
+ * `sf version --json` prints a bare object, without the usual
+ * {status, result} envelope, so it is parsed here rather than via invokeSf.
+ */
+export async function getSfVersion(): Promise<string> {
+  let raw: string;
+  try {
+    raw = await invokeSfStdout(['version', '--json']);
+  } catch (err) {
+    if (err instanceof SfCliError) throw err;
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') throw notFoundError(err);
+    const detail = extractProcessErrorDetail(err) ?? ((err as Error).message ?? String(err));
+    throw new SfCliError(`Failed to invoke sf CLI (sf version): ${detail}`, err);
+  }
+  try {
+    const parsed = JSON.parse(raw) as { cliVersion?: string; result?: { cliVersion?: string } };
+    return parsed.cliVersion ?? parsed.result?.cliVersion ?? 'unknown';
+  } catch {
+    return raw.trim().split('\n')[0] || 'unknown';
+  }
+}
