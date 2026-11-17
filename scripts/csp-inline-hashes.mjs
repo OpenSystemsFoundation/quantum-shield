@@ -16,6 +16,7 @@ const MAX_HEADER_LINE = 2000;
 
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi;
 const NON_EXECUTING_TYPE_RE = /\btype\s*=\s*["']?(application\/(ld\+)?json|importmap-shim|text\/template)/i;
+const STRIP_RE = /<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?-->/gi;
 const INLINE_HANDLER_RE = /<[a-z][^<>]*\son[a-z]+\s*=\s*["'][^<>]*>/gi;
 
 /** CSP hash-source for one inline script body, exactly as the browser hashes it. */
@@ -37,17 +38,10 @@ export function inlineScriptHashes(html) {
 
 /** Tags carrying inline event-handler attributes, which hashes cannot allow. */
 export function inlineEventHandlers(html) {
-  // Strip script/style bodies and comments first so their text is not scanned.
-  // Repeat until nothing changes, so a removal cannot splice together a new
-  // <script, <style or <!-- opener from the text around it.
-  let markup = html;
-  for (let previous = ''; previous !== markup; ) {
-    previous = markup;
-    markup = markup
-      .replace(SCRIPT_RE, '')
-      .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, '')
-      .replace(/<!--[\s\S]*?-->/g, '');
-  }
+  // Blank out script/style bodies and comments first so their text is not
+  // scanned. Each match becomes a space, not nothing, so a removal can never
+  // splice the text around it into a new <script, <style or <!-- opener.
+  const markup = html.replace(STRIP_RE, ' ');
   return markup.match(INLINE_HANDLER_RE) ?? [];
 }
 
