@@ -31,7 +31,7 @@ cases:
       recommendedReplacement: >-
         Request the vendor's cryptographic inventory and PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap for any RSA, ECC, or proprietary crypto that aligns with FIPS 203 and FIPS 204.
       rationale: >-
-        Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.
+        Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and the NIST IR 8547 transition plan both call for dependent products and services to be included in migration planning when their cryptography is outside direct code review.
       citations:
         - NIST_SP_800_53
         - ENISA_PQC_2024

@@ -76,4 +76,17 @@ describe('tls probe rules', () => {
     expect(findings[0].severity).toBe('medium');
     expect(findings[0].regulatoryStatus).toBe('advisory');
   });
+
+  it('reports TLS 1.0 and 1.1 as obsolete (critical), not as a 2030 migration item', () => {
+    for (const tlsVersion of ['TLSv1', 'TLSv1.1']) {
+      const findings = evaluate(
+        probedAsset({ tlsVersion, algorithm: 'ECDHE-RSA-AES128-SHA', hybridKem: false }),
+        tlsProbeRules(),
+        ctx,
+      );
+      expect(findings.map((f) => f.id.split(':')[0]), tlsVersion).toEqual(['R-TLS-OBSOLETE']);
+      expect(findings[0].severity).toBe('critical');
+      expect(findings[0].deadline).toBeUndefined();
+    }
+  });
 });

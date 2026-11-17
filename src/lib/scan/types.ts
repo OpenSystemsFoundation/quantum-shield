@@ -6,9 +6,11 @@ export interface ScanOptions {
   session: Session;
   overlays: string[];
   /**
-   * Regulatory jurisdictions to include in rule filtering. Rules whose
-   * citations do not map to any listed jurisdiction (and are not tagged INTL)
-   * are skipped. Empty array = no region filter (all rules fire).
+   * Regulatory jurisdictions the reader cares about. Regions never decide
+   * which rules fire — every detection runs for every scan. They scope each
+   * finding's citations: sources from the listed jurisdictions (and
+   * international ones) are shown first and unrelated ones are dropped when
+   * an in-region source exists. Empty array = citations left as authored.
    */
   regions?: Jurisdiction[] | string[];
   /**

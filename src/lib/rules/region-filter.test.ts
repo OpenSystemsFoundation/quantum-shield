@@ -1,53 +1,68 @@
 import { describe, expect, it } from 'vitest';
-import { ruleCatalogFor, ruleCatalogForOverlays } from './engine.js';
+import type { Citation } from '@lib/pdf';
+import { buildMockSession } from '../auth/oauth.js';
+import { runScan } from '../scan/engine.js';
+import { cite } from './citations.js';
+import { ruleCatalogFor, ruleCatalogForOverlays, scopeCitationsToRegions } from './engine.js';
 
-describe('ruleCatalogFor (region filtering)', () => {
-  it('returns the full base catalog when no regions are supplied', () => {
-    const unfiltered = ruleCatalogForOverlays([]);
-    const filtered = ruleCatalogFor([], []);
-    expect(filtered.length).toBe(unfiltered.length);
-  });
+const ALL_REGIONS = ['US', 'EU', 'NL', 'DE', 'FR', 'UK', 'INTL'];
 
-  it('keeps rules that cite US sources when region=US', () => {
-    const us = ruleCatalogFor([], ['US']);
-    expect(us.length).toBeGreaterThan(0);
-    // R-RSA-2048 cites NSA CNSA 2.0 (US) so it must still fire under US filter.
-    expect(us.map((r) => r.id)).toContain('R-RSA-2048');
-  });
-
-  it('keeps rules with INTL citations even when the region doesn\'t match directly', () => {
-    // NIST SP 800-131A is jurisdiction INTL and is cited by R-RSA-1024.
-    const frOnly = ruleCatalogFor([], ['FR']);
-    expect(frOnly.map((r) => r.id)).toContain('R-RSA-1024');
-  });
-
-  it('accepts lowercase region codes', () => {
-    const nl = ruleCatalogFor([], ['nl']);
-    expect(nl.length).toBeGreaterThan(0);
-  });
-
-  it('keeps universally-applicable baseline rules for EU users', () => {
-    // Regression: plaintext HTTP and expired certificates are non-compliant
-    // in every jurisdiction; the EU filter must never drop them.
-    const eu = ruleCatalogFor([], ['NL', 'EU']);
-    const ids = eu.map((r) => r.id);
-    expect(ids).toContain('R-HTTP-ENDPOINT');
-    expect(ids).toContain('R-CERT-EXPIRY');
-    expect(ids).toContain('R-AES-128');
-    expect(ids).toContain('R-WEAK-HASH');
-    expect(ids).toContain('R-SESSION-LENGTH');
-  });
-
-  it('member-state selections imply EU-wide sources', () => {
-    // NL alone must keep rules whose only European citation is EU-level
-    // (GDPR / NIS 2), because those bind Dutch organisations directly.
-    const nlOnly = ruleCatalogFor([], ['NL']);
-    expect(nlOnly.map((r) => r.id)).toContain('R-HTTP-ENDPOINT');
+describe('ruleCatalogFor (regions never gate detection)', () => {
+  it('returns the full catalog for every region selection', () => {
+    const full = ruleCatalogForOverlays([]).map((r) => r.id);
+    expect(ruleCatalogFor([], []).map((r) => r.id)).toEqual(full);
+    for (const region of ALL_REGIONS) {
+      expect(ruleCatalogFor([], [region]).map((r) => r.id), region).toEqual(full);
+    }
+    expect(ruleCatalogFor([], ['nl', 'eu']).map((r) => r.id)).toEqual(full);
   });
 
   it('never drops rules based on overlay selection', () => {
-    const withOverlays = ruleCatalogFor(['pci-dss-4'], []);
-    const without = ruleCatalogFor([], []);
-    expect(withOverlays.length).toBe(without.length);
+    expect(ruleCatalogFor(['pci-dss-4'], []).length).toBe(ruleCatalogFor([], []).length);
+  });
+});
+
+describe('scans produce the same findings for every region', () => {
+  const scan = (regions: string[]) =>
+    runScan(
+      { scanId: `region-${regions.join('-') || 'none'}`, session: buildMockSession(), overlays: [], regions, mock: true },
+      () => {},
+    );
+
+  it("keeps every finding for ['UK'] and ['INTL']", async () => {
+    // Regression: a UK-scoped scan used to lose 8 of 18 findings because
+    // few rules cite a UK source.
+    const baseline = await scan([]);
+    expect(baseline.findings.length).toBeGreaterThan(0);
+    const ids = baseline.findings.map((f) => f.id).sort();
+    for (const regions of [['UK'], ['INTL'], ['US'], ['NL', 'EU']]) {
+      const scoped = await scan(regions);
+      expect(scoped.findings.map((f) => f.id).sort(), regions.join(',')).toEqual(ids);
+      expect(scoped.summary.bySeverity).toEqual(baseline.summary.bySeverity);
+      for (const finding of scoped.findings) {
+        expect(finding.citations.length, finding.id).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe('scopeCitationsToRegions', () => {
+  const jurisdictions = (citations: Citation[]) => citations.map((c) => c.jurisdiction);
+  const mixed = cite('NIST_SP_800_53', 'GDPR_ART_32', 'NIST_SP_800_131A', 'NCSC_NL_PQC');
+
+  it('leaves citations untouched when no region is selected', () => {
+    expect(scopeCitationsToRegions(mixed, [])).toEqual(mixed);
+  });
+
+  it('puts in-region sources first, then international ones, and drops the rest', () => {
+    expect(jurisdictions(scopeCitationsToRegions(mixed, ['US']))).toEqual(['US', 'INTL']);
+    // NL implies EU.
+    expect(jurisdictions(scopeCitationsToRegions(mixed, ['NL']))).toEqual(['EU', 'NL', 'INTL']);
+    expect(jurisdictions(scopeCitationsToRegions(mixed, ['INTL']))).toEqual(['INTL']);
+  });
+
+  it('keeps every citation when none matches the region', () => {
+    const usOnly = cite('NIST_SP_800_53', 'NIST_IR_8547');
+    expect(scopeCitationsToRegions(usOnly, ['UK'])).toEqual(usOnly);
   });
 });

@@ -1,6 +1,6 @@
 /**
- * Compliant crypto helpers. QuantumShield should NOT flag this class
- * — it's the negative control.
+ * Compliant crypto helpers. QuantumShield should raise NO finding for this class
+ * — it is the negative control. Its calls are still inventoried in the CBOM.
  */
 public with sharing class ModernCrypto {
 

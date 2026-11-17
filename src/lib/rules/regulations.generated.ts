@@ -133,12 +133,12 @@ export const GENERATED_CITATIONS = {
     "retrievalUrl": "https://csrc.nist.gov/pubs/fips/205/final"
   },
   "NIST_SP_800_131A": {
-    "sourceId": "NIST-SP-800-131A-r3",
+    "sourceId": "NIST-SP-800-131A-r2",
     "title": "Transitioning the Use of Cryptographic Algorithms and Key Lengths",
     "jurisdiction": "INTL",
-    "section": "§5.6.1, §6.2.1",
-    "documentVersion": "Rev 3",
-    "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/131/a/r3/final"
+    "section": "§3, §9, §10",
+    "documentVersion": "Rev 2",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/sp/800/131/a/r2/final"
   },
   "NIST_SP_800_52": {
     "sourceId": "NIST-SP-800-52-r2",
@@ -166,8 +166,8 @@ export const GENERATED_CITATIONS = {
     "sourceId": "NIST-IR-8547",
     "title": "Transition to Post-Quantum Cryptography Standards",
     "jurisdiction": "US",
-    "documentVersion": "Initial Public Draft",
-    "retrievalUrl": "https://csrc.nist.gov/pubs/ir/8547/ipd"
+    "documentVersion": "Final (October 2026)",
+    "retrievalUrl": "https://csrc.nist.gov/pubs/ir/8547/final"
   },
   "NSA_CNSA_2_0": {
     "sourceId": "NSA-CNSA-2.0",
@@ -316,9 +316,9 @@ export const GENERATED_SOURCE_VERSIONS = [
     "retrievedAt": "2026-04-21"
   },
   {
-    "sourceId": "NIST-SP-800-131A-r3",
-    "documentVersion": "Rev 3",
-    "retrievedAt": "2026-04-21"
+    "sourceId": "NIST-SP-800-131A-r2",
+    "documentVersion": "Rev 2",
+    "retrievedAt": "2026-11-17"
   },
   {
     "sourceId": "NIST-SP-800-52-r2",
@@ -337,8 +337,8 @@ export const GENERATED_SOURCE_VERSIONS = [
   },
   {
     "sourceId": "NIST-IR-8547",
-    "documentVersion": "Initial Public Draft",
-    "retrievedAt": "2026-04-21"
+    "documentVersion": "Final (October 2026)",
+    "retrievedAt": "2026-11-17"
   },
   {
     "sourceId": "NSA-CNSA-2.0",

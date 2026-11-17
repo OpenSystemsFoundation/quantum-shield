@@ -18,6 +18,11 @@ const QUERY_PLAN = [
     kind: 'toolingQuery',
     soql: 'SELECT Id, Name, DeveloperName, ContactEmail, RefreshTokenValidityPeriod FROM ConnectedApplication',
   },
+  // ExternalClientApplication: REST first, Tooling as the fallback.
+  {
+    kind: 'query',
+    soql: 'SELECT Id, DeveloperName, MasterLabel FROM ExternalClientApplication',
+  },
   {
     kind: 'toolingQuery',
     soql: 'SELECT Id, DeveloperName, MasterLabel FROM ExternalClientApplication',
@@ -25,6 +30,11 @@ const QUERY_PLAN = [
   {
     kind: 'query',
     soql: 'SELECT Id, DeveloperName, MasterLabel, Endpoint, PrincipalType FROM NamedCredential',
+  },
+  // ExternalCredential: Tooling first, REST as the fallback.
+  {
+    kind: 'toolingQuery',
+    soql: 'SELECT Id, DeveloperName, MasterLabel, AuthenticationProtocol FROM ExternalCredential',
   },
   {
     kind: 'query',
@@ -49,6 +59,10 @@ const QUERY_PLAN = [
   {
     kind: 'toolingQuery',
     soql: 'SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexClass WHERE NamespacePrefix = null',
+  },
+  {
+    kind: 'toolingQuery',
+    soql: 'SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexTrigger WHERE NamespacePrefix = null',
   },
   {
     kind: 'toolingQuery',

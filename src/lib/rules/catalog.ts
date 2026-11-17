@@ -23,16 +23,30 @@ interface TemplateContext {
 const IF_BLOCK_PATTERN = /{{#if\s+([^}]+)}}([\s\S]*?){{\/if}}/g;
 const TOKEN_PATTERN = /{{\s*([^}]+?)\s*}}/g;
 
-function isQuantumVulnerableSignature(algo: string | undefined): boolean {
+const QUANTUM_VULNERABLE_TOKENS = new Set([
+  'RSA',
+  'ECDSA',
+  'DSA',
+  'EDDSA',
+  'ED25519',
+  'ED448',
+  'ECDH',
+  'ECDHE',
+  'DH',
+  'DHE',
+  'ECC',
+]);
+
+/**
+ * True for classical public-key algorithms that Shor's algorithm breaks.
+ * Matches whole name tokens, not substrings: "ML-DSA-65" and "SLH-DSA" are
+ * post-quantum signatures and must never match on their "DSA" suffix.
+ */
+export function isQuantumVulnerableSignature(algo: string | undefined): boolean {
   if (!algo) return false;
   const normalised = algo.toUpperCase();
-  return (
-    normalised.includes('RSA') ||
-    normalised.includes('ECDSA') ||
-    normalised.includes('DSA') ||
-    normalised.includes('ED25519') ||
-    normalised.includes('ECDH')
-  );
+  if (/^(ML-DSA|SLH-DSA|ML-KEM|SPHINCS|FALCON|FN-DSA|LMS|XMSS|HSS)\b/.test(normalised)) return false;
+  return normalised.split(/[^A-Z0-9]+/).some((token) => QUANTUM_VULNERABLE_TOKENS.has(token));
 }
 
 function compareByOrder(left: RuleDefinition, right: RuleDefinition): number {
@@ -117,8 +131,10 @@ function evaluateCondition(condition: RuleCondition, asset: CryptoAsset, ctx: Ru
       const value = normalise(actual, caseInsensitive);
       return condition.values.some((item) => value.includes(normalise(item, caseInsensitive)));
     }
+    case 'missing':
+      return asset.keySize === undefined || asset.keySize === null;
     case 'one-of': {
-      const actual = getAssetString(asset, 'signatureHash');
+      const actual = getAssetString(asset, condition.field);
       if (!actual) return false;
       const caseInsensitive = condition.caseInsensitive ?? true;
       const value = normalise(actual, caseInsensitive);

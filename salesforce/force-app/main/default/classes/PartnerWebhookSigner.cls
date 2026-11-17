@@ -1,6 +1,6 @@
 /**
  * Signs outbound webhook payloads with RSA-SHA256.
- * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high, HNDL).
+ * Quantum-vulnerable — flagged by R-APEX-CRYPTO (high). Signatures are not HNDL-exposed.
  */
 public with sharing class PartnerWebhookSigner {
 

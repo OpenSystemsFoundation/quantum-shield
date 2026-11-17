@@ -109,7 +109,7 @@
         return [];
       }
     })();
-    if (regions.length > 0) pushLog('info', `region filter: ${regions.join(', ')}`);
+    if (regions.length > 0) pushLog('info', `citation regions: ${regions.join(', ')} (all rules still run)`);
     try {
       const report = await startScan(
         { scanId, session: s, overlays: ['gdpr', 'nis2', 'dora'], regions, mock: s.mock === true },
