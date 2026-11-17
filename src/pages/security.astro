@@ -92,7 +92,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 script-src 'self' &lt;build hashes&gt;;
 style-src 'self' 'unsafe-inline';
 img-src 'self' data:; font-src 'self';
-connect-src 'self' https://*.salesforce.com https://*.force.com https://*.my.site.com;
+connect-src 'self' https://*.salesforce.com;
 worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</code></div>
         <p style="margin:10px 0 0;color:var(--muted);font-size:11.5px;font-family:var(--mono);">
           Also served: X-Content-Type-Options: nosniff · Referrer-Policy: strict-origin-when-cross-origin · Permissions-Policy: camera=(), microphone=(), geolocation=() · Strict-Transport-Security. Local dev servers (astro dev/preview) do not apply these headers.
