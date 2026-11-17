@@ -52,8 +52,7 @@ jobs:
         run: npx vitest run
 
       - name: Build
-        env:
-          PUBLIC_APP_ORIGIN: https://quantumshield.opensf.foundation
+        # Public build values come from the committed .env.production.
         run: npm run build
 
       - name: Package release assets
