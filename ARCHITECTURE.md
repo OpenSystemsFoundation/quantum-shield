@@ -110,12 +110,12 @@ All read-only. All queries are scoped to metadata and configuration; we never re
 - Risk: quantum-vulnerable asymmetric keys; undersized RSA.
 
 **Connected Apps and External Client Apps**
-- Source: `ConnectedApplication` and `ExternalClientApplication` via the Tooling API.
+- Source: `ConnectedApplication` via the Tooling API; `ExternalClientApplication` via the REST API with a Tooling fallback (it is a Tooling object only from API v67 — querying Tooling alone at v66 returned `INVALID_TYPE`, which hid every External Client App).
 - Crypto elements: **none — inventory only.** The API exposes no OAuth signing-key configuration, so no JWT key-size or algorithm claims are made; reports direct admins to review JWT certificates manually in Setup.
 - Risk: surfaced as inventory for manual review, not as findings with invented parameters.
 
 **Named Credentials and External Credentials**
-- Source: `NamedCredential`, `ExternalCredential` via the REST API.
+- Source: `NamedCredential` via the REST API; `ExternalCredential` via the Tooling API (REST fallback).
 - Crypto elements: endpoint URL, configured authentication protocol as reported.
 - Risk: plaintext HTTP endpoints; weak authentication protocols where the API states them.
 
@@ -126,23 +126,23 @@ All read-only. All queries are scoped to metadata and configuration; we never re
 
 **Single Sign-On (SAML and Auth Providers)**
 - Source: `SamlSsoConfig` and `AuthProvider` via the REST API (they are standard objects, not Tooling objects).
-- Crypto elements: SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by provider type. IdP certificate key sizes are not exposed by the API and are not guessed.
-- Risk: SHA-1 request signing; legacy providers surfaced for review.
+- Crypto elements: SAML request-signature method (`RSA-SHA1` vs `RSA-SHA256`); auth providers inventoried by provider type. Certificate key sizes are not exposed by the API and are not guessed.
+- Risk: SHA-1 request signing; RSA request signing reported as "RSA with an unknown key size" (migration planning, key size to be confirmed in Setup); legacy providers surfaced for review.
 
 **Shield Platform Encryption**
 - Source: `TenantSecret` via the REST API.
-- Crypto elements: tenant secret type, BYOK/EKM vs Salesforce-derived key material, rotation history. Data-encryption keys derived from tenant secrets are AES-256 per platform documentation.
-- Risk: missing BYOK, stale rotation extending HNDL exposure. Orgs without Shield licensed record the category as `skipped` with an explicit reason.
+- Crypto elements: tenant secret type, key origin from `TenantSecret.Source` (`HSM` = Salesforce-generated, `UPLOADED` = customer-supplied/BYOK, `REMOTE` = fetched from an external key service), rotation history. Data-encryption keys derived from tenant secrets are AES-256 per platform documentation.
+- Risk: stale rotation (a crypto-agility gap, not a quantum exposure). When `TenantSecret` answers `INVALID_TYPE` the category is `skipped` and the reason says Shield is either not provisioned or the user lacks *Manage Encryption Keys* — the two are indistinguishable from the API response.
 
 **Apex code (pattern analysis)**
-- Source: `ApexClass` bodies via the Tooling API (unmanaged classes), analyzed with regex patterns after comment stripping (line numbers preserved; commented-out code never matches).
-- Crypto elements: `Crypto.generateDigest` with MD5/SHA-1; `Crypto.sign`/`signWithCertificate` including the `'RSA'` → RSA-SHA1 alias; `Crypto.generateMac` with HMAC-MD5/HMAC-SHA1; `Crypto.encrypt`/`decrypt`(`WithManagedIV`) with AES-128/AES-192; hardcoded AES key literals passed to `Crypto.encrypt`/`decrypt`.
-- Risk: legacy digests and MACs, weak AES, RSA-SHA1 signing, hardcoded keys. Pattern-based analysis has known false-negative modes (string-built algorithm names); this is documented, not hidden.
+- Source: `ApexClass` and `ApexTrigger` bodies via the Tooling API (unmanaged code), analyzed after comment stripping (line numbers preserved; commented-out code never matches).
+- Crypto elements: every `System.Crypto` call that takes an algorithm — `generateDigest`, `generateMac`, `verifyHMac`, `sign`, `signWithCertificate`, `signXML`, `verify`, `verifyWithCertificate` (including the `'RSA'` → RSA-SHA1 alias), `encrypt`/`decrypt`(`WithManagedIV`) and `generateAesKey`. The algorithm argument is read from a literal or from a constant initialised once from a literal. Key arguments built from a literal (`Blob.valueOf('…')`, `EncodingUtil.base64Decode('…')`, `EncodingUtil.convertFromHex('…')`, inline or via a variable) are reported as hardcoded AES, HMAC or signing keys.
+- Risk: MD5 (critical), SHA-1 digests and HMAC-MD5/SHA1 (high, deprecated), SHA-1 signatures (critical), RSA/ECDSA signatures (PQC migration), AES-128/192 (low advisory), hardcoded keys (critical). Calls using SHA-256 or stronger, HMAC-SHA256 or stronger and AES-256 are added to the CBOM with no finding. A call whose algorithm is a variable or expression is emitted as an *unresolved* asset with a low-severity finding, so it is reviewed rather than silently missed. Crypto reached through wrapper classes is only seen where the wrapper itself calls `Crypto`.
 
 **Session settings**
 - Source: `SessionSettings` via the Tooling API.
-- Crypto elements: session timeout configuration.
-- Risk: long session lifetimes.
+- Crypto elements: none — the session timeout (stored in minutes) is a hygiene setting.
+- Risk: a timeout of eight hours or more is reported as a low-severity hygiene advisory with no deadline. It is not a cryptographic finding and is excluded from the CBOM.
 
 **Managed packages**
 - Source: `InstalledSubscriberPackage` via the Tooling API.
@@ -152,7 +152,7 @@ All read-only. All queries are scoped to metadata and configuration; we never re
 **TLS endpoints (CLI only, `--probe-tls`)**
 - Source: live `node:tls` handshakes against HTTPS endpoints referenced by Named Credentials and Remote Sites.
 - Crypto elements: negotiated TLS version, cipher, key-exchange group.
-- Risk: TLS 1.2 (HNDL-exposed); TLS 1.3 without a hybrid PQC KEM. The hybrid verdict is only asserted when the local OpenSSL (≥ 3.5) could itself have negotiated a hybrid group — otherwise it is recorded as unknown rather than as a false negative.
+- Risk: TLS 1.0/1.1 (already non-compliant); TLS 1.2 (HNDL-exposed); TLS 1.3 without a hybrid PQC KEM. The hybrid verdict comes from a second handshake that offers only a hybrid group (X25519MLKEM768, then SecP256r1MLKEM768): success means supported, a TLS-level refusal of both means not supported. The name of the group negotiated in the first handshake is not relied on, because OpenSSL ≥ 3.5 reports an empty ephemeral-key record for ML-KEM hybrids. Without a local OpenSSL ≥ 3.5, or when the second handshake fails for a network reason, the verdict is unknown rather than a false negative. The probe does not verify certificates — it inspects the handshake and sends no request — so endpoints behind a private CA are assessed; an untrusted chain is recorded on the asset.
 
 ### Coverage model
 
@@ -161,13 +161,15 @@ Every category (plus the TLS probe pass) ends a scan with an explicit status rec
 - `scanned` — every query for the category completed.
 - `partial` — some data was collected but at least one sub-query failed; results are incomplete.
 - `failed` — the category could not be scanned at all.
-- `skipped` — the underlying feature is not available in the org (e.g. Shield not licensed), with the reason stated.
+- `skipped` — nothing in the category could be read because Salesforce reported the objects as not available (`INVALID_TYPE`), with the reason stated. That response means either "not present at this API version / edition" or "not permitted for this user"; the scanner cannot tell which and says so.
+
+A category whose objects are partly unavailable is `partial`, never `scanned`: a scan must not report zero assets for something it could not query.
 
 Consumers must treat anything other than `scanned` as *unverified*: zero findings in a `failed` category does not mean clean. This exists precisely so "we couldn't check" can never render as "you're fine." The CLI exits `3` on partial coverage unless `--allow-partial` is passed.
 
 ### Overlay mapping
 
-Rules declare which regulatory overlays (NIS 2, DORA, PCI DSS 4, HIPAA, …) they map to, and every finding carries the union of its rules' overlay IDs regardless of scan options. Enabling overlays (`--overlay`, or the browser toggles) only scopes the report's **regulatory appendix** — it never changes which rules fire or which findings appear. Region selection (`--region`) similarly scopes regulatory framing to the cited jurisdictions without dropping universally applicable baseline rules.
+Rules declare which regulatory overlays (NIS 2, DORA, PCI DSS 4, HIPAA, …) they map to, and every finding carries the union of its rules' overlay IDs regardless of scan options. Enabling overlays (`--overlay`, or the browser toggles) only scopes the report's **regulatory appendix** — it never changes which rules fire or which findings appear. Region selection (`--region`, or the browser checkboxes) likewise never changes which rules fire. It scopes each finding's citations: sources from the selected jurisdictions come first, international sources follow, and sources from other jurisdictions are dropped only when an in-region or international source remains.
 
 ---
 
@@ -185,11 +187,11 @@ Every finding in the report cites at least one primary source below. The rules e
 
 **United States — primary**
 
-- **NIST IR 8547 — Transition to Post-Quantum Cryptography Standards.** Deprecation and disallowed dates per algorithm. This is the canonical US transition timeline. Everything with a "deprecated after YYYY" or "disallowed after YYYY" finding traces here.
-- **NIST SP 800-131A Rev 3 — Transitioning the Use of Cryptographic Algorithms and Key Lengths.** Already-live transitions. SHA-1 disallowed, 1024-bit RSA disallowed, legacy modes retired. Catches compliance gaps that exist today, independent of PQC.
+- **NIST IR 8547 — Transition to Post-Quantum Cryptography Standards** (final, October 2026). All quantum-vulnerable signature and key-establishment algorithms are deprecated after 2030 and disallowed after 2035, at every key size. This is the canonical US transition timeline. Everything with a "deprecated after YYYY" or "disallowed after YYYY" finding traces here.
+- **NIST SP 800-131A Rev 2 — Transitioning the Use of Cryptographic Algorithms and Key Lengths.** Already-live transitions: SHA-1 signature generation and RSA below 2048 bits disallowed (since the end of 2013). Catches compliance gaps that exist today, independent of PQC. Rev 3 is an initial public draft and is not cited for present-day prohibitions.
 - **NIST SP 800-57 Part 1 — Recommendation for Key Management.** Key length recommendations, crypto period guidance. Used for key-rotation findings.
 - **NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA).** The approved replacements. Cited in every migration recommendation.
-- **NSA CNSA 2.0 — Commercial National Security Algorithm Suite 2.0.** Binding deadlines for US federal and defense. Pre-2027 prepare, 2027 start deploying PQC, 2030 deprecate classical, 2033 prohibit. Cited whenever a report needs federal-grade language.
+- **NSA CNSA 2.0 — Commercial National Security Algorithm Suite 2.0.** Binding deadlines for US federal and defense. Pre-2027 prepare, 2027 start deploying PQC, 2030 deprecate classical, 2033 prohibit. These dates bind US national security systems only; findings use the NIST IR 8547 dates (2030 / 2035) and cite CNSA 2.0 as the stricter benchmark.
 
 **Europe — secondary, enabled per org**
 
@@ -212,16 +214,16 @@ Sources are revisioned quarterly. Each source file in `src/content/regulations/`
 
 Each finding includes the specific replacement algorithm and its source document. Summary of the mapping:
 
-- **RSA (any key size) signing** → **ML-DSA (FIPS 204)** for general-purpose signatures; **SLH-DSA (FIPS 205)** when stateless hash-based assurance is preferred. CNSA 2.0 deprecates classical signatures after 2030, prohibits after 2033.
-- **RSA key transport / ECDH key exchange** → **ML-KEM (FIPS 203)**. HQC added in 2025 as a second-source KEM; still in draft standardization as of the current cutoff. Same CNSA 2.0 timeline.
+- **RSA (any key size) signing** → **ML-DSA (FIPS 204)** for general-purpose signatures; **SLH-DSA (FIPS 205)** when stateless hash-based assurance is preferred. NIST IR 8547 deprecates classical signatures after 2030 and disallows them after 2035 (CNSA 2.0, for national security systems: 2033).
+- **RSA key transport / ECDH key exchange** → **ML-KEM (FIPS 203)**. HQC added in 2025 as a second-source KEM; still in draft standardization as of the current cutoff. Same 2030 / 2035 timeline.
 - **ECDSA signing** → **ML-DSA** or **SLH-DSA**. Same timeline.
-- **AES-128** → **AES-256**. Grover's algorithm reduces symmetric security by half in theory; AES-256 retains 128-bit security margin post-quantum. Recommended now, no hard deadline.
-- **SHA-1** → **SHA-256 or SHA-3**. Already disallowed under SP 800-131A Rev 3. Finding is "existing non-compliance," not "future risk."
-- **MD5** → **SHA-256 or SHA-3**. Same category.
+- **AES-128 / AES-192** → **AES-256** only where a CNSA 2.0 style profile applies. NIST keeps AES-128 approved with no retirement date and rates it PQC category 1, so this is a low-severity advisory with no deadline and no HNDL flag.
+- **SHA-1** → **SHA-256 or SHA-3**. For digital signatures it is already disallowed (SP 800-131A, since 2013): "existing non-compliance". As a bare digest or in HMAC it is deprecated, with retirement at the end of 2030: high severity, not critical.
+- **MD5** → **SHA-256 or SHA-3**. Never NIST-approved; critical.
 - **3DES** → **AES-256**. Already prohibited.
 - **Hardcoded keys (any algorithm)** → **Named Credentials + platform-managed secrets**. Not a PQC finding per se; included because the scanner encounters it during Apex analysis.
 
-For each finding, the report includes: current algorithm and parameters, recommended replacement, citation to the authoritative source, and one of three migration postures — **replace now** (already non-compliant), **plan for 2030** (CNSA 2.0 deprecate), **prepare for 2033** (CNSA 2.0 prohibit).
+For each finding, the report includes: current algorithm and parameters, recommended replacement, citation to the authoritative source, and a migration posture — **replace now** (already non-compliant or deprecated and cheap to fix), **plan for 2030** (NIST IR 8547 deprecation; disallowed after 2035), or **advisory**. A **prepare for 2033** posture exists for CNSA 2.0 scoped rules; no shipped rule uses it.
 
 Hybrid deployments (classical + PQC in parallel) are called out in the recommendation where NIST guidance explicitly endorses them as the transition strategy.
 
@@ -232,8 +234,8 @@ Hybrid deployments (classical + PQC in parallel) are called out in the recommend
 No proprietary 0–100 score. Each finding carries:
 
 - **Regulatory status:** Already non-compliant / Deprecated by date / Disallowed by date / Advisory.
-- **Severity:** Critical / High / Medium / Low, derived deterministically from (regulatory status × data sensitivity × exposure). The derivation rule is documented and open.
-- **Harvest-Now-Decrypt-Later exposure:** Flagged separately for any asset carrying data with long confidentiality requirements, because the attack can be occurring today even if the decryption is years away.
+- **Severity:** Critical / High / Medium / Low, fixed by the rule case that matched (see the rule catalog under `src/content/rules/`). It is deterministic, but it is not computed from data sensitivity or exposure — the scanner has neither. Treat it as a starting priority.
+- **Harvest-Now-Decrypt-Later exposure:** Flagged only where a quantum-vulnerable algorithm establishes keys or encrypts data (probed TLS endpoints today), because that traffic can be recorded now and decrypted later. Signature-only assets — signing certificates, SAML and OIDC signing, Apex `Crypto.sign` — are not flagged: a signature cannot be forged retroactively. The scanner does not know how long data must stay confidential; that judgement is the reader's.
 - **Effort estimate:** Low / Medium / High. Editable by the customer; the default is heuristic (cert rotation is Low, SSO provider change is High).
 
 The report sorts findings by regulatory deadline, not by severity, because CISOs plan by date.
@@ -248,9 +250,9 @@ Generated entirely client-side by the PDF module. Produces:
 - **Findings register** (variable). Every finding with asset, current crypto, replacement, citation, migration posture, effort.
 - **Regulatory appendix.** For each enabled overlay (PCI, HIPAA, CMMC, etc.), the findings that map to each requirement via rule-declared overlay IDs.
 - **Coverage section.** Per-category scan status (`scanned` / `partial` / `failed` / `skipped`) with reasons, so partial scans are visibly partial in the auditor-facing artifact.
-- **Methodology** (1 page). What was scanned, what was not, how severity is computed, source document versions.
-- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, as a schema-valid CycloneDX v1.6 BOM: `assetType` drawn from the spec's closed enum, `cryptoProperties` populated where known (`primitive`, `oid`, `nistQuantumSecurityLevel`, `executionEnvironment`), so customers can feed it into Dependency-Track, ServiceNow, or any CycloneDX-aware GRC tooling. Fields the spec does not define (e.g. a bare `quantumSafe` boolean) are not emitted.
-- **OpenVEX document.** Spec-conformant OpenVEX v0.2.0: one statement per finding (`affected` / `under_investigation`) with the remediation in `action_statement` and rationale/HNDL context in `status_notes`. `justification` and `impact_statement` are never emitted (they are only valid on `not_affected` statements, which the scanner does not produce). Consumable by Grype / Trivy / Dependency-Track without parsing the PDF.
+- **Methodology** (1 page). What was scanned, what was not, how severity is assigned, source document versions.
+- **Cryptographic Bill of Materials (CBOM).** Machine-readable appendix listing every cryptographic asset found, as a schema-valid CycloneDX v1.6 BOM: `assetType` drawn from the spec's closed enum, and each asset type carrying only its own properties object (`algorithmProperties` with `primitive`, `oid`, `nistQuantumSecurityLevel`, `executionEnvironment` on algorithms; `certificateProperties.notValidAfter` on certificates; `protocolProperties` type/version/cipher suite on endpoints; `relatedCryptoMaterialProperties` on keys). RSA and ECC report quantum security level 0 at every key size. Quantum safety is tri-state (`true` / `false` / `unknown`). Assets with no observable cryptography (session settings, Connected Apps, auth providers, installed packages) are not listed, so customers can feed it into Dependency-Track, ServiceNow, or any CycloneDX-aware GRC tooling. Fields the spec does not define (e.g. a bare `quantumSafe` boolean) are not emitted.
+- **OpenVEX document.** Spec-conformant OpenVEX v0.2.0: one `affected` statement per finding — advisories included, since a finding is an observed condition, not an open question — with the remediation in `action_statement` and severity, regulatory status, rationale and HNDL context in `status_notes`. Each category that was not fully scanned adds one `under_investigation` statement, so a failed scan never produces an empty, clean-looking VEX. `justification` and `impact_statement` are never emitted (they are only valid on `not_affected` statements, which the scanner does not produce). Consumable by Grype / Trivy / Dependency-Track without parsing the PDF.
 
 Export options: PDF (primary), CBOM JSON (CycloneDX 1.6), OpenVEX JSON, findings CSV, raw report JSON. The web app streams these directly from the browser to the user's disk; the CLI writes them all to `./qshield-out/`. Neither path uploads anywhere.
 
@@ -269,9 +271,9 @@ The CLI exists specifically so admins can run a scan without the customer org ha
 
 **CLI-only additions:**
 
-- `NodeTlsProbe` (`cli/probe/tls.ts`) — a `node:tls`-backed probe that performs a live handshake with every HTTPS endpoint referenced by a `NamedCredential` or `RemoteSiteSetting`, records the negotiated TLS version, cipher suite, and ephemeral key-exchange group, and flags TLS 1.2 (HNDL-exposed) plus TLS 1.3 without a hybrid PQC KEM (X25519MLKEM768 and friends). Enabled via `--probe-tls`.
+- `NodeTlsProbe` (`cli/probe/tls.ts`) — a `node:tls`-backed probe that performs a live handshake with every HTTPS endpoint referenced by a `NamedCredential` or `RemoteSiteSetting`, records the negotiated TLS version and cipher suite, then decides hybrid PQC KEM support with a hybrid-only handshake (X25519MLKEM768, SecP256r1MLKEM768). Flags TLS 1.0/1.1, TLS 1.2 (HNDL-exposed) and TLS 1.3 without a hybrid KEM. Enabled via `--probe-tls`.
 - File-system writers (`cli/output/writers.ts`) that hand raw bytes from `renderReportPdf()`, `buildCbomJson()`, `buildVexJson()`, `buildFindingsCsv()` directly to disk.
-- `--region US,EU,NL,...` — filters the rule catalog to only fire rules that cite the listed jurisdictions (or INTL), so Dutch customers see Dutch/EU guidance and US customers see CNSA 2.0 framing.
+- `--region US,EU,NL,...` — scopes the citations on each finding to the listed jurisdictions (plus international sources), so Dutch customers see Dutch/EU guidance first and US customers see NIST/CNSA framing. It never changes which rules fire.
 - `--overlay nis2,dora,pci-dss-4,...` — same overlay system the web app exposes via the `OverlayScope` type.
 
 **Tech choices:**
