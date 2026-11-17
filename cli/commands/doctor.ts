@@ -91,7 +91,10 @@ export async function doctorCommand(args: ParsedArgs): Promise<number> {
         id: 'orgs',
         ok: orgs.length > 0,
         detail: `${orgs.length} authenticated org(s)`,
-        fix: orgs.length > 0 ? undefined : 'Ask a human to run: sf org login web --alias <name>',
+        fix:
+          orgs.length > 0
+            ? undefined
+            : 'Log in with sf: a human runs sf org login web --alias <name> (opens a browser); headless setups use sf org login jwt or sf org login sfdx-url.',
       });
     } catch (err) {
       checks.push({ id: 'orgs', ok: false, detail: (err as Error).message, fix: 'Run: sf org list' });
