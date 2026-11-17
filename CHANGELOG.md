@@ -48,6 +48,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **Build Node version pinned in the repo.** `.node-version` (22.23.4) drives
+  both Cloudflare Workers Builds and GitHub CI, so production and preview
+  builds cannot drift. A `NODE_VERSION` build variable would override it, so
+  none is set.
 - **Astro 7 upgrade** (astro 7.4, @astrojs/svelte 9.1, @astrojs/mdx 8.1, vitest
   latest; the Cloudflare build now runs a Node version Astro 7.4 accepts).
   `npm audit --omit=dev` is down from 1 critical and several high to 1 low
