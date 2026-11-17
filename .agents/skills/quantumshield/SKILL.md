@@ -118,9 +118,16 @@ Finding fields worth explaining to the user:
   `disallowed-by-date`, or `advisory`; `deadline` is the date it applies.
 - `currentCrypto` → `recommendedReplacement`: what to change it to.
 - `effort`: `low | medium | high` rough migration effort.
-- `priority` (present when the report carries risk prioritization): its
-  `band` (`act-now | plan | monitor`) and `reason` take precedence over raw
-  severity when you summarise what to fix first.
+- `priority` (present when the report carries risk prioritization): `band`
+  (`act-now | plan | monitor`), `rank` (1 = most urgent), `dataTier` (what
+  the crypto protects: `none | ephemeral | internal | confidential | personal
+  | regulated`), `shelfLifeYears`, `migrationYears`, `yearsToQuantum`,
+  `marginYears` (negative means the data outlives the quantum timeline before
+  migration can finish) and a plain-language `reason`. When present, band and
+  reason take precedence over raw severity in what you tell the user to fix
+  first; `summary.priorityCounts` gives the totals per band. If `qshield help
+  scan` lists `--quantum-year <YYYY>`, it changes the assumed year a
+  cryptographically relevant quantum computer exists (default 2033).
 
 ## 6. Report back
 
