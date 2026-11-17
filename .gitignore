@@ -11,3 +11,9 @@ coverage/
 .sfdx
 .sf
 qshield-out/
+
+# Local agent / editor settings
+.claude/settings.local.json
+
+# SBOM output
+sbom*.cdx.json

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/OpenSystemsFoundation/quantum-shield/security/advisories/new
+    about: Please report security issues privately, never in a public issue. See SECURITY.md.
+  - name: Documentation and install guide
+    url: https://quantumshield.opensf.foundation/install
+    about: CLI quickstart and browser-mode setup, including the CORS settings.

@@ -1,0 +1,88 @@
+name: Release
+
+# Push a tag like v0.2.0 (matching package.json) to publish a GitHub Release
+# with the built site, the source tarball and a CycloneDX SBOM, each with a
+# signed build-provenance attestation (verify with `gh attestation verify`).
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build, attest and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write       # create the GitHub Release
+      id-token: write       # sign attestations (Sigstore)
+      attestations: write   # store attestations
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Tag matches package.json and src/lib/version.ts
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TS_VERSION="$(grep -oP "QSHIELD_VERSION = '\K[^']+" src/lib/version.ts)"
+          if [ "$TAG" != "v$PKG_VERSION" ] || [ "$PKG_VERSION" != "$TS_VERSION" ]; then
+            echo "::error::Tag $TAG, package.json $PKG_VERSION and QSHIELD_VERSION $TS_VERSION must agree"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        # Public build values come from the committed .env.production.
+        run: npm run build
+
+      - name: Package release assets
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p release
+          tar -czf "release/quantum-shield-${TAG}-site.tar.gz" -C dist .
+          git archive --format=tar.gz --prefix="quantum-shield-${TAG}/" -o "release/quantum-shield-${TAG}-source.tar.gz" HEAD
+          npm sbom --sbom-format=cyclonedx --sbom-type=application --omit=dev > "release/quantum-shield-${TAG}.cdx.json"
+          (cd release && sha256sum * > SHA256SUMS)
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: release/*
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: release/quantum-shield-${{ github.ref_name }}-site.tar.gz
+          sbom-path: release/quantum-shield-${{ github.ref_name }}.cdx.json
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "QuantumShield $TAG" \
+            --generate-notes \
+            --verify-tag

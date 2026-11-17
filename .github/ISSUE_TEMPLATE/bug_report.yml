@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in the CLI, the browser app or a generated report is wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security issues go through [SECURITY.md](https://github.com/OpenSystemsFoundation/quantum-shield/blob/main/SECURITY.md), not here.**
+        Remove org names, usernames, instance URLs and tokens from anything you paste.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it happen?
+      options:
+        - CLI (qshield)
+        - Browser app (hosted site)
+        - Browser app (local dev)
+        - Generated artifact (PDF, CBOM, VEX, CSV, JSON)
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Commands or clicks, in order.
+      placeholder: |
+        1. npm run qshield -- scan --target-org my-scratch --probe-tls
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: coverage
+    attributes:
+      label: Coverage section or error output
+      description: For scan problems, paste the coverage section of the report or the CLI output (redacted).
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: QuantumShield version or commit
+      placeholder: v0.1.0 or a commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, `sf` CLI version, browser, and org type (production, sandbox, scratch).

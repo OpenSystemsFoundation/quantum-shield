@@ -1,0 +1,30 @@
+name: Rule or source correction
+description: A finding, severity, deadline or citation does not match the primary source, or a source should be added.
+labels: ["rules"]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Rule ID or source file
+      placeholder: R-ECDSA, or src/content/regulations/nist-ir-8547.md
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What QuantumShield says now
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: What it should say
+    validations:
+      required: true
+  - type: textarea
+    id: citation
+    attributes:
+      label: Primary source
+      description: Link and section of the standard, guideline or regulation that supports the change. Secondary sources such as blog posts are not enough on their own.
+    validations:
+      required: true

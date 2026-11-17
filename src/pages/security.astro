@@ -70,7 +70,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             <strong style="color:var(--ink);">The access token does not persist.</strong> It lives in sessionStorage and is gone when the tab closes. <em>Sign out</em> also asks Salesforce to revoke the token (a best-effort request to your instance's <span class="mono">/services/oauth2/revoke</span> endpoint) before discarding it.
           </li>
           <li>
-            <strong style="color:var(--ink);">Preferences.</strong> Your chosen environment, Consumer Key and region selection are remembered in localStorage.
+            <strong style="color:var(--ink);">Preferences.</strong> Your org's My Domain, Consumer Key and region selection are remembered in localStorage.
           </li>
           <li>
             <strong style="color:var(--ink);">The sample report</strong> at <a href="/demo">/demo</a> uses bundled fixture data only. It contacts no Salesforce org and stores nothing.
@@ -83,7 +83,7 @@ import SiteFooter from '../components/SiteFooter.astro';
       <div class="qs-card-head"><h3>Content Security Policy</h3></div>
       <div class="qs-card-body">
         <p style="margin-top:0;color:var(--ink-3);font-size:12.5px;">
-          The deployed site serves a CSP as an HTTP response header on every page, via the Cloudflare <span class="mono">_headers</span> file (<span class="mono">public/_headers</span> in the repository, finalised at build time). <span class="mono">connect-src</span> limits outbound requests to this origin plus Salesforce-owned domains (<span class="mono">*.salesforce.com</span>, <span class="mono">*.force.com</span>, <span class="mono">*.my.site.com</span>) — the scanner talks to your org directly and nowhere else. Fonts and images are served from this origin only; the page cannot be framed.
+          The deployed site serves a CSP as an HTTP response header on every page, via the Cloudflare <span class="mono">_headers</span> file (<span class="mono">public/_headers</span> in the repository, finalised at build time). <span class="mono">connect-src</span> limits outbound requests to this origin plus Salesforce-owned <span class="mono">*.salesforce.com</span> hosts (your org's My Domain and instance) — the scanner talks to your org directly and nowhere else. Fonts and images are served from this origin only; the page cannot be framed.
         </p>
         <p style="color:var(--ink-3);font-size:12.5px;">
           <span class="mono">script-src</span> does not allow <span class="mono">'unsafe-inline'</span>. Scripts load from this origin, and the few inline scripts the build emits (the component bootstrap and small page scripts) are allowed individually by SHA-256 hash: the build hashes every inline script in the generated pages and writes those hashes into the header, so an injected inline script or event handler does not run. The policy below is the template; <span class="mono">&lt;build hashes&gt;</span> stands for those generated <span class="mono">'sha256-…'</span> values, which change with each release — check the response header for the exact list. <span class="mono">style-src</span> still allows inline styles.
@@ -96,6 +96,15 @@ connect-src 'self' https://*.salesforce.com;
 worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</code></div>
         <p style="margin:10px 0 0;color:var(--muted);font-size:11.5px;font-family:var(--mono);">
           Also served: X-Content-Type-Options: nosniff · Referrer-Policy: strict-origin-when-cross-origin · Permissions-Policy: camera=(), microphone=(), geolocation=() · Strict-Transport-Security. Local dev servers (astro dev/preview) do not apply these headers.
+        </p>
+      </div>
+    </section>
+
+    <section class="qs-card" style="margin-top:16px;">
+      <div class="qs-card-head"><h3>Reporting a vulnerability</h3></div>
+      <div class="qs-card-body" style="font-size:12.5px;color:var(--ink-3);line-height:1.6;">
+        <p style="margin:0;">
+          Please report security issues privately, not in a public issue: use <a href="https://github.com/OpenSystemsFoundation/quantum-shield/security/advisories/new">GitHub private vulnerability reporting</a> for the repository. The full policy, what is in scope and how quickly we respond, is in <a href="https://github.com/OpenSystemsFoundation/quantum-shield/blob/main/SECURITY.md">SECURITY.md</a>. The source of this site is <a href="https://github.com/OpenSystemsFoundation/quantum-shield">public on GitHub</a>, so anyone can check that it behaves as described here.
         </p>
       </div>
     </section>

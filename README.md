@@ -1,6 +1,8 @@
 # QuantumShield
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![CI](https://github.com/OpenSystemsFoundation/quantum-shield/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSystemsFoundation/quantum-shield/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OpenSystemsFoundation/quantum-shield/badge)](https://scorecard.dev/viewer/?uri=github.com/OpenSystemsFoundation/quantum-shield)
 
 Free, open-source post-quantum readiness scanner for Salesforce orgs, from the [Open Systems Foundation](https://opensf.foundation). No accounts, no paid tiers: everything here is free for everyone under the Apache 2.0 licence. Try the browser app at [quantumshield.opensf.foundation](https://quantumshield.opensf.foundation).
 
@@ -130,10 +132,10 @@ Rules are generated from the Markdown frontmatter at build time (`npm run sync:r
 - **HNDL flag scope.** Harvest-now-decrypt-later is flagged only for key establishment and encryption (probed TLS endpoints). Signing certificates, SAML/OIDC signing and Apex signatures are quantum-vulnerable but not harvestable, and are not flagged.
 - **API-bounded surface.** Salesforce does not expose everything (Connected App signing keys, IdP certificate details); those surfaces are inventoried, not assessed. Check the coverage section of every report.
 - **TLS probe caveat.** Hybrid-KEM verdicts depend on the local OpenSSL (≥ 3.5 required); older stacks report *unknown*. Behind a TLS-intercepting proxy the probe sees the proxy, not the endpoint.
-- **From-source beta.** No npm package, no signed release binaries yet; pin the commit you audit.
+- **From-source beta.** No npm package; pin the commit or release tag you audit.
 - Support is best-effort via [GitHub issues](https://github.com/OpenSystemsFoundation/quantum-shield/issues).
 
-The full audit trail for the production-readiness wave is in [docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md).
+Found a security issue? Please report it privately as described in [SECURITY.md](./SECURITY.md), not in a public issue.
 
 ---
 
@@ -165,11 +167,17 @@ npm run check                   # astro check (TypeScript + Svelte + Astro diagn
 npx tsc --noEmit -p tsconfig.cli.json          # typecheck the CLI entry points
 ```
 
-CI (GitHub Actions) runs typechecks, unit tests, the production build, a generated-tables freshness check, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`. CI deliberately runs only cheap checks that need no Salesforce org, browser, or secrets; run the Playwright e2e suite locally with `npm run test:e2e`.
+CI (GitHub Actions) runs typechecks, unit tests, the production build, a generated-tables freshness check, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`. It also produces a CycloneDX SBOM of the runtime dependencies (kept as a workflow artifact). CodeQL and the OpenSSF Scorecard run on `main`, and Dependabot proposes dependency and Actions updates weekly. CI deliberately runs only cheap checks that need no Salesforce org, browser, or secrets; run the Playwright e2e suite locally with `npm run test:e2e`.
 
 Tests for the scan fixtures + a "poisoned" scratch-org bootstrap live under `salesforce/` — run `npm run capture:scan-fixtures` after standing the scratch org up to refresh the snapshot the browser uses for demo mode.
 
 ---
+
+## Contributing
+
+Contributions are welcome: bug reports, rule corrections with a primary-source citation, new regulatory sources, docs and code. Start with [CONTRIBUTING.md](./CONTRIBUTING.md). Everyone taking part follows the [Code of Conduct](./CODE_OF_CONDUCT.md). Security issues go through [SECURITY.md](./SECURITY.md).
+
+Releases are tagged `vX.Y.Z` on GitHub. Each release carries the built site, a CycloneDX SBOM of the runtime dependencies, and signed build-provenance attestations; see [CHANGELOG.md](./CHANGELOG.md) for what changed.
 
 ## License
 
