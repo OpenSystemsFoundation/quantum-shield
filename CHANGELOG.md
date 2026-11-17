@@ -34,11 +34,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
-- **Astro 7 upgrade** (astro 7.4, @astrojs/svelte 9, @astrojs/mdx 8, vitest
-  latest). Clears the critical and high advisories in the shipped site's
-  dependencies: `npm audit --omit=dev` now reports one low (esbuild dev
-  server on Windows). The remaining dev-only advisory is zod under
-  `@google/design.md`, which has no fix yet.
+- **Astro 7 upgrade** (astro 7.3, @astrojs/svelte 9.0, @astrojs/mdx 8.0, vitest
+  latest). Clears the critical RCE and every high advisory in the shipped
+  site's dependencies. Held at the newest releases that still run on the
+  Cloudflare build's Node 22.12; astro 7.4.x needs Node ≥ 22.23.4. What
+  remains (`npm audit --omit=dev`: 1 moderate, 2 low) concerns server
+  rendering, `@astrojs/node` and the Windows dev server, none of which this
+  static build uses.
 
 - **CSP no longer allows inline scripts wholesale.** `script-src 'unsafe-inline'`
   is gone from `public/_headers`. A final build step (`csp-inline-hashes` in

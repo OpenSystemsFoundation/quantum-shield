@@ -162,9 +162,14 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 - [x] CI trimmed to cheap checks that need no org, browser, or secrets
   (typecheck, unit tests, build, generated-table and version gates). The
   Playwright e2e suite is local-only: run `npm run test:e2e` before releases.
-- [x] Astro 7 upgrade done 2026-11-17. `npm audit --omit=dev`: 1 low
-  (esbuild dev server on Windows). Dev-only: zod under `@google/design.md`
-  (no fix yet).
+- [x] Astro 7 upgrade done 2026-11-17 (astro 7.3.x, pinned with `~` because
+  7.4.x requires Node ≥ 22.23.4 and the Cloudflare build sets
+  `NODE_VERSION=22.12.0`). `npm audit --omit=dev`: 1 moderate, 2 low, all in
+  SSR/`@astrojs/node`/Windows-dev-server code paths this static build does
+  not use.
+- [ ] Raise the Cloudflare build variable `NODE_VERSION` to a current 22.x
+  (≥ 22.23.4) or 24.x, then move to astro 7.4.x / @astrojs/svelte 9.1.x /
+  @astrojs/mdx 8.1.x to clear the last advisories.
 - [x] Production domain is `https://quantumshield.opensf.foundation`, deployed
   as a static-assets Cloudflare Worker (`wrangler.jsonc`). PDF metadata points
   at the GitHub repository, not the domain.
