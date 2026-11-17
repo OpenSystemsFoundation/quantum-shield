@@ -125,3 +125,7 @@ console.log(`PUBLIC_SF_CLIENT_ID=${consumerKey}`);
 console.log(`PUBLIC_SF_API_VERSION=${orgPayload.result.apiVersion}`);
 console.log(`PUBLIC_SF_SCRATCH_INSTANCE=${orgPayload.result.instanceUrl}`);
 console.log('PUBLIC_DEV_MOCK=0');
+console.log('');
+console.log('Browser sign-in: open /connect and enter this My Domain (not login/test.salesforce.com):');
+console.log(`  ${new URL(orgPayload.result.instanceUrl).hostname}`);
+console.log('CORS for localhost:4321 and the production origin, plus "Enable CORS for OAuth endpoints", were deployed with the seed.');

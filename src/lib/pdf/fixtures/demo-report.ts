@@ -19,6 +19,7 @@ const {
   NIST_FIPS_204,
   NIST_FIPS_205,
   NIST_SP_800_131A,
+  NIST_SP_800_53,
 } = CITATIONS;
 
 function mkFinding(f: Omit<Finding, 'id'> & { id?: string }): Finding {
@@ -53,9 +54,9 @@ const findings: Finding[] = [
     recommendedReplacement:
       'Rotate immediately to an ML-DSA (FIPS 204) signing certificate; use ML-KEM (FIPS 203) for any key-transport usage. If interoperability blocks PQC adoption, at minimum move to RSA-3072 with SHA-256 as an interim step.',
     rationale:
-      'RSA-1024 and SHA-1 are both already disallowed under NIST SP 800-131A Rev 3 and BSI TR-02102. Use of this certificate is a current compliance failure independent of the quantum timeline. Signatures produced by this key cannot be trusted against any modern regulator.',
+      'RSA-1024 and SHA-1 are both already disallowed under NIST SP 800-131A and BSI TR-02102. Use of this certificate is a current compliance failure independent of the quantum timeline. Signatures produced by this key cannot be trusted against any modern regulator.',
     citations: [NIST_SP_800_131A, BSI_TR_02102, NIST_FIPS_204],
-    deadline: '2020-12-31',
+    deadline: '2013-12-31',
   }),
   mkFinding({
     id: 'F-CERT-002',
@@ -102,10 +103,10 @@ const findings: Finding[] = [
     recommendedReplacement:
       'Reconfigure the SSO provider to sign assertions with SHA-256 or SHA-3 immediately. Plan migration to ML-DSA signing at next IdP upgrade window.',
     rationale:
-      'SHA-1 is disallowed under SP 800-131A Rev 3 and BSI TR-02102. Exploitable collision attacks on SHA-1 are practical today; this is not a future risk.',
+      'SHA-1 is disallowed under SP 800-131A and BSI TR-02102. Exploitable collision attacks on SHA-1 are practical today; this is not a future risk.',
     citations: [NIST_SP_800_131A, BSI_TR_02102, NIS2],
     overlayIds: ['nis2'],
-    deadline: '2020-12-31',
+    deadline: '2013-12-31',
   }),
   mkFinding({
     id: 'F-NC-001',
@@ -247,9 +248,8 @@ const findings: Finding[] = [
     recommendedReplacement:
       "Replace with Crypto.generateDigest('SHA-256', ...) or SHA-3. Review callers for any security-sensitive use of the digest.",
     rationale:
-      'MD5 is broken for any security-relevant use. SP 800-131A disallows it; BSI TR-02102 excludes it from approved hash functions. Any security-relevant use is a current compliance failure.',
+      'MD5 is broken for any security-relevant use. It was never a NIST-approved hash function, and BSI TR-02102 excludes it. Any security-relevant use is a current compliance failure.',
     citations: [NIST_SP_800_131A, BSI_TR_02102],
-    deadline: '2010-12-31',
   }),
   mkFinding({
     id: 'F-APEX-002',
@@ -301,24 +301,23 @@ const findings: Finding[] = [
   mkFinding({
     id: 'F-SESS-001',
     category: 'session-login',
-    severity: 'medium',
+    severity: 'low',
     regulatoryStatus: 'advisory',
     migrationPosture: 'advisory',
     effort: 'low',
     hndlExposure: false,
-    title: 'Session timeout exceeds NCSC-NL guidance',
+    title: 'Session timeout is 720 minutes — session-hygiene advisory',
     asset: {
-      kind: 'connected-app',
+      kind: 'session-settings',
       name: 'SessionSettings',
       identifier: 'SessionSettings/global',
     },
-    currentCrypto: 'Session lifetime: 12 hours; MFA required for admin only',
+    currentCrypto: 'Session timeout: 720 minutes (not a cryptographic setting)',
     recommendedReplacement:
-      'Reduce session lifetime to 2 hours with idle timeout at 30 minutes. Require MFA for all user profiles handling personal data, per NCSC-NL and NIS 2 guidance.',
+      'Consider a shorter timeout in Setup → Session Settings (for example 2 hours) and require re-authentication for privileged actions.',
     rationale:
-      'Session length is not a cryptographic primitive, but long sessions extend the window for token theft and reduce the practical effectiveness of cryptographic controls upstream.',
-    citations: [NCSC_NL_PQC, NIS2],
-    overlayIds: ['nis2'],
+      'A long session timeout lengthens the window in which a stolen session can be replayed. NIST SP 800-53 AC-12 sets no numeric limit, so this is a hygiene note rather than a compliance failure.',
+    citations: [NIST_SP_800_53],
   }),
   mkFinding({
     id: 'F-PKG-001',
@@ -422,9 +421,10 @@ const overlays: OverlayScope[] = GENERATED_OVERLAYS.map((overlay) => ({
 }));
 
 const hndlCount = findings.filter((f) => f.hndlExposure).length;
+// Earliest deadline still ahead of the (fixed) demo scan date.
 const earliest = findings
   .map((f) => f.deadline)
-  .filter((d): d is string => Boolean(d))
+  .filter((d): d is string => Boolean(d) && (d as string) >= '2026-04-18')
   .sort()[0];
 
 export const demoReport: Report = {
@@ -445,7 +445,8 @@ export const demoReport: Report = {
       status: 'skipped',
       assetCount: 0,
       findingCount: 0,
-      detail: 'Shield Platform Encryption is not enabled in this org (TenantSecret is not available).',
+      detail:
+        'Shield Platform Encryption keys were not checked: TenantSecret is not available to this user. Either Shield Platform Encryption is not provisioned in this org, or the user lacks the "Manage Encryption Keys" permission.',
     },
     { id: 'apex-crypto', label: 'Apex cryptographic calls', status: 'scanned', assetCount: 6, findingCount: 5 },
     { id: 'session-login', label: 'Session & login settings', status: 'scanned', assetCount: 1, findingCount: 1 },
@@ -457,7 +458,6 @@ export const demoReport: Report = {
     orgName: 'ACME Europe B.V.',
     orgType: 'production',
     apiVersion: 'v66.0',
-    userLicense: 'Salesforce',
   },
   findings,
   overlays,
@@ -468,7 +468,7 @@ export const demoReport: Report = {
     byCategory: categoryCounts,
     earliestDeadline: earliest,
     hndlFindings: hndlCount,
-    postureSentence: `ACME Europe B.V. has ${findings.length} cryptographic findings across ${Object.values(categoryCounts).filter((n) => n > 0).length} asset categories. ${severityCounts.critical} must be remediated immediately to restore baseline compliance; the remainder should be scheduled against the 2030 BSI and ENISA migration milestone.`,
+    postureSentence: `ACME Europe B.V. has ${findings.length} cryptographic findings across ${Object.values(categoryCounts).filter((n) => n > 0).length} asset categories. ${findings.filter((f) => f.migrationPosture === 'replace-now').length} should be remediated now, independent of the post-quantum timeline; the remainder should be scheduled against the post-quantum migration milestones (NIST IR 8547: quantum-vulnerable algorithms deprecated after 2030, disallowed after 2035) or reviewed as advisories.`,
   },
   cbom: [
     { name: 'legacy_partner_signing', type: 'certificate', algorithm: 'RSA', keySize: 1024, location: 'Certificate/03S1x00000ABcDeEAB', quantumSafe: false },
@@ -477,12 +477,11 @@ export const demoReport: Report = {
     { name: 'partner_api_mtls', type: 'key', algorithm: 'ECDSA-P256', keySize: 256, location: 'ExternalCredential/0XB3x000000bcDE', quantumSafe: false },
     { name: 'Partner Data Integration JWT key', type: 'key', algorithm: 'RSA', keySize: 2048, location: 'ConnectedApplication/0C03x000000Xyz1', quantumSafe: false },
     { name: 'Treasury Portal OIDC JWKS', type: 'key', algorithm: 'RSA', keySize: 2048, location: 'AuthProvider/0SO3x000000jkL', quantumSafe: false },
-    { name: 'Shield tenant secret', type: 'key', algorithm: 'AES', keySize: 128, location: 'TenantSecret/active', quantumSafe: false },
+    { name: 'Shield tenant secret', type: 'key', algorithm: 'AES', keySize: 256, location: 'TenantSecret/active', quantumSafe: true },
     { name: 'LegacyHashUtil.cls:42', type: 'algorithm', algorithm: 'MD5', location: 'ApexClass/01p3x000000abc', quantumSafe: false },
     { name: 'PartnerWebhookSigner.cls:118', type: 'algorithm', algorithm: 'RSA-SHA256', keySize: 2048, location: 'ApexClass/01p3x000000def', quantumSafe: false },
     { name: 'SAML signature hash', type: 'algorithm', algorithm: 'SHA-1', location: 'SamlSsoConfig/00F3x000001aBcD', quantumSafe: false },
     { name: 'legacy_billing_api endpoint', type: 'protocol', algorithm: 'HTTP (no TLS)', location: 'NamedCredential/0XA3x000000abCD', quantumSafe: false },
     { name: 'internal_reporting_http endpoint', type: 'protocol', algorithm: 'HTTP (no TLS)', location: 'RemoteSiteSetting/0rp3x000000aa', quantumSafe: false },
-    { name: 'Acme Signing Utilities', type: 'library', algorithm: 'unknown', location: 'InstalledPackage/033xx0000000abc', quantumSafe: false },
   ],
 };

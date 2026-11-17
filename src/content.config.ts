@@ -15,6 +15,8 @@ const assetKinds = [
   'shield-key',
   'apex-call',
   'installed-package',
+  'session-settings',
+  'tls-endpoint',
 ] as const;
 
 const overlayIds = ['gdpr', 'dora', 'nis2', 'eidas2', 'pci-dss-4', 'hipaa', 'cmmc', 'swift-csp'] as const;
@@ -25,6 +27,7 @@ const ruleCondition = z.object({
     'equals',
     'contains-any',
     'one-of',
+    'missing',
     'lt',
     'gte',
     'between',

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
+    describeProviderError,
+    enrichSessionWithOrg,
     exchangeCode,
     loadClientId,
     OAuthFlowError,
@@ -25,8 +27,14 @@
 
     if (params.error) {
       status = 'error';
-      errorTitle = 'Salesforce denied the authorization';
-      errorDetail = params.errorDescription ?? params.error;
+      // Only echo Salesforce's description when the response belongs to a
+      // sign-in this tab started; otherwise anyone could put text here.
+      const pendingForError = takePendingAuth();
+      const trusted = !!pendingForError && params.state === pendingForError.state;
+      errorTitle = params.error === 'access_denied' ? 'Sign-in was cancelled' : 'Salesforce refused the sign-in';
+      errorDetail = trusted
+        ? describeProviderError(params.error, params.errorDescription ?? '')
+        : 'Start again from the setup page.';
       return;
     }
 
@@ -71,6 +79,7 @@
         clientId,
       });
       const session = sessionFromTokenAndIdentity(pending, token, identity);
+      await enrichSessionWithOrg(session);
 
       saveSession(session);
       status = 'success';
@@ -78,7 +87,12 @@
     } catch (err) {
       status = 'error';
       if (err instanceof OAuthFlowError) {
-        errorTitle = `OAuth failed (${err.kind})`;
+        errorTitle =
+          err.kind === 'cors-blocked'
+            ? 'The org blocked sign-in from this site'
+            : err.kind === 'token-exchange-failed'
+              ? 'Salesforce rejected the sign-in'
+              : 'Sign-in could not be completed';
         errorDetail = err.message;
       } else {
         errorTitle = 'OAuth failed';
@@ -88,8 +102,8 @@
   });
 </script>
 
-<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg);">
-  <div class="qs-card" style="max-width:480px;width:100%;margin:24px;padding:32px 28px;text-align:center;">
+<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg);padding:24px 16px;box-sizing:border-box;">
+  <div class="qs-card" style="max-width:480px;width:100%;box-sizing:border-box;padding:32px 28px;text-align:center;overflow-wrap:anywhere;">
     <div style="display:flex;justify-content:center;margin-bottom:18px;">
       <BlochShield size={48} />
     </div>

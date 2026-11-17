@@ -6,12 +6,33 @@
     finding: Finding | null;
     onClose: () => void;
     height?: number;
+    /** Set in sample-report mode so the detail is labelled even when it covers the page banner. */
+    sampleLabel?: string;
   }
-  let { finding, onClose, height = $bindable(360) }: Props = $props();
+  let { finding, onClose, height = $bindable(360), sampleLabel }: Props = $props();
 
   const HEIGHT_KEY = 'qs.findingDrawer.height.v1';
   const MIN_HEIGHT = 180;
   const MAX_RATIO = 0.85;
+
+  /** Below this width the drawer is a full-screen modal dialog. */
+  const MOBILE_QUERY = '(max-width: 700px)';
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  let isMobile = $state(false);
+  let mobileQuery: MediaQueryList | null = null;
+  const onMobileChange = (e: MediaQueryListEvent) => (isMobile = e.matches);
+
+  /** Citation URLs come from report data; only ever link to https: targets. */
+  function safeHttpsUrl(raw: string | undefined): string | null {
+    if (!raw) return null;
+    try {
+      const u = new URL(raw);
+      return u.protocol === 'https:' ? u.href : null;
+    } catch {
+      return null;
+    }
+  }
 
   let dragging = $state(false);
   let drawerEl = $state<HTMLElement | null>(null);
@@ -75,10 +96,24 @@
       /* noop */
     }
     document.addEventListener('keydown', onKeydown);
+    mobileQuery = window.matchMedia(MOBILE_QUERY);
+    isMobile = mobileQuery.matches;
+    mobileQuery.addEventListener('change', onMobileChange);
+  });
+
+  // While the full-screen dialog is open the page behind it must not scroll.
+  $effect(() => {
+    if (!(finding && isMobile)) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
   });
 
   onDestroy(() => {
     document.removeEventListener('keydown', onKeydown);
+    mobileQuery?.removeEventListener('change', onMobileChange);
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', stopDrag);
     document.removeEventListener('touchmove', onTouchMove);
@@ -86,9 +121,33 @@
   });
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && finding) {
+    if (!finding) return;
+    if (e.key === 'Escape') {
       e.preventDefault();
       onClose();
+      return;
+    }
+    // Full-screen (modal) mode: keep Tab focus inside the dialog.
+    if (e.key === 'Tab' && isMobile && drawerEl) {
+      const items = Array.from(drawerEl.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (items.length === 0) {
+        e.preventDefault();
+        drawerEl.focus();
+        return;
+      }
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      const inside = active instanceof Node && drawerEl.contains(active);
+      if (e.shiftKey && (!inside || active === first || active === drawerEl)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (!inside || active === last)) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
 
@@ -155,8 +214,9 @@
     bind:this={drawerEl}
     class="qs-drawer"
     style={`height:${height}px;`}
-    role="region"
-    aria-label="Finding detail"
+    role="dialog"
+    aria-modal={isMobile ? 'true' : undefined}
+    aria-labelledby="finding-drawer-title"
     tabindex="-1"
     data-testid="finding-drawer"
   >
@@ -175,17 +235,18 @@
 
     <div class="qs-drawer-head">
       <div class="title-row" style="flex:1;min-width:0;">
+        {#if sampleLabel}<span class="pill sample" data-testid="drawer-sample-label">{sampleLabel}</span>{/if}
         <span class={`pill ${SEV_CLASS[finding.severity]}`}>{finding.severity}</span>
         <span class="pill adv">{POSTURE_LABELS[finding.migrationPosture]}</span>
         {#if finding.hndlExposure}<span class="pill hndl">HNDL</span>{/if}
         <span class="tag">{CATEGORY_LABELS[finding.category]}</span>
-        <h3 style="margin:0 0 0 8px;font-family:var(--display);font-size:16px;font-weight:500;letter-spacing:-0.005em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">
+        <h3 id="finding-drawer-title" class="qs-drawer-title" style="margin:0 0 0 8px;font-family:var(--display);font-size:16px;font-weight:500;letter-spacing:-0.005em;min-width:0;">
           {finding.title}
         </h3>
       </div>
       <div class="qs-drawer-actions">
-        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={reset} title="Reset size">Reset</button>
-        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={maximise} title="Maximise" aria-label="Maximise detail panel">▲</button>
+        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm resize-btn" onclick={reset} title="Reset size" aria-label="Reset detail panel size">Reset</button>
+        <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm resize-btn" onclick={maximise} title="Maximise" aria-label="Maximise detail panel">▲</button>
         <button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={onClose} title="Close (Esc)" aria-label="Close finding detail" data-testid="drawer-close">✕</button>
       </div>
     </div>
@@ -220,12 +281,21 @@
           <h5>Citations</h5>
           <div style="display:grid;gap:8px;margin-top:4px;">
             {#each finding.citations as c}
-              <a class="cite" href={c.retrievalUrl} target="_blank" rel="noopener">
-                <div style="flex:1;">
+              {@const href = safeHttpsUrl(c.retrievalUrl)}
+              {#snippet citeBody()}
+                <div style="flex:1;min-width:0;">
                   <div class="doc">{c.sourceId}{c.section ? ` · ${c.section}` : ''} · {c.jurisdiction} · v{c.documentVersion}</div>
                   <div class="quote">{c.title}</div>
                 </div>
-              </a>
+              {/snippet}
+              {#if href}
+                <a class="cite" {href} target="_blank" rel="noopener noreferrer">
+                  {@render citeBody()}
+                  <span class="sr-only">(opens in a new tab)</span>
+                </a>
+              {:else}
+                <div class="cite">{@render citeBody()}</div>
+              {/if}
             {/each}
           </div>
         </div>
@@ -318,12 +388,53 @@
   }
 
   :global(.qs-drawer .detail-grid) {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .pill.sample {
+    background: var(--warn-bg);
+    color: #4a2300;
+  }
+  .qs-drawer-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Desktop: the app sidebar (240px) stays visible and usable. */
+  @media (min-width: 901px) {
+    .qs-drawer {
+      left: 240px;
+    }
   }
 
   @media (max-width: 720px) {
     :global(.qs-drawer .detail-grid) {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    /* Phones: a full-screen modal dialog; the inline height is ignored. */
+    .qs-drawer {
+      top: 0;
+      height: 100dvh !important;
+      z-index: 50;
+      border-top: none;
+    }
+    .qs-drawer-handle,
+    .resize-btn {
+      display: none;
+    }
+    .qs-drawer-head {
+      align-items: flex-start;
+    }
+    .qs-drawer-title {
+      flex: 1 0 100%;
+      margin-left: 0 !important;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .qs-drawer-meta {
+      flex-wrap: wrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     .qs-drawer-meta {
       padding: 8px 14px;

@@ -40,14 +40,14 @@ export const GENERATED_RULE_DEFS = [
           "effort": "low",
           "hndlExposure": true,
           "currentCrypto": "RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
-          "recommendedReplacement": "Rotate immediately to ML-DSA (FIPS 204) for signing or ML-KEM (FIPS 203) for key transport. If interoperability blocks PQC adoption, RSA-3072 with SHA-256 is the minimum acceptable interim step.",
-          "rationale": "RSA key lengths below 2048 bits are disallowed under NIST SP 800-131A Rev 3 and excluded from BSI TR-02102 approved parameters. Use is a current compliance failure, independent of the post-quantum timeline.",
+          "recommendedReplacement": "Replace the key now. Salesforce-generated certificates are offered at 2048 and 4096 bits only, so create a new 4096-bit certificate in Setup → Certificate and Key Management (or import a CA-signed one of at least 3072 bits) and repoint every integration that uses the old one. Post-quantum signatures (ML-DSA, FIPS 204) are not yet available for Salesforce certificates; track the replacement for that migration.",
+          "rationale": "RSA keys below 2048 bits provide less than 112 bits of security. NIST SP 800-131A has disallowed them for digital signature generation since the end of 2013 (Rev. 2 keeps them disallowed for signatures and key establishment), and BSI TR-02102 excludes them from its approved parameters. Use is a current compliance failure, independent of the post-quantum timeline.",
           "citations": [
             "NIST_SP_800_131A",
             "BSI_TR_02102_1",
             "NIST_FIPS_204"
           ],
-          "deadline": "2020-12-31"
+          "deadline": "2013-12-31"
         }
       }
     ]
@@ -55,9 +55,9 @@ export const GENERATED_RULE_DEFS = [
   {
     "id": "R-RSA-2048",
     "order": 20,
-    "title": "RSA at 2048 or 3072 bits requires PQC migration planning",
+    "title": "RSA at 2048 bits or more requires PQC migration planning",
     "summary": "Transition rule for RSA that is still acceptable today but needs scheduled replacement.",
-    "description": "RSA-2048 and RSA-3072 remain usable today but are on the deprecation path.",
+    "description": "RSA at 2048 bits or more is approved today, deprecated after 2030 and disallowed after 2035 under NIST IR 8547.",
     "implementationStatus": "active",
     "appliesTo": [
       "*"
@@ -91,7 +91,7 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": true,
           "currentCrypto": "RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
           "recommendedReplacement": "Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.",
-          "rationale": "RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.",
+          "rationale": "RSA-{{asset.keySize}} remains approved today. NIST IR 8547 deprecates all quantum-vulnerable signature and key-establishment algorithms after 2030 and disallows them under NIST standards after 2035, whatever the key size; NSA CNSA 2.0 sets earlier dates for US national security systems only. Inventory the asset now so partner dependencies and certificate chains are ready before the 2030 deprecation.",
           "citations": [
             "NIST_IR_8547",
             "NSA_CNSA_2_0",
@@ -123,7 +123,38 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": true,
           "currentCrypto": "RSA-{{asset.keySize}}{{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
           "recommendedReplacement": "Plan migration at the next major rotation window. For signing uses, target ML-DSA (FIPS 204); for key-establishment uses, target ML-KEM (FIPS 203). Where partner ecosystems are not yet ready, deploy hybrid certificates or dual-stack handshakes during the transition.",
-          "rationale": "RSA-{{asset.keySize}} remains usable today, but NIST IR 8547 and NSA CNSA 2.0 treat RSA-based signatures and key establishment as transition priorities. Inventory the asset now so partner dependencies and certificate chains are ready before the PQC deadline.",
+          "rationale": "RSA-{{asset.keySize}} remains approved today. NIST IR 8547 deprecates all quantum-vulnerable signature and key-establishment algorithms after 2030 and disallows them under NIST standards after 2035, whatever the key size; NSA CNSA 2.0 sets earlier dates for US national security systems only. Inventory the asset now so partner dependencies and certificate chains are ready before the 2030 deprecation.",
+          "citations": [
+            "NIST_IR_8547",
+            "NSA_CNSA_2_0",
+            "NIST_FIPS_203",
+            "NIST_FIPS_204"
+          ],
+          "deadline": "2030-12-31"
+        }
+      },
+      {
+        "when": [
+          {
+            "field": "algorithm",
+            "op": "equals",
+            "value": "RSA"
+          },
+          {
+            "field": "keySize",
+            "op": "missing"
+          }
+        ],
+        "result": {
+          "title": "RSA with an unknown key size — plan PQC migration",
+          "severity": "high",
+          "regulatoryStatus": "deprecated-by-date",
+          "migrationPosture": "plan-2030",
+          "effort": "medium",
+          "hndlExposure": true,
+          "currentCrypto": "RSA (key size not exposed by the Salesforce API){{#if asset.signatureHash}} with {{asset.signatureHash}}{{/if}}",
+          "recommendedReplacement": "Confirm the key size of the underlying certificate in Setup and replace it if it is below 2048 bits. Then plan the migration with the rest of the RSA inventory: ML-DSA (FIPS 204) for signing, ML-KEM (FIPS 203) for key establishment, as soon as the platform and the counterparty support them.",
+          "rationale": "The configuration uses RSA, but the Salesforce API does not expose the key size here, so it could not be checked against the 2048-bit minimum. Whatever its size, NIST IR 8547 deprecates RSA after 2030 and disallows it under NIST standards after 2035.",
           "citations": [
             "NIST_IR_8547",
             "NSA_CNSA_2_0",
@@ -140,10 +171,17 @@ export const GENERATED_RULE_DEFS = [
     "order": 30,
     "title": "ECDSA and ECC signatures require PQC migration planning",
     "summary": "Advisory-to-deprecation rule for elliptic-curve signing primitives.",
-    "description": "ECDSA and related ECC signing primitives are compliant today but deprecated by the PQC horizon.",
+    "description": "ECDSA and related ECC signing primitives are approved today, deprecated after 2030 and disallowed after 2035 under NIST IR 8547.",
     "implementationStatus": "active",
     "appliesTo": [
-      "*"
+      "certificate",
+      "connected-app",
+      "named-credential",
+      "external-credential",
+      "external-data-source",
+      "saml-sso",
+      "oidc-provider",
+      "shield-key"
     ],
     "overlays": [
       "nis2",
@@ -168,10 +206,10 @@ export const GENERATED_RULE_DEFS = [
           "regulatoryStatus": "deprecated-by-date",
           "migrationPosture": "plan-2030",
           "effort": "medium",
-          "hndlExposure": true,
+          "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}",
           "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Where a hash-based signature profile is a better fit for long-lived verification, evaluate SLH-DSA (FIPS 205) and use hybrid certificate strategies while ecosystem support catches up.",
-          "rationale": "ECDSA and related ECC signatures remain compliant today, but NIST IR 8547 and NSA CNSA 2.0 place them on the quantum transition path. Signature inventories, certificate chains, and relying-party interoperability should be updated before the 2030 horizon.",
+          "rationale": "ECDSA and related ECC signatures remain approved today. NIST IR 8547 deprecates all quantum-vulnerable digital signature algorithms after 2030 and disallows them under NIST standards after 2035; NSA CNSA 2.0 sets earlier dates for US national security systems only. Signature inventories, certificate chains, and relying-party interoperability should be updated before the 2030 deprecation.",
           "citations": [
             "NIST_IR_8547",
             "NSA_CNSA_2_0",
@@ -188,7 +226,7 @@ export const GENERATED_RULE_DEFS = [
     "order": 40,
     "title": "Weak signature hashes are already non-compliant",
     "summary": "Immediate failure rule for SHA-1, SHA1, MD5, and MD4 signature usage.",
-    "description": "SHA-1 and MD5 class hashes are disallowed today for security-relevant use.",
+    "description": "SHA-1 and MD5 class hashes are disallowed today for digital signatures.",
     "implementationStatus": "active",
     "appliesTo": [
       "*"
@@ -222,12 +260,12 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": false,
           "currentCrypto": "{{asset.signatureHash}} signature",
           "recommendedReplacement": "Replace with SHA-256 or SHA-3. For signed assertions, reissue the signing certificate if the hash was baked into the signature.",
-          "rationale": "SHA-1 and MD5 are disallowed under NIST SP 800-131A Rev 3 and excluded from BSI TR-02102. Practical collision attacks on SHA-1 are public; MD5 is broken for any security-relevant use.",
+          "rationale": "NIST SP 800-131A has disallowed SHA-1 for digital signature generation since the end of 2013 (Rev. 2 keeps it disallowed and permits verification for legacy use only). MD5 and MD4 were never NIST-approved hash functions. BSI TR-02102 excludes all of them. Practical collision attacks on SHA-1 are public; MD5 is broken for any security-relevant use.",
           "citations": [
             "NIST_SP_800_131A",
             "BSI_TR_02102_1"
           ],
-          "deadline": "2020-12-31"
+          "deadline": "2013-12-31"
         }
       }
     ]
@@ -281,17 +319,12 @@ export const GENERATED_RULE_DEFS = [
   {
     "id": "R-AES-128",
     "order": 60,
-    "title": "AES below 256 bits should be migrated for PQC resilience",
-    "summary": "Advisory migration rule for symmetric encryption with insufficient long-term margin.",
-    "description": "AES-128 remains usable today but should be upgraded to AES-256 for long-lived confidentiality.",
+    "title": "AES below 256 bits is acceptable today; AES-256 is the high-assurance target",
+    "summary": "Low-severity advisory for AES-128 and AES-192. Not a compliance failure and not a quantum deadline.",
+    "description": "AES-128 and AES-192 remain NIST-approved with no retirement date. AES-256 is advised only where a CNSA 2.0 style high-assurance profile applies.",
     "implementationStatus": "active",
     "appliesTo": [
       "*"
-    ],
-    "overlays": [
-      "pci-dss-4",
-      "hipaa",
-      "cmmc"
     ],
     "cases": [
       {
@@ -308,22 +341,18 @@ export const GENERATED_RULE_DEFS = [
           }
         ],
         "result": {
-          "title": "AES-{{asset.keySize}} — migrate to AES-256",
-          "severity": "medium",
+          "title": "AES-{{asset.keySize}} in use — AES-256 advised for high-assurance profiles",
+          "severity": "low",
           "regulatoryStatus": "advisory",
-          "migrationPosture": "plan-2030",
-          "effort": "medium",
-          "hndlExposure": true,
+          "migrationPosture": "advisory",
+          "effort": "low",
+          "hndlExposure": false,
           "currentCrypto": "AES-{{asset.keySize}}",
-          "recommendedReplacement": "Where available, configure AES-256. Treat 128-bit symmetric keys as short on long-confidentiality data and align new designs, KMS defaults, and partner profiles to 256-bit strength.",
-          "rationale": "NIST SP 800-57 key-management guidance and NSA CNSA 2.0 both point high-assurance deployments toward 256-bit symmetric strength. AES-128 remains usable today, but it leaves less long-term margin once quantum search costs are considered.",
+          "recommendedReplacement": "No action is required for general compliance. If the organisation follows NSA CNSA 2.0 or a comparable high-assurance profile, standardise new designs and key-management defaults on AES-256 (in Apex, 'AES256' with Crypto.generateAesKey(256)).",
+          "rationale": "AES-128 and AES-192 are approved by NIST with no scheduled retirement: NIST IR 8547 places AES-128 in post-quantum security category 1, and Grover's algorithm does not make a 128-bit key search practical. This is not a harvest-now-decrypt-later exposure. NSA CNSA 2.0, which is mandatory only for US national security systems, requires AES-256, so the finding is recorded as an advisory for organisations that align to that profile.",
           "citations": [
-            "NIST_SP_800_57_PT1",
-            "BSI_TR_02102_1",
-            "ENISA_PQC_2024",
             "NSA_CNSA_2_0"
-          ],
-          "deadline": "2030-12-31"
+          ]
         }
       }
     ]
@@ -333,7 +362,7 @@ export const GENERATED_RULE_DEFS = [
     "order": 70,
     "title": "Certificates inside the rotation window need action",
     "summary": "Operational hygiene rule for expired certificates and certificates expiring soon.",
-    "description": "Certificates inside the 90-day window should be rotated and expired certificates should be flagged immediately.",
+    "description": "Certificates inside the 90-day window should be rotated; expired certificates are flagged however long ago they expired.",
     "implementationStatus": "active",
     "appliesTo": [
       "certificate"
@@ -348,25 +377,24 @@ export const GENERATED_RULE_DEFS = [
           {
             "field": "expiresAt",
             "op": "days-until-between",
-            "min": -30,
-            "max": -1
+            "min": -1000000,
+            "max": 0
           }
         ],
         "result": {
-          "title": "Certificate expired",
+          "title": "Certificate expired on {{computed.expiresAtDate}}",
           "severity": "high",
           "regulatoryStatus": "advisory",
           "migrationPosture": "advisory",
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}",
-          "recommendedReplacement": "Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.",
-          "rationale": "Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.",
+          "recommendedReplacement": "Replace the certificate now, or delete it if nothing references it. Check every integration, SSO configuration and Named Credential that uses it — connections relying on an expired certificate fail or are rejected by the counterparty.",
+          "rationale": "The certificate is past its validity period. NIST SP 800-57 treats the end of a key's cryptoperiod as the point at which it must be replaced; an expired certificate left in place either breaks the integration or signals that expiry is not being checked.",
           "citations": [
             "NIST_SP_800_57_PT1",
             "BSI_TR_02102_1",
-            "EIDAS2",
-            "NIST_IR_8547"
+            "EIDAS2"
           ],
           "deadline": "{{computed.expiresAtDate}}"
         }
@@ -405,8 +433,8 @@ export const GENERATED_RULE_DEFS = [
     "id": "R-APEX-CRYPTO",
     "order": 80,
     "title": "Apex cryptography usage must avoid weak primitives and hardcoded material",
-    "summary": "Branching Apex rule that covers weak hashes, hardcoded keys, and quantum-vulnerable signatures.",
-    "description": "Apex crypto calls using weak hashes, hardcoded keys, or quantum-vulnerable signatures require action.",
+    "summary": "Branching Apex rule that covers weak hashes and MACs, SHA-1 signatures, hardcoded keys, unresolved algorithms, and quantum-vulnerable signatures.",
+    "description": "Apex Crypto calls using weak hashes, hardcoded keys, algorithms that cannot be resolved statically, or quantum-vulnerable signatures require action.",
     "implementationStatus": "active",
     "appliesTo": [
       "apex-call"
@@ -422,7 +450,7 @@ export const GENERATED_RULE_DEFS = [
         "when": [
           {
             "field": "algorithm",
-            "op": "contains-any",
+            "op": "one-of",
             "values": [
               "HMAC-MD5",
               "HMAC-SHA1"
@@ -430,17 +458,18 @@ export const GENERATED_RULE_DEFS = [
           }
         ],
         "result": {
-          "title": "Apex generates {{asset.algorithm}} MACs",
+          "title": "Apex uses {{asset.algorithm}} for message authentication",
           "severity": "high",
           "regulatoryStatus": "deprecated-by-date",
           "migrationPosture": "replace-now",
           "effort": "low",
           "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm}}",
-          "recommendedReplacement": "Replace with Crypto.generateMac('hmacSHA256', ...) or hmacSHA512.",
-          "rationale": "HMAC constructions over MD5 and SHA-1 are not broken the way the raw digests are, but NIST SP 800-131A Rev 3 retires all SHA-1 and MD5 based mechanisms, and BSI TR-02102 does not include them among recommended MAC mechanisms. Migrate MAC generation to SHA-256 or stronger before the 2030 retirement.",
+          "recommendedReplacement": "Replace with Crypto.generateMac('hmacSHA256', ...) or hmacSHA512, and agree the change with the party that verifies the MAC.",
+          "rationale": "HMAC over SHA-1 or MD5 is not broken the way the bare digests are, and NIST SP 800-131A Rev. 2 still accepts HMAC-SHA-1 with a key of at least 112 bits. But NIST is retiring SHA-1 from every remaining use — NIST IR 8547 records it as deprecated and disallowed in validated modules after 2030 — MD5 was never a NIST-approved hash, and BSI TR-02102 recommends neither for MACs.",
           "citations": [
             "NIST_SP_800_131A",
+            "NIST_IR_8547",
             "BSI_TR_02102_1"
           ],
           "deadline": "2030-12-31"
@@ -450,7 +479,7 @@ export const GENERATED_RULE_DEFS = [
         "when": [
           {
             "field": "algorithm",
-            "op": "contains-any",
+            "op": "one-of",
             "values": [
               "RSA-SHA1",
               "ECDSA-SHA1"
@@ -458,50 +487,76 @@ export const GENERATED_RULE_DEFS = [
           }
         ],
         "result": {
-          "title": "Apex signs with {{asset.algorithm}} — SHA-1 signatures are disallowed",
+          "title": "Apex uses {{asset.algorithm}} signatures — SHA-1 signature generation is disallowed",
           "severity": "critical",
           "regulatoryStatus": "already-non-compliant",
           "migrationPosture": "replace-now",
           "effort": "medium",
-          "hndlExposure": true,
+          "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm}}",
-          "recommendedReplacement": "Re-sign with Crypto.sign('RSA-SHA256', ...) today — SHA-1 signature generation has been disallowed since 2013 — and track the asset for ML-DSA (FIPS 204) migration alongside the rest of the signature inventory.",
-          "rationale": "NIST SP 800-131A disallows SHA-1 for digital signature generation, and the underlying RSA/ECDSA primitive is additionally on the post-quantum transition path under NIST IR 8547 and CNSA 2.0. Note that in Apex, Crypto.sign('RSA', ...) is an alias for RSA-SHA1.",
+          "recommendedReplacement": "Sign with Crypto.sign('RSA-SHA256', ...) or stronger today, and track the call for ML-DSA (FIPS 204) migration alongside the rest of the signature inventory. If the call only verifies signatures from a partner, ask the partner to re-sign with SHA-256.",
+          "rationale": "NIST SP 800-131A has disallowed SHA-1 for digital signature generation since the end of 2013; verifying existing SHA-1 signatures is permitted for legacy use only. The underlying RSA or ECDSA primitive is additionally deprecated after 2030 and disallowed after 2035 under NIST IR 8547. Note that in Apex, the algorithm name 'RSA' is an alias for RSA-SHA1.",
           "citations": [
             "NIST_SP_800_131A",
             "NIST_IR_8547",
             "BSI_TR_02102_1"
           ],
-          "deadline": "2010-12-31"
+          "deadline": "2013-12-31"
         }
       },
       {
         "when": [
           {
             "field": "algorithm",
-            "op": "contains-any",
+            "op": "one-of",
             "values": [
-              "MD5",
+              "MD5"
+            ]
+          }
+        ],
+        "result": {
+          "title": "Apex computes MD5 digests",
+          "severity": "critical",
+          "regulatoryStatus": "already-non-compliant",
+          "migrationPosture": "replace-now",
+          "effort": "low",
+          "hndlExposure": false,
+          "currentCrypto": "MD5",
+          "recommendedReplacement": "Replace with Crypto.generateDigest('SHA-256', ...) or SHA3-256. If the digest is only a non-security checksum (cache key, change detection), record that decision so the next review does not have to rediscover it.",
+          "rationale": "MD5 was never a NIST-approved hash function (it is not in FIPS 180-4) and BSI TR-02102 excludes it. Collisions can be produced in seconds, so it gives no integrity or authenticity guarantee.",
+          "citations": [
+            "NIST_SP_800_131A",
+            "BSI_TR_02102_1"
+          ]
+        }
+      },
+      {
+        "when": [
+          {
+            "field": "algorithm",
+            "op": "one-of",
+            "values": [
               "SHA-1",
               "SHA1"
             ]
           }
         ],
         "result": {
-          "title": "Apex uses {{asset.algorithm}}",
-          "severity": "critical",
-          "regulatoryStatus": "already-non-compliant",
+          "title": "Apex computes SHA-1 digests",
+          "severity": "high",
+          "regulatoryStatus": "deprecated-by-date",
           "migrationPosture": "replace-now",
           "effort": "low",
           "hndlExposure": false,
-          "currentCrypto": "{{asset.algorithm ?? weak hash}}",
-          "recommendedReplacement": "Replace with Crypto.generateDigest('SHA-256', ...) or SHA-3.",
-          "rationale": "NIST SP 800-131A disallows MD5 and SHA-1 for security-relevant use, and BSI TR-02102 reaches the same conclusion.",
+          "currentCrypto": "SHA-1",
+          "recommendedReplacement": "Replace with Crypto.generateDigest('SHA-256', ...) or SHA3-256.",
+          "rationale": "A bare SHA-1 digest is not yet disallowed: NIST SP 800-131A Rev. 2 still accepts SHA-1 outside digital signatures. It is deprecated, though — NIST IR 8547 records SHA-1 as deprecated for all remaining uses and disallowed in validated modules after 2030 — and practical collision attacks are public, so it must not be relied on for collision resistance.",
           "citations": [
             "NIST_SP_800_131A",
+            "NIST_IR_8547",
             "BSI_TR_02102_1"
           ],
-          "deadline": "2010-12-31"
+          "deadline": "2030-12-31"
         }
       },
       {
@@ -534,20 +589,43 @@ export const GENERATED_RULE_DEFS = [
         "when": [
           {
             "field": "algorithm",
+            "op": "equals",
+            "value": "UNRESOLVED"
+          }
+        ],
+        "result": {
+          "title": "Apex crypto call with an algorithm that could not be resolved",
+          "severity": "low",
+          "regulatoryStatus": "advisory",
+          "migrationPosture": "advisory",
+          "effort": "low",
+          "hndlExposure": false,
+          "currentCrypto": "Algorithm passed as a variable or expression; not resolvable by static scanning",
+          "recommendedReplacement": "Open the call site and confirm which algorithm reaches it at run time. If it can be MD5, SHA-1, an RSA or ECDSA signature, or AES below 256 bits, treat it like the corresponding finding. Prefer a constant so future scans can verify it.",
+          "rationale": "The algorithm argument of this Crypto call is a variable, parameter or expression, so QuantumShield could not determine which primitive is used. The call is listed so it is reviewed by a person instead of being silently counted as clean. NIST SP 800-57 expects an inventory of where and how cryptography is used.",
+          "citations": [
+            "NIST_SP_800_57_PT1"
+          ]
+        }
+      },
+      {
+        "when": [
+          {
+            "field": "algorithm",
             "op": "predicate",
             "predicate": "quantum-vulnerable-signature"
           }
         ],
         "result": {
-          "title": "Apex signs with {{asset.algorithm}}",
+          "title": "Apex uses {{asset.algorithm}} signatures",
           "severity": "high",
           "regulatoryStatus": "deprecated-by-date",
           "migrationPosture": "plan-2030",
           "effort": "medium",
-          "hndlExposure": true,
+          "hndlExposure": false,
           "currentCrypto": "{{asset.algorithm}}",
           "recommendedReplacement": "Plan migration to ML-DSA (FIPS 204). Where the relying party cannot yet accept PQ signatures, treat the asset as a tracked transition item and move to hybrid certificate or signature strategies as the surrounding platform permits.",
-          "rationale": "NIST IR 8547 and NSA CNSA 2.0 both put digital-signature migration on the near-term transition path. Salesforce does not yet expose FIPS 204 primitives in Apex, so the immediate requirement is inventory, shortened rotation, and partner-readiness planning.",
+          "rationale": "NIST IR 8547 deprecates RSA and ECDSA signatures after 2030 and disallows them under NIST standards after 2035; NSA CNSA 2.0 sets earlier dates for US national security systems. Salesforce does not yet expose FIPS 204 primitives in Apex, so the immediate requirement is inventory and partner-readiness planning. Signatures are not exposed to harvest-now-decrypt-later: forging one requires a quantum computer at the time of verification.",
           "citations": [
             "NIST_IR_8547",
             "NIST_FIPS_204",
@@ -561,50 +639,45 @@ export const GENERATED_RULE_DEFS = [
   {
     "id": "R-SESSION-LENGTH",
     "order": 90,
-    "title": "Long session lifetimes weaken upstream cryptographic protections",
-    "summary": "Advisory rule that flags long Salesforce session lifetimes.",
-    "description": "Session lifetime exceeding guidance should be flagged as a supporting exposure.",
+    "title": "Long session timeouts are a session-hygiene advisory",
+    "summary": "Low-severity hygiene note for org session timeouts of eight hours or more. Not a cryptographic finding.",
+    "description": "Flags an org-wide session timeout of eight hours or more as a hygiene advisory. It is not a cryptographic or post-quantum finding and carries no deadline.",
     "implementationStatus": "active",
     "appliesTo": [
-      "*"
-    ],
-    "overlays": [
-      "pci-dss-4",
-      "hipaa"
+      "session-settings"
     ],
     "cases": [
       {
         "when": [
           {
-            "field": "name",
+            "field": "kind",
             "op": "equals",
-            "value": "SessionSettings"
+            "value": "session-settings"
           },
           {
             "field": "location",
             "op": "capture-number",
-            "pattern": "(\\d+)\\s*h",
-            "capture": "hours"
+            "pattern": "(\\d+)\\s*minutes",
+            "capture": "minutes"
           },
           {
-            "field": "captures.hours",
+            "field": "captures.minutes",
             "op": "gte",
-            "value": 8
+            "value": 480
           }
         ],
         "result": {
-          "title": "Session timeout exceeds NIST session-termination guidance",
-          "severity": "medium",
+          "title": "Session timeout is {{captures.minutes}} minutes — session-hygiene advisory",
+          "severity": "low",
           "regulatoryStatus": "advisory",
           "migrationPosture": "advisory",
           "effort": "low",
           "hndlExposure": false,
-          "currentCrypto": "Session lifetime: {{captures.hours}} hours",
-          "recommendedReplacement": "Reduce session lifetime to 2 hours with idle timeout at 30 minutes or less. Reauthenticate for privileged or high-risk actions so token theft windows do not persist for most of a workday.",
-          "rationale": "NIST SP 800-53 AC-12 treats session termination as a baseline control. Long-lived Salesforce sessions expand the replay window after credential theft or device compromise and weaken upstream cryptographic protections.",
+          "currentCrypto": "Session timeout: {{captures.minutes}} minutes (not a cryptographic setting)",
+          "recommendedReplacement": "Consider a shorter timeout in Setup → Session Settings (for example 2 hours) and require re-authentication for privileged actions. Choose the value from your own access-control policy.",
+          "rationale": "A long session timeout lengthens the window in which a stolen session can be replayed. NIST SP 800-53 AC-12 requires sessions to be terminated under organisation-defined conditions; it sets no numeric limit, so this is a hygiene note rather than a compliance failure. It says nothing about the strength of the org's cryptography and is unrelated to the post-quantum transition.",
           "citations": [
-            "NIST_SP_800_53",
-            "NIS2"
+            "NIST_SP_800_53"
           ]
         }
       }
@@ -643,7 +716,7 @@ export const GENERATED_RULE_DEFS = [
           "hndlExposure": false,
           "currentCrypto": "Third-party managed package; cryptographic internals not inspectable",
           "recommendedReplacement": "Request the vendor's cryptographic inventory and PQC migration statement. Track the package as a supply-chain exposure until the vendor publishes a roadmap for any RSA, ECC, or proprietary crypto that aligns with FIPS 203 and FIPS 204.",
-          "rationale": "Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and NIST IR 8547 both require transition planning for dependent products and services whose cryptography is outside direct code review.",
+          "rationale": "Managed packages are opaque to QuantumShield scanning. NIST SP 800-53 supply-chain controls and the NIST IR 8547 transition plan both call for dependent products and services to be included in migration planning when their cryptography is outside direct code review.",
           "citations": [
             "NIST_SP_800_53",
             "ENISA_PQC_2024",

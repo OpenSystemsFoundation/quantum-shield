@@ -6,9 +6,9 @@ implementationStatus: active
 citationKey: NCSC_NL_PQC
 sourceId: NCSC-NL-PQC-factsheet
 jurisdiction: NL
-documentVersion: '2024'
-retrievalUrl: https://www.ncsc.nl/documenten/factsheets/2023/januari/17/factsheet-pqc
-lastReviewed: '2026-04-21'
+documentVersion: '2023-11'
+retrievalUrl: https://www.ncsc.nl/documenten/publicaties/2023/november/8/factsheet-postquantumcryptografie
+lastReviewed: '2026-11-17'
 updateCadence: quarterly
 summary: Netherlands-focused transition guidance used for EU customer messaging and migration timing support.
 tags:

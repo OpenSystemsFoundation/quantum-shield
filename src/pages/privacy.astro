@@ -26,9 +26,13 @@ import SiteFooter from '../components/SiteFooter.astro';
         <h2 class="display" style="font-size:22px;font-weight:600;margin:0 0 8px;">What QuantumShield stores</h2>
         <p style="margin:0;color:var(--ink-3);font-size:13px;line-height:1.65;">
           The CLI writes reports only to the output directory you choose. Browser
-          mode stores scan history and reports in IndexedDB on this device. Browser
-          OAuth session material is kept in session storage and is discarded when
-          the tab session ends. The browser may remember your Salesforce client ID
+          mode stores scan history and full reports in IndexedDB on this device, and
+          they persist there — across sign-outs, tab closes and browser restarts —
+          until you delete them: use <em>Clear local data</em> on the app overview,
+          tick <em>Also delete local scan data</em> when signing out, or clear this
+          site's data in your browser. Browser OAuth session material is kept in
+          session storage and is discarded when the tab session ends; signing out
+          also asks Salesforce to revoke the access token. The browser may remember your Salesforce client ID
           and region preference in local storage.
         </p>
       </article>

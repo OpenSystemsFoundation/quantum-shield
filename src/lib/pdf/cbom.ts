@@ -16,9 +16,14 @@ interface CycloneDxAlgorithmProperties {
 interface CycloneDxCryptoProperties {
   /** CycloneDX 1.6 enum: algorithm | certificate | protocol | related-crypto-material */
   assetType: string;
+  /** Only on assetType=algorithm. */
   algorithmProperties?: CycloneDxAlgorithmProperties;
-  relatedCryptoMaterialProperties?: { type: string };
-  protocolProperties?: { type: string };
+  /** Only on assetType=certificate. */
+  certificateProperties?: { notValidAfter?: string };
+  /** Only on assetType=related-crypto-material. */
+  relatedCryptoMaterialProperties?: { type: string; size?: number };
+  /** Only on assetType=protocol. */
+  protocolProperties?: { type: string; version?: string; cipherSuites?: Array<{ name: string }> };
   oid?: string;
 }
 
@@ -37,9 +42,8 @@ interface CycloneDxComponent {
 
 /**
  * Maps the scanner's component type onto CycloneDX 1.6's closed assetType
- * enum. Keys/libraries (and any future kind such as session-settings-derived
- * material) are "related-crypto-material" — "key" and "library" are not valid
- * assetType values.
+ * enum. Keys are "related-crypto-material" — "key" is not a valid assetType.
+ * `library` only appears in reports written by older versions.
  */
 const ASSET_TYPE_BY_COMPONENT_TYPE: Record<string, string> = {
   certificate: 'certificate',
@@ -55,44 +59,87 @@ function assetTypeFor(c: CbomComponent): string {
 
 /** CycloneDX 1.6 relatedCryptoMaterialProperties.type enum values we emit. */
 function relatedMaterialTypeFor(c: CbomComponent): string {
-  return c.type === 'key' ? 'key' : 'other';
+  if (c.type !== 'key') return 'other';
+  const upper = c.algorithm.toUpperCase();
+  if (upper === 'AES' || upper.includes('AES') || upper.includes('HMAC')) return 'secret-key';
+  if (upper.includes('SIGNING')) return 'private-key';
+  return 'key';
+}
+
+/** CycloneDX requires RFC 3339 date-times; Salesforce returns "+0000" offsets. */
+function toIsoDateTime(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? undefined : new Date(ms).toISOString();
+}
+
+/**
+ * Protocol type for CycloneDX. An HTTPS endpoint is TLS even when it was not
+ * probed (the version is then simply absent); plaintext HTTP is "other".
+ * Older reports carry no `protocol` field, so fall back to the algorithm text.
+ */
+function protocolTypeFor(c: CbomComponent): string {
+  if (c.protocol) return c.protocol === 'tls' ? 'tls' : 'other';
+  return /\bTLS/i.test(c.algorithm) || /^https:/i.test(c.algorithm) ? 'tls' : 'other';
+}
+
+function quantumSafeLabel(value: boolean | null): string {
+  return value === null ? 'unknown' : String(value);
 }
 
 function componentFor(c: CbomComponent, idx: number): CycloneDxComponent {
   const cls = classifyCryptoAsset(c);
   const assetType = assetTypeFor(c);
-  const algorithmProperties: CycloneDxAlgorithmProperties = {
-    primitive: cls.primitive,
-    parameterSetIdentifier: c.keySize ? `${c.keySize}` : undefined,
-    executionEnvironment: executionEnvironmentFor(c),
-    nistQuantumSecurityLevel: cls.nistQuantumSecurityLevel,
-  };
-  const cryptoProperties: CycloneDxCryptoProperties = {
-    assetType,
-    algorithmProperties,
-    oid: cls.oid,
-  };
-  if (assetType === 'related-crypto-material') {
-    cryptoProperties.relatedCryptoMaterialProperties = { type: relatedMaterialTypeFor(c) };
-  }
-  if (assetType === 'protocol') {
-    cryptoProperties.protocolProperties = {
-      type: /\bTLS\b/i.test(c.algorithm) ? 'tls' : 'other',
+  const cryptoProperties: CycloneDxCryptoProperties = { assetType };
+  const properties: Array<{ name: string; value: string }> = [
+    // "quantumSafe" is not part of the CycloneDX cryptoProperties schema —
+    // carry it (and the execution-environment detail) as spec-legal
+    // name/value properties instead. Tri-state: true | false | unknown.
+    { name: 'quantumshield:quantum-safe', value: quantumSafeLabel(cls.quantumSafe) },
+    { name: 'quantumshield:execution-environment', value: EXECUTION_ENVIRONMENT_DETAIL },
+  ];
+
+  // Each assetType takes only its own *Properties object: algorithm
+  // parameters on a certificate or a protocol are not schema-meaningful and
+  // mislead consumers into treating an endpoint as an algorithm.
+  if (assetType === 'algorithm') {
+    cryptoProperties.algorithmProperties = {
+      primitive: cls.primitive,
+      parameterSetIdentifier: c.keySize ? `${c.keySize}` : undefined,
+      executionEnvironment: executionEnvironmentFor(c),
+      nistQuantumSecurityLevel: cls.nistQuantumSecurityLevel,
     };
+    cryptoProperties.oid = cls.oid;
+  } else if (assetType === 'certificate') {
+    const notValidAfter = toIsoDateTime(c.notValidAfter);
+    cryptoProperties.certificateProperties = notValidAfter ? { notValidAfter } : {};
+    properties.push({
+      name: 'quantumshield:public-key-algorithm',
+      value: c.keySize ? `${c.algorithm}-${c.keySize}` : c.algorithm,
+    });
+  } else if (assetType === 'protocol') {
+    const type = protocolTypeFor(c);
+    cryptoProperties.protocolProperties = {
+      type,
+      ...(c.protocolVersion ? { version: c.protocolVersion } : {}),
+      // A probed endpoint's `algorithm` is the negotiated cipher suite.
+      ...(type === 'tls' && c.protocolVersion ? { cipherSuites: [{ name: c.algorithm }] } : {}),
+    };
+  } else {
+    cryptoProperties.relatedCryptoMaterialProperties = {
+      type: relatedMaterialTypeFor(c),
+      ...(c.keySize ? { size: c.keySize } : {}),
+    };
+    properties.push({ name: 'quantumshield:algorithm', value: cls.legalAlgorithmName ?? c.algorithm });
   }
+
   return {
     type: 'cryptographic-asset',
     'bom-ref': `quantum-shield:cbom:${idx}`,
     name: c.name,
     description: cls.legalAlgorithmName,
     cryptoProperties,
-    // "quantumSafe" is not part of the CycloneDX cryptoProperties schema —
-    // carry it (and the execution-environment detail) as spec-legal
-    // name/value properties instead.
-    properties: [
-      { name: 'quantumshield:quantum-safe', value: String(cls.quantumSafe) },
-      { name: 'quantumshield:execution-environment', value: EXECUTION_ENVIRONMENT_DETAIL },
-    ],
+    properties,
     evidence: { occurrences: [{ location: c.location }] },
   };
 }

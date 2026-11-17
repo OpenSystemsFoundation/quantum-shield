@@ -93,7 +93,12 @@ export class SfClient implements ScanClient {
   }
 
   private async run<T>(path: string, init?: RequestInit): Promise<T> {
-    const url = path.startsWith('http') ? path : `${this.apiBase()}${path}`;
+    // nextRecordsUrl comes back as an instance-relative /services/data/... path.
+    const url = path.startsWith('http')
+      ? path
+      : path.startsWith('/services/')
+        ? `${this.session.instanceUrl.replace(/\/$/, '')}${path}`
+        : `${this.apiBase()}${path}`;
     let resp: Response;
     try {
       resp = await fetch(url, {

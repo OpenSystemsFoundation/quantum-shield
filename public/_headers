@@ -1,13 +1,18 @@
 # Security headers for Cloudflare Pages.
 # https://developers.cloudflare.com/pages/configuration/headers/
 #
-# The CSP below is described verbatim on /security — keep the two in sync.
-# connect-src allows only this origin plus Salesforce-owned hosts (login,
-# instance, and Experience Cloud domains) so the browser scanner can talk
+# The CSP below is described on /security — keep the two in sync.
+#
+# script-src deliberately has no 'unsafe-inline'. The build (the
+# csp-inline-hashes integration in astro.config.mjs) appends one 'sha256-…'
+# source per inline <script> it finds in dist/**/*.html, so the served policy
+# is this line plus those hashes. Do not add hashes here by hand.
+# connect-src allows only this origin plus *.salesforce.com: sign-in, identity
+# and API calls all go to the org's My Domain, so the browser scanner can talk
 # directly to the user's org and nowhere else.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.my.site.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.salesforce.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()

@@ -109,7 +109,7 @@
         return [];
       }
     })();
-    if (regions.length > 0) pushLog('info', `region filter: ${regions.join(', ')}`);
+    if (regions.length > 0) pushLog('info', `citation regions: ${regions.join(', ')} (all rules still run)`);
     try {
       const report = await startScan(
         { scanId, session: s, overlays: ['gdpr', 'nis2', 'dora'], regions, mock: s.mock === true },
@@ -262,7 +262,7 @@
   <div class="app-frame">
     <AppChrome session={session} active="scan" crumb={`Scan ${scanId.slice(0, 14)}…`} latestReportScanId={latestReportScanId} />
 
-    <main style="padding:24px 28px 48px;min-width:0;">
+    <main class="app-main">
       {#if status === 'cors'}
         <div class="cors-panel" data-testid="cors-panel">
           <div class="head">
@@ -273,7 +273,7 @@
             </div>
           </div>
           <p style="margin:12px 0 0;font-size:12.5px;color:var(--ink-2);">
-            Open <span class="mono" style="color:var(--ink)">Setup → CORS Allowlist</span> and add:
+            Open <span class="mono" style="color:var(--ink)">Setup → CORS</span> and add this origin to the Allowed Origins List:
           </p>
           <div class="mono-field" style="margin-top:10px;">
             <code>{typeof window !== 'undefined' ? window.location.origin : ''}</code>

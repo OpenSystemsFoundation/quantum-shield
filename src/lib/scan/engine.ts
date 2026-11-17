@@ -1,16 +1,18 @@
 import type {
   Category,
   CategoryCoverage,
+  CbomComponent,
   CryptoAsset,
   Finding,
   OverlayScope,
   Report,
   Severity,
 } from '@lib/pdf';
-import { evaluate, ruleCatalogFor } from '../rules/engine.js';
+import { evaluate, ruleCatalogFor, scopeCitationsToRegions } from '../rules/engine.js';
 import { tlsProbeRules } from '../rules/tls-rules.js';
 import { keyRotationRules } from '../rules/key-rotation-rules.js';
 import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '../rules/regulations.generated.js';
+import { classifyCryptoAsset } from '../pdf/crypto-classification.js';
 import { QSHIELD_NAME, QSHIELD_VERSION } from '../version.js';
 import {
   AuthError,
@@ -210,8 +212,20 @@ async function runEndpointProbes(
         tlsVersion: result.tlsVersion,
         kexGroup: result.keyExchangeGroup,
         hybridKem: result.hybridKemNegotiated,
-        location: `discovered via ${source.kind}:${source.identifier}`,
+        location:
+          `discovered via ${source.kind}:${source.identifier}` +
+          (result.certificateTrusted === false
+            ? ` · certificate not trusted by the scanning machine (${result.authorizationError ?? 'verification failed'})`
+            : ''),
+        usage: 'key-establishment',
       };
+      if (result.certificateTrusted === false) {
+        emit({
+          type: 'log',
+          level: 'info',
+          message: `${origin}: certificate did not verify against the local CA store (${result.authorizationError ?? 'unknown'}); handshake inspected anyway`,
+        });
+      }
       assets.push(asset);
       emit({ type: 'asset', category: 'named-credentials', asset });
     }
@@ -261,7 +275,6 @@ function findingCountFor(entry: CategoryCoverage, findings: Finding[]): number {
 function postureSentence(
   orgName: string,
   findings: Finding[],
-  severityCounts: Record<Severity, number>,
   categoryCounts: Record<Category, number>,
   coverage: CategoryCoverage[],
 ): string {
@@ -276,13 +289,149 @@ function postureSentence(
   }
 
   const activeCategories = Object.values(categoryCounts).filter((n) => n > 0).length;
+  // "Now" is every finding the rules mark replace-now, whatever its severity:
+  // a high-severity plaintext endpoint is as immediate as a critical one.
+  const immediate = findings.filter((f) => f.migrationPosture === 'replace-now').length;
+  const rest = findings.length - immediate;
+  const immediateSentence =
+    immediate > 0
+      ? `${immediate} should be remediated now, independent of the post-quantum timeline`
+      : 'None requires immediate remediation';
+  const restSentence =
+    rest > 0
+      ? `; the remaining ${rest} should be scheduled against the post-quantum migration milestones (NIST IR 8547: quantum-vulnerable algorithms deprecated after 2030, disallowed after 2035) or reviewed as advisories.`
+      : '.';
   return (
     `${orgName} has ${findings.length} cryptographic finding${findings.length === 1 ? '' : 's'} across ` +
     `${activeCategories} asset categor${activeCategories === 1 ? 'y' : 'ies'}. ` +
-    `${severityCounts.critical} must be remediated immediately to restore baseline compliance; ` +
-    `the remainder should be scheduled against the applicable post-quantum migration milestones (2030 deprecation, 2033 prohibition).` +
+    immediateSentence +
+    restSentence +
     coverageCaveat
   );
+}
+
+/** "TLSv1.3" → "1.3". */
+function tlsVersionNumber(version: string | undefined): string | undefined {
+  const match = /(\d+(?:\.\d+)?)$/.exec(version ?? '');
+  return match ? match[1] : undefined;
+}
+
+function endpointProtocol(endpointUrl: string | undefined): 'tls' | 'http' | undefined {
+  if (!endpointUrl) return undefined;
+  try {
+    const protocol = new URL(endpointUrl).protocol;
+    return protocol === 'https:' ? 'tls' : protocol === 'http:' ? 'http' : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Maps a scanned asset to a CBOM entry, or `null` when the asset carries no
+ * cryptographic fact. Session settings, Connected Apps, auth providers and
+ * installed packages are inventory the scanner reads, but nothing about their
+ * cryptography is observable, so listing them in a *cryptographic* bill of
+ * materials (as keys or libraries with an "unknown" algorithm) would be
+ * fabrication.
+ */
+export function cbomComponentFor(a: CryptoAsset): CbomComponent | null {
+  const location = a.location ?? `${a.kind}:${a.identifier}`;
+  switch (a.kind) {
+    case 'session-settings':
+    case 'connected-app':
+    case 'oidc-provider':
+    case 'installed-package':
+      return null;
+
+    case 'certificate':
+      return {
+        name: a.name,
+        type: 'certificate',
+        algorithm: a.algorithm ?? 'unknown',
+        keySize: a.keySize,
+        location,
+        quantumSafe: a.algorithm ? false : null,
+        ...(a.expiresAt ? { notValidAfter: a.expiresAt } : {}),
+      };
+
+    case 'tls-endpoint':
+      return {
+        name: a.name,
+        type: 'protocol',
+        algorithm: a.algorithm ?? 'unknown',
+        location,
+        // `hybridKem` is undefined when the probe could not tell.
+        quantumSafe: a.hybridKem ?? null,
+        protocol: 'tls',
+        ...(tlsVersionNumber(a.tlsVersion) ? { protocolVersion: tlsVersionNumber(a.tlsVersion) } : {}),
+      };
+
+    case 'named-credential':
+    case 'remote-site':
+    case 'external-data-source': {
+      const protocol = endpointProtocol(a.endpointUrl);
+      if (!protocol) return null;
+      return {
+        name: a.name,
+        type: 'protocol',
+        algorithm: protocol === 'tls' ? 'TLS (version and cipher not probed)' : 'HTTP (no TLS)',
+        location: a.endpointUrl ?? location,
+        // Plaintext HTTP protects nothing. For HTTPS the key exchange is
+        // unknown until the endpoint is probed (see the tls-endpoint entry).
+        quantumSafe: protocol === 'http' ? false : null,
+        protocol,
+      };
+    }
+
+    case 'external-credential':
+      if (!a.algorithm) return null;
+      return {
+        name: a.name,
+        type: 'protocol',
+        algorithm: a.algorithm,
+        location,
+        quantumSafe: null,
+        protocol: 'other',
+      };
+
+    case 'saml-sso':
+      if (!a.algorithm) return null;
+      return {
+        name: a.name,
+        type: 'algorithm',
+        algorithm: a.signatureHash ? `${a.algorithm}-${a.signatureHash.replace('-', '')}` : a.algorithm,
+        keySize: a.keySize,
+        location,
+        quantumSafe: false,
+        usage: a.usage ?? 'signature',
+      };
+
+    case 'shield-key':
+      return {
+        name: a.name,
+        type: 'key',
+        algorithm: a.algorithm ?? 'AES',
+        keySize: a.keySize,
+        location,
+        quantumSafe: a.algorithm === 'AES' && (a.keySize ?? 0) >= 256,
+        usage: a.usage ?? 'key-material',
+      };
+
+    case 'apex-call': {
+      const algorithm = a.algorithm ?? 'unknown';
+      const hardcoded = algorithm.toUpperCase().startsWith('HARDCODED');
+      return {
+        name: a.name,
+        type: hardcoded ? 'key' : 'algorithm',
+        algorithm,
+        keySize: a.keySize,
+        location,
+        // Decided per algorithm by classifyCryptoAsset; unknown until then.
+        quantumSafe: null,
+        ...(a.usage ? { usage: a.usage } : {}),
+      };
+    }
+  }
 }
 
 export async function runScan(
@@ -327,8 +476,9 @@ export async function runScan(
       }
     }
 
+    const regions = (options.regions ?? []) as string[];
     const rules = [
-      ...ruleCatalogFor(options.overlays, (options.regions ?? []) as string[]),
+      ...ruleCatalogFor(options.overlays, regions),
       ...tlsProbeRules(),
       ...keyRotationRules(),
     ];
@@ -338,6 +488,9 @@ export async function runScan(
     for (const asset of assets) {
       const produced = evaluate(asset, rules, ctx);
       for (const f of produced) {
+        // Regions scope and order the citations; they never suppress the
+        // finding itself.
+        f.citations = scopeCitationsToRegions(f.citations, regions);
         if (dedupe.has(f.id)) continue;
         dedupe.add(f.id);
         findings.push(f);
@@ -356,9 +509,14 @@ export async function runScan(
     }
 
     const hndlCount = findings.filter((f) => f.hndlExposure).length;
+    // Earliest deadline that is still ahead. Dates already in the past
+    // (SHA-1 signatures disallowed since 2013, an expired certificate) are
+    // not "the next deadline" — the PDF reports those as overdue instead.
+    const today = startedAt.toISOString().slice(0, 10);
     const deadlines = findings
       .map((f) => f.deadline)
-      .filter((d): d is string => Boolean(d))
+      .filter((d): d is string => Boolean(d) && /^\d{4}-\d{2}-\d{2}/.test(d as string))
+      .filter((d) => d.slice(0, 10) >= today)
       .sort();
 
     const overlays = OVERLAY_DEFS.map((o) => ({
@@ -384,7 +542,6 @@ export async function runScan(
         orgName,
         orgType: (options.session.org.orgType?.toLowerCase() as Report['org']['orgType']) ?? 'production',
         apiVersion: options.session.apiVersion,
-        userLicense: 'Salesforce',
       },
       findings,
       coverage,
@@ -396,31 +553,14 @@ export async function runScan(
         byCategory: categoryCounts,
         earliestDeadline: deadlines[0],
         hndlFindings: hndlCount,
-        postureSentence: postureSentence(orgName, findings, severityCounts, categoryCounts, coverage),
+        postureSentence: postureSentence(orgName, findings, categoryCounts, coverage),
       },
-      cbom: assets.map((a) => ({
-        name: a.name,
-        type:
-          a.kind === 'certificate'
-            ? 'certificate'
-            : a.kind === 'apex-call'
-              ? 'algorithm'
-              : a.kind === 'remote-site' ||
-                  a.kind === 'named-credential' ||
-                  a.kind === 'external-credential' ||
-                  a.kind === 'tls-endpoint'
-                ? 'protocol'
-                : a.kind === 'installed-package'
-                  ? 'library'
-                  : 'key',
-        algorithm: a.algorithm ?? a.tlsVersion ?? a.endpointUrl ?? 'unknown',
-        keySize: a.keySize,
-        location: a.location ?? `${a.kind}:${a.identifier}`,
-        quantumSafe:
-          a.kind === 'tls-endpoint'
-            ? a.hybridKem === true
-            : a.algorithm === 'AES' && (a.keySize ?? 0) >= 256,
-      })),
+      cbom: assets
+        .map((a) => cbomComponentFor(a))
+        .filter((c): c is CbomComponent => c !== null)
+        // One source of truth for quantum safety: the classifier that also
+        // drives the CycloneDX export, so the PDF table and the CBOM agree.
+        .map((c) => ({ ...c, quantumSafe: classifyCryptoAsset(c).quantumSafe })),
     };
 
     send({ type: 'completed', report });

@@ -261,6 +261,13 @@ so dynamic counts and long labels do not shift the layout. Tables favor
 scanability: sticky headers, compact rows, clear columns, technical metadata in
 mono. Everything must work at 320px wide without sideways scrolling.
 
+Responsive rules: grid tracks that hold content are `minmax(0, 1fr)`, never a
+bare `1fr`, so long ids and tables cannot widen the page. Below 900px the app
+sidebar becomes a wrapping nav row and multi-column layouts stack. Below 700px
+the findings table renders as stacked cards (title, asset and rule id, then
+category, severity, posture and deadline), and the finding detail becomes a
+full-screen dialog. Other tables scroll inside their card (`.tbl-scroll`).
+
 ## Elevation & Depth
 
 Ambient shadows only (`--shadow-card`, `--shadow-ambient`), tinted slate. If a
@@ -292,7 +299,22 @@ Severity pills are uppercase mono labels:
 - HNDL: purple text on purple background
 
 Finding tables open details in an adjacent drawer, not a full-page jump. Export
-buttons stay near the active report surface.
+buttons stay near the active report surface. The drawer is a labelled dialog
+that sits beside the sidebar on desktop (never over it) and fills the screen,
+with focus kept inside, on phones.
+
+Rows are never the control: each clickable table row contains a real button or
+link (`.row-open`) that keyboard and screen-reader users operate; the row click
+is a pointer convenience only. Column headers carry `scope="col"`. Unavailable
+navigation items are `aria-disabled` links with hidden text saying why.
+
+Sample-data mode (`/demo`) always shows the `.demo-banner` — warning-panel
+colours, sticky under the top bar, text "Sample data — not your org" — and
+repeats that label as a pill inside the finding dialog. Never show sample data
+without it.
+
+Confirmation dialogs use the native `<dialog>` with `.qs-dialog`: 14px corners,
+ambient shadow, actions right-aligned with the primary action last.
 
 ## Do's and Don'ts
 

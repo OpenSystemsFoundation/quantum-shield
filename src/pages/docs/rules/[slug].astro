@@ -35,6 +35,8 @@ function describeCondition(condition: RuleCondition): string {
       return `${condition.field} contains one of ${condition.values.join(', ')}`;
     case 'one-of':
       return `${condition.field} is one of ${condition.values.join(', ')}`;
+    case 'missing':
+      return `${condition.field} is not exposed by the Salesforce API`;
     case 'lt':
       return `${condition.field} < ${condition.value}`;
     case 'gte':

@@ -53,7 +53,12 @@ builder, and OpenVEX/report output code under `src/lib/`.
 - `public/fonts/` holds the self-hosted woff2 fonts and `fonts.css`; pages load
   fonts only from there (no font CDNs — see `DESIGN.md`).
 - `public/_headers` is the Cloudflare Pages security-header config (CSP etc.).
-  The `/security` page describes that policy verbatim — change them together.
+  `script-src` has no `'unsafe-inline'`: the `csp-inline-hashes` integration
+  (last in `astro.config.mjs`, logic in `scripts/csp-inline-hashes.mjs`) hashes
+  every inline `<script>` in the built HTML and writes the `'sha256-…'` sources
+  into `dist/_headers`. Never add inline event handlers (`onclick="…"`); the
+  build fails on them. The `/security` page describes the policy — change them
+  together.
 - `src/lib/version.ts` is the single source of truth for the tool version; CI
   fails if it disagrees with `package.json`'s `version`.
 - `cli/` is excluded from `tsconfig.json`; typecheck it with
@@ -99,7 +104,7 @@ polish task, or a verification step that has been completed.
 - **Release stage:** beta candidate
 - **Primary product path:** local `qshield` CLI
 - **Secondary product path:** static browser app for setup, scans, and report review
-- **Last reviewed:** 2026-08-13 (production-readiness wave; audit trail in
+- **Last reviewed:** 2026-11-17 (live-org review: browser sign-in fixed, rule accuracy, Astro 7; earlier 2026-08-13 wave in
   [docs/PRODUCTION_READINESS_REVIEW.md](./docs/PRODUCTION_READINESS_REVIEW.md))
 - **Version:** 0.1.0 (`package.json` ↔ `src/lib/version.ts`, enforced by CI)
 
@@ -141,37 +146,53 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 
 ## Open Items Toward Public Beta
 
-- [ ] Re-verify a full CLI scan (`--probe-tls`, `--region`, `--overlay`) against
-  a live org after this wave, on a clean clone.
-- [ ] Verify browser OAuth (code + PKCE) against production, sandbox, and
-  My Domain orgs — the review sandbox could not complete a live round-trip.
+- [x] Full CLI scan (`--probe-tls`, `--region`) against a live scratch org on a
+  clean clone (2026-11-17; `qs-review` from the OpenSF Dev Hub).
+- [ ] Re-verify `--probe-tls` hybrid-KEM detection against a real
+  hybrid-capable endpoint from a machine with OpenSSL ≥ 3.5 and no TLS
+  interception. The 2026-11 accuracy wave rewrote the detection (hybrid-only
+  second handshake) and covered it with unit tests, but the review sandbox's
+  egress gateway terminates TLS, so live probes there only see the gateway.
+- [x] Browser OAuth (code + PKCE) verified end to end against a scratch org's
+  My Domain, both locally and on the Cloudflare preview with the real CSP:
+  sign-in, scan, all five downloads, sign-out revoke (token rejected after).
+  2026-11-17.
+- [ ] Repeat the browser round-trip against a production org and a sandbox
+  (same code path as the scratch org's My Domain; not yet exercised).
 - [x] CI trimmed to cheap checks that need no org, browser, or secrets
   (typecheck, unit tests, build, generated-table and version gates). The
   Playwright e2e suite is local-only: run `npm run test:e2e` before releases.
-- [ ] Remaining npm advisories (5: 1 low, 2 moderate, 2 high as of 2026-08-13)
-  all require the Astro 7 major upgrade; schedule it deliberately, not via
-  `npm audit fix --force`.
+- [x] Astro 7 upgrade done 2026-11-17 (astro 7.4.x, Node >= 22.23.4). The
+  build's Node version is pinned by `.node-version`; keep `engines`,
+  `.node-version` and CI in step, and leave the Cloudflare `NODE_VERSION`
+  build variable unset (it would override the file).
+  `npm audit --omit=dev`: 1 low (esbuild Windows dev server via `tsx`).
 - [x] Production domain is `https://quantumshield.opensf.foundation`, deployed
   as a static-assets Cloudflare Worker (`wrangler.jsonc`). PDF metadata points
   at the GitHub repository, not the domain.
-- [ ] Keyboard accessibility for the findings table and drawer; mobile layout
-  for landing/app/report pages.
+- [x] Keyboard accessibility for the findings table and drawer; mobile layout
+  for landing/app/report pages (no horizontal scroll at 390px; findings stack
+  as cards; the finding detail is a full-screen dialog on phones).
 - [ ] Decide whether the beta ever publishes to npm; until then the repo stays
   `"private": true` and installs from source (documented in README).
 - [ ] Rotate the committed scratch-org ECA consumer key under `salesforce/`
-  and keep seed metadata credential-free.
+  and keep seed metadata credential-free. (A consumer key is not a secret and
+  only exists in short-lived scratch orgs, so this is hygiene, not a leak.)
+- [x] The GitHub repository is public (2026-11-17), so the site's source,
+  licence, issues and `git clone` links resolve.
 
 ## Release Readiness Definition
 
 Beta is ready when:
 
 - [ ] Clean clone setup succeeds from README instructions.
-- [ ] CLI scan works against at least one real Salesforce org.
-- [ ] Browser setup and scan work against at least one real Salesforce org.
-- [ ] All public links resolve.
+- [x] CLI scan works against at least one real Salesforce org.
+- [x] Browser setup and scan work against at least one real Salesforce org.
+- [x] All public links resolve (2026-11-17; a few regulator sites block
+  automated checks with 403 but load in a browser).
 - [x] README, architecture, install, and security docs match the implemented app
   (reconciled 2026-08-13).
 - [x] Legal/privacy posture is explicit (LICENSE, NOTICE, /privacy, /terms).
-- [ ] Unit, type/check, and build pass in CI; key e2e tests pass locally.
+- [x] Unit, type/check, and build pass in CI; key e2e tests pass locally.
 - [x] Known limitations are documented in user-facing language (README beta
   caveats, /terms).

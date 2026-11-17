@@ -31,17 +31,31 @@ test.describe('Finding detail drawer', () => {
     await expect(page.getByTestId('finding-drawer')).toHaveCount(0);
   });
 
-  test('keyboard: Enter opens the drawer, closing restores focus to the row', async ({ page }) => {
-    const firstRow = page.getByTestId('findings-list').locator('tbody tr').first();
-    await firstRow.focus();
+  test('keyboard: Enter on the finding button opens the dialog, closing restores focus', async ({ page }) => {
+    // Rows are not focusable controls; the button in the finding cell is.
+    await expect(page.locator('tr[role="button"], tr[tabindex]')).toHaveCount(0);
+    const openButton = page.getByTestId('finding-open').first();
+    await openButton.focus();
     await page.keyboard.press('Enter');
     const drawer = page.getByTestId('finding-drawer');
     await expect(drawer).toBeVisible();
     await expect(drawer).toBeFocused();
+    await expect(drawer).toHaveAttribute('role', 'dialog');
+    await expect(drawer).toHaveAttribute('aria-labelledby', 'finding-drawer-title');
+    await expect(openButton).toHaveAttribute('aria-expanded', 'true');
 
     await page.keyboard.press('Escape');
     await expect(drawer).toHaveCount(0);
-    await expect(firstRow).toBeFocused();
+    await expect(openButton).toBeFocused();
+  });
+
+  test('citation links are https and do not leak the opener or referrer', async ({ page }) => {
+    await page.getByTestId('finding-open').first().click();
+    const links = page.getByTestId('finding-drawer').locator('a.cite');
+    for (const link of await links.all()) {
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      await expect(link).toHaveAttribute('href', /^https:\/\//);
+    }
   });
 
   test('Escape key closes the drawer', async ({ page }) => {

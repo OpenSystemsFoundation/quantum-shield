@@ -8,7 +8,8 @@ The goal is simple: a fresh scratch org created from this folder should already 
 
 - Deployable External Client App metadata for `QuantumShield Scanner`
 - Deployable OAuth policy and global OAuth settings for that app
-- Deployable `CorsWhitelistOrigin` for `http://localhost:4321`
+- Deployable `CorsWhitelistOrigin` entries for `http://localhost:4321` and `https://quantumshield.opensf.foundation`, and a callback URL for each
+- `Security.settings` turning on **Enable CORS for OAuth endpoints** (`enableOauthCorsPolicy`). Without it the browser's PKCE token exchange is blocked by CORS; a fresh scratch org has it off
 - Any additional Apex, permissions, tabs, objects, layouts, or other metadata we decide to keep as part of the reproducible test seed
 
 ## Fresh Scratch Org Flow

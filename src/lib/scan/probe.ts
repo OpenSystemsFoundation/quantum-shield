@@ -14,16 +14,28 @@ export interface TlsProbeResult {
   peerCertKeyType?: string;
   peerCertKeyBits?: number;
   /**
-   * True if the peer negotiated a hybrid post-quantum group (e.g.
-   * X25519MLKEM768 / SecP256r1MLKEM768). Derived from the negotiated
-   * ephemeral group name when the runtime exposes it; otherwise undefined.
+   * Whether the endpoint completes a handshake with a hybrid post-quantum
+   * group (X25519MLKEM768 / SecP256r1MLKEM768).
+   *   true      — it did, in the first handshake or when offered only hybrids
+   *   false     — it refused every hybrid-only handshake (or is not TLS 1.3)
+   *   undefined — unknown: the probing machine's TLS stack cannot offer
+   *               ML-KEM, or the hybrid-only handshake failed for a network
+   *               reason. Never treat undefined as "no".
    */
   hybridKemNegotiated?: boolean;
   /**
-   * Name of the ephemeral key-exchange group if the runtime reports it.
-   * OpenSSL 3.5+ surfaces this; older builds do not.
+   * Key-exchange group, when known: the name the runtime reported for the
+   * first handshake, or the hybrid group that a hybrid-only handshake
+   * succeeded with.
    */
   keyExchangeGroup?: string;
+  /**
+   * False when the endpoint's certificate chain did not verify against the
+   * probing machine's CA store (private CA, self-signed, expired, wrong
+   * host). The handshake is still inspected; `authorizationError` says why.
+   */
+  certificateTrusted?: boolean;
+  authorizationError?: string;
   error?: string;
 }
 

@@ -31,6 +31,7 @@ const CONDITION_OPS = new Set([
   'equals',
   'contains-any',
   'one-of',
+  'missing',
   'lt',
   'gte',
   'between',
@@ -118,8 +119,11 @@ function validateCondition(ruleId, condition, index) {
       assert(Array.isArray(condition.values) && condition.values.length > 0, `${ruleId} condition ${index + 1} must provide values`);
       break;
     case 'one-of':
-      assert(condition.field === 'signatureHash', `${ruleId} condition ${index + 1} uses one-of on unsupported field ${condition.field}`);
+      assert(['signatureHash', 'algorithm'].includes(condition.field), `${ruleId} condition ${index + 1} uses one-of on unsupported field ${condition.field}`);
       assert(Array.isArray(condition.values) && condition.values.length > 0, `${ruleId} condition ${index + 1} must provide values`);
+      break;
+    case 'missing':
+      assert(condition.field === 'keySize', `${ruleId} condition ${index + 1} uses missing on unsupported field ${condition.field}`);
       break;
     case 'lt':
     case 'gte':

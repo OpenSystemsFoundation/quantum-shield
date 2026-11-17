@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildAuthorizeUrl,
+  describeTokenError,
   exchangeCode,
+  probeOAuthCors,
   OAuthFlowError,
   sessionFromTokenAndIdentity,
 } from './oauth.js';
@@ -85,7 +87,7 @@ describe('exchangeCode', () => {
     });
 
     expect(token.access_token).toBe('tok-123');
-    expect(identity.username).toBe('admin@example.com');
+    expect(identity?.username).toBe('admin@example.com');
 
     const [tokenUrl, init] = fetchMock.mock.calls[0];
     expect(tokenUrl).toBe('https://login.salesforce.com/services/oauth2/token');
@@ -141,6 +143,73 @@ describe('exchangeCode', () => {
 
     expect(err).toBeInstanceOf(OAuthFlowError);
     expect((err as OAuthFlowError).kind).toBe('token-exchange-failed');
-    expect((err as OAuthFlowError).message).toContain('400');
+    expect((err as OAuthFlowError).message).toMatch(/expired or was already used/);
+  });
+});
+
+describe('exchangeCode hardening', () => {
+  it('fetches identity from the org My Domain, not login.salesforce.com', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(tokenJson), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(identityJson), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await exchangeCode({ code: 'c', state: 'state-1', pending, clientId: pending.clientId! });
+    const identityUrl = String(fetchMock.mock.calls[1][0]);
+    expect(new URL(identityUrl).origin).toBe(new URL(tokenJson.instance_url).origin);
+    expect(new URL(identityUrl).pathname).toBe(new URL(tokenJson.id).pathname);
+  });
+
+  it('treats an identity failure as non-fatal', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(tokenJson), { status: 200 }))
+        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+    );
+    const { identity } = await exchangeCode({ code: 'c', state: 'state-1', pending, clientId: pending.clientId! });
+    expect(identity).toBeNull();
+  });
+
+  it('refuses to send the token to a non-Salesforce instance_url', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ...tokenJson, instance_url: 'https://evil.example.com' }), { status: 200 }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const err = await exchangeCode({ code: 'c', state: 'state-1', pending, clientId: pending.clientId! }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toMatchObject({ kind: 'invalid-callback' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('describeTokenError', () => {
+  it('explains invalid_client as the secret-required setting', () => {
+    expect(describeTokenError(400, '{"error":"invalid_client","error_description":"invalid client credentials"}')).toMatch(
+      /Require secret for Web Server Flow/,
+    );
+  });
+  it('falls back to the Salesforce description', () => {
+    expect(describeTokenError(400, '{"error":"weird","error_description":"something"}')).toContain('something');
+  });
+});
+
+describe('probeOAuthCors', () => {
+  it('reports ok when the token endpoint answers cross-origin', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', { status: 400 })));
+    expect(await probeOAuthCors('https://acme.my.salesforce.com')).toEqual({ ok: true });
+  });
+  it('distinguishes OAuth CORS off from origin not allowed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValueOnce(new TypeError('x')).mockResolvedValueOnce(new Response('[]')),
+    );
+    expect(await probeOAuthCors('https://acme.my.salesforce.com')).toEqual({ ok: false, reason: 'oauth-cors-disabled' });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('x')));
+    expect(await probeOAuthCors('https://acme.my.salesforce.com')).toEqual({ ok: false, reason: 'origin-not-allowed' });
   });
 });

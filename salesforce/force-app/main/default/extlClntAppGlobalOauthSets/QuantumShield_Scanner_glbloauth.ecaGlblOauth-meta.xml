@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExtlClntAppGlobalOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
-    <callbackUrl>http://localhost:4321/callback</callbackUrl>
+    <callbackUrl>http://localhost:4321/callback
+https://quantumshield.opensf.foundation/callback</callbackUrl>
     <consumerKey>3MVG90biqdLHqqMQXLJwtmroQhCVZGj3aJi2C7rYcuzZ1hmm0RVisKFHdopnuDov8qeT..OlhsBxv8xH0Nben</consumerKey>
     <externalClientApplication>QuantumShield_Scanner</externalClientApplication>
     <isClientCredentialsFlowEnabled>false</isClientCredentialsFlowEnabled>

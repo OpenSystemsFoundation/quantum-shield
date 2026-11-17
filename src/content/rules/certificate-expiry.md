@@ -3,7 +3,7 @@ order: 70
 id: R-CERT-EXPIRY
 title: Certificates inside the rotation window need action
 summary: Operational hygiene rule for expired certificates and certificates expiring soon.
-description: Certificates inside the 90-day window should be rotated and expired certificates should be flagged immediately.
+description: Certificates inside the 90-day window should be rotated; expired certificates are flagged however long ago they expired.
 implementationStatus: active
 appliesTo:
   - certificate
@@ -18,10 +18,10 @@ cases:
   - when:
       - field: expiresAt
         op: days-until-between
-        min: -30
-        max: -1
+        min: -1000000
+        max: 0
     result:
-      title: Certificate expired
+      title: Certificate expired on {{computed.expiresAtDate}}
       severity: high
       regulatoryStatus: advisory
       migrationPosture: advisory
@@ -29,14 +29,13 @@ cases:
       hndlExposure: false
       currentCrypto: '{{asset.algorithm ?? Unknown}}{{#if asset.keySize}}-{{asset.keySize}}{{/if}}; expires {{asset.expiresAt}}'
       recommendedReplacement: >-
-        Rotate before expiry. Use the scheduled renewal window to validate hybrid certificate issuance or other PQC-ready trust-chain changes where counterparties allow it.
+        Replace the certificate now, or delete it if nothing references it. Check every integration, SSO configuration and Named Credential that uses it — connections relying on an expired certificate fail or are rejected by the counterparty.
       rationale: >-
-        Scheduled certificate renewal is a standard key-management event under NIST SP 800-57 and a low-risk point to exercise PQC transition playbooks described in NIST IR 8547.
+        The certificate is past its validity period. NIST SP 800-57 treats the end of a key's cryptoperiod as the point at which it must be replaced; an expired certificate left in place either breaks the integration or signals that expiry is not being checked.
       citations:
         - NIST_SP_800_57_PT1
         - BSI_TR_02102_1
         - EIDAS2
-        - NIST_IR_8547
       deadline: '{{computed.expiresAtDate}}'
   - when:
       - field: expiresAt
