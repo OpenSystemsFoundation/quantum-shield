@@ -151,9 +151,9 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 - [ ] Remaining npm advisories (5: 1 low, 2 moderate, 2 high as of 2026-08-13)
   all require the Astro 7 major upgrade; schedule it deliberately, not via
   `npm audit fix --force`.
-- [ ] Replace placeholder deployment/domain copy (`https://quantumshield.example`)
-  in `astro.config.mjs` `site` and PDF metadata once the production domain
-  exists.
+- [x] Production domain is `https://quantumshield.opensf.foundation`, deployed
+  as a static-assets Cloudflare Worker (`wrangler.jsonc`). PDF metadata points
+  at the GitHub repository, not the domain.
 - [ ] Keyboard accessibility for the findings table and drawer; mobile layout
   for landing/app/report pages.
 - [ ] Decide whether the beta ever publishes to npm; until then the repo stays

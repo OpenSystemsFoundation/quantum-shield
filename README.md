@@ -134,6 +134,24 @@ The full audit trail for the production-readiness wave is in [docs/PRODUCTION_RE
 
 ---
 
+## Deployment
+
+The hosted browser app runs at **https://quantumshield.opensf.foundation** as a static-assets Cloudflare Worker (`wrangler.jsonc`). There is no server code, no storage binding (D1, KV, R2) and no runtime secret: scans, reports and OAuth tokens stay in the visitor's browser.
+
+Cloudflare builds from GitHub (Workers Builds) with:
+
+| Setting | Value |
+|---|---|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Build variable `NODE_VERSION` | `22.12.0` (or newer 22.x) |
+| Build variable `PUBLIC_APP_ORIGIN` | `https://quantumshield.opensf.foundation` |
+| Build variable `PUBLIC_SF_API_VERSION` | `66.0` |
+
+Leave `PUBLIC_SF_CLIENT_ID` and `PUBLIC_DEV_MOCK` unset in production: customers bring their own Consumer Key, and the mock login is disabled in production builds regardless. Security headers (CSP, HSTS, caching) ship in `public/_headers`. Unknown paths serve `src/pages/404.astro`.
+
+---
+
 ## Dev loop
 
 ```sh

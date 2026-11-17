@@ -1,0 +1,19 @@
+// Cloudflare Workers deployment: static assets only, no Worker script.
+// The build (`npm run build`) writes the site to ./dist; Cloudflare serves it
+// with the security headers in public/_headers. There are no bindings
+// (no D1, KV or R2) and no secrets: scans, reports and OAuth tokens stay in
+// the visitor's browser.
+{
+  "name": "quantum-shield",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve dist/404.html with a 404 status for unknown paths.
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "quantumshield.opensf.foundation", "custom_domain": true }
+  ],
+  "workers_dev": true,
+  "preview_urls": true
+}

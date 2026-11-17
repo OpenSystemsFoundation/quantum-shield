@@ -20,7 +20,7 @@ function stripDevPages() {
 }
 
 export default defineConfig({
-  site: 'https://quantumshield.example',
+  site: 'https://quantumshield.opensf.foundation',
   // Pure static output on Cloudflare Pages. The scan/report pages read their
   // id from the URL hash (e.g. /app/scan#<scanId>) on the client — no dynamic
   // route segments, no server-side rendering, no adapter required.
