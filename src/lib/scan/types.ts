@@ -1,4 +1,4 @@
-import type { Category, CryptoAsset, Finding, Jurisdiction, Report } from '@lib/pdf';
+import type { Category, CryptoAsset, Finding, Jurisdiction, Report, RiskAssumptions } from '@lib/pdf';
 import type { Session } from '@lib/auth';
 
 export interface ScanOptions {
@@ -26,6 +26,13 @@ export interface ScanOptions {
    * Defaults to 'browser'.
    */
   generatorMode?: 'cli' | 'browser';
+  /**
+   * Assumptions the stored finding priorities are computed with. Defaults to
+   * DEFAULT_ASSUMPTIONS; viewers can recompute with their own at any time.
+   */
+  riskAssumptions?: RiskAssumptions;
+  /** Skip the data-sensitivity pass (priorities then assume personal data). */
+  skipDataProfile?: boolean;
 }
 
 export type ScannerStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'failed';

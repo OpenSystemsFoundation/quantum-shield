@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Field access to the classified seed fields, so the scanning admin can see their classification (Salesforce hides fields without field-level security from FieldDefinition).</description>
+    <label>QuantumShield Seed Data</label>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.National_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+</PermissionSet>

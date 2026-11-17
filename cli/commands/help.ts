@@ -32,6 +32,10 @@ SCAN FLAGS
                                        for TLS version + hybrid-KEM support. Makes up
                                        to three handshakes per endpoint from this
                                        machine; no request is sent after a handshake.
+  --quantum-year <YYYY>                Year a quantum computer is assumed to break
+                                       today's public-key crypto (default: 2033).
+                                       Findings are ranked act-now / plan / monitor
+                                       by data shelf life + fix time vs this year.
   --allow-partial                      Exit 0 even when some categories could not be
                                        fully scanned (coverage 'partial' or 'failed').
                                        For CI pipelines that accept partial coverage.

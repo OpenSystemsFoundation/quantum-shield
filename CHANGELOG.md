@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Prioritisation
+
+- **Findings ranked by what is at stake.** Every finding is now *Act now*,
+  *Plan* or *Monitor*: how long the data behind it must stay secret plus how
+  long the fix takes, compared with the year a quantum computer is assumed to
+  break today's public-key cryptography (default 2033). Weak-today findings
+  stay *Act now*. Severity is unchanged.
+- **Data-sensitivity pass** (metadata only): field Data Sensitivity Level and
+  Compliance Categorization, Shield-encrypted fields, and best-practice
+  defaults for standard and industry objects. Stored as `report.dataProfile`.
+- **Browser controls**: change the quantum year (2030 / 2033 / 2035 presets or
+  any year), shelf life per data tier, fix time per effort, and what each
+  integration carries; saved per org in this browser. Findings, PDF, CSV and
+  JSON follow the reader's assumptions.
+- **New rule `R-CALLOUT-HNDL`**: HTTPS callouts are harvest-now exposure
+  because Salesforce agrees callout keys classically.
+- **CLI**: `--quantum-year <YYYY>`. A failed data-sensitivity pass does not
+  cause exit code 3.
+- **Report fields**: `finding.priority`, `summary.priorityCounts`,
+  `dataProfile`, `riskAssumptions`; CSV adds `priorityRank`, `priorityBand`,
+  `dataTier`, `marginYears`.
+- **Method page** at `/docs/prioritization`.
+- **Scratch-org seed** classifies Contact/Lead fields and adds
+  `Contact.National_Id__c`; fixtures re-captured.
+
 ### Project
 
 - **Open-source repository essentials**: `SECURITY.md` with a private

@@ -14,7 +14,37 @@ import {
   spacer,
   wrapText,
 } from './layout.js';
-import type { CoverageStatus, Finding, Report, Severity } from './types.js';
+import type { CoverageStatus, DataTier, Finding, PriorityBand, Report, Severity } from './types.js';
+
+const BAND_LABELS: Record<PriorityBand, string> = { 'act-now': 'Act now', plan: 'Plan', monitor: 'Monitor' };
+const TIER_TEXT: Record<DataTier, string> = {
+  none: 'no stored data (authenticity only)',
+  ephemeral: 'short-lived data',
+  internal: 'internal data',
+  confidential: 'confidential business data',
+  personal: 'personal data',
+  regulated: 'long-lived regulated data',
+};
+
+function bandColor(band: PriorityBand) {
+  return band === 'act-now' ? COLORS.critical : band === 'plan' ? COLORS.medium : COLORS.low;
+}
+
+function priorityLine(f: Finding): string {
+  const p = f.priority;
+  if (!p) return '';
+  const margin = p.marginYears > 0 ? `${p.marginYears} yrs exposed` : `${Math.abs(p.marginYears)} yrs slack`;
+  return `${p.shelfLifeYears} yrs secrecy + ${p.migrationYears} yrs to fix vs ${p.yearsToQuantum} yrs to quantum = ${margin}. ${p.reason} Data at stake: ${TIER_TEXT[p.dataTier]}. ${p.dataBasis}.`;
+}
+
+/** Plain-words statement of the assumptions behind the priorities. */
+export function assumptionsSentence(report: Report): string | null {
+  const a = report.riskAssumptions;
+  if (!a) return null;
+  const s = a.shelfLifeYears;
+  const m = a.migrationYears;
+  return `Assumes a quantum computer able to break today's public-key cryptography by ${a.quantumYear}. Data must stay secret for ${s.regulated} years (long-lived regulated), ${s.personal} (personal), ${s.confidential} (confidential business), ${s.internal} (internal), ${s.ephemeral} (short-lived). Fixes take ${m.low} / ${m.medium} / ${m.high} years for low / medium / high effort.`;
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   certificates: 'Certificates & keys',
@@ -148,6 +178,16 @@ export function drawCoverSection(cursor: Cursor, report: Report): void {
   }
   spacer(cursor, 10);
 
+  const pc = report.summary.priorityCounts;
+  if (pc) {
+    drawHeading(cursor, 'Priority', { size: FONT.h3, spaceAfter: 6 });
+    drawParagraph(
+      cursor,
+      `Act now: ${pc['act-now']}   ·   Plan: ${pc.plan}   ·   Monitor: ${pc.monitor}. Ranked by how long the data at stake must stay secret plus how long the fix takes, against the year a quantum computer could break it.`,
+      { size: FONT.body, color: COLORS.inkSoft, spaceAfter: 10 },
+    );
+  }
+
   if (report.summary.hndlFindings > 0) {
     const n = report.summary.hndlFindings;
     const msg = `${n} finding${n === 1 ? '' : 's'} ${n === 1 ? 'concerns' : 'concern'} key establishment or encryption that a quantum computer could break. Traffic recorded today could be decrypted later (harvest now, decrypt later); how much that matters depends on how long the data must stay confidential.`;
@@ -251,6 +291,36 @@ export function drawExecutiveSummary(cursor: Cursor, report: Report): void {
     spaceAfter: 14,
     leading: 1.45,
   });
+
+  if (report.summary.priorityCounts) {
+    drawHeading(cursor, 'Where to start', { size: FONT.h3, spaceAfter: 6 });
+    const top = [...report.findings]
+      .filter((f) => f.priority)
+      .sort((a, b) => (a.priority?.rank ?? 0) - (b.priority?.rank ?? 0))
+      .slice(0, 5);
+    for (const f of top) {
+      const p = f.priority!;
+      drawParagraph(cursor, `${p.rank}. [${BAND_LABELS[p.band]}] ${f.title} — ${f.asset.name}. ${p.reason}`, {
+        x: PAGE.marginX + 6,
+        color: COLORS.inkSoft,
+        size: FONT.small,
+        leading: 1.4,
+      });
+    }
+    const assumptions = assumptionsSentence(report);
+    if (assumptions) {
+      drawParagraph(cursor, assumptions, { size: FONT.small, color: COLORS.muted, spaceAfter: 4, leading: 1.4 });
+    }
+    const dp = report.dataProfile;
+    if (dp) {
+      const bySource = (src: string) => dp.entries.filter((e) => e.sources.includes(src as never)).length;
+      drawParagraph(
+        cursor,
+        `Data sensitivity: ${dp.entries.filter((e) => e.sources.includes('classification') || e.sources.includes('compliance')).length} classified fields, ${bySource('shield')} Shield-encrypted fields and ${bySource('default')} standard objects with best-practice defaults. The most sensitive data found is ${TIER_TEXT[dp.orgTier]}; integrations are assumed to carry it unless the reader said otherwise. ${dp.note ?? ''}`,
+        { size: FONT.small, color: COLORS.muted, spaceAfter: 12, leading: 1.4 },
+      );
+    }
+  }
 
   drawHeading(cursor, 'What we scanned', { size: FONT.h3, spaceAfter: 6 });
   drawCoverageList(cursor, report);
@@ -357,7 +427,7 @@ function drawCoverageList(cursor: Cursor, report: Report): void {
     }
   }
 
-  const unverified = coverage.filter((c) => c.status !== 'scanned');
+  const unverified = coverage.filter((c) => c.status !== 'scanned' && c.id !== 'data-profile');
   if (unverified.length > 0) {
     spacer(cursor, 8);
     drawCoverageWarning(
@@ -398,13 +468,17 @@ function drawCoverageWarning(cursor: Cursor, note: string): void {
 export function drawFindingsRegister(cursor: Cursor, report: Report): void {
   newPage(cursor);
   drawHeading(cursor, 'Findings register', { size: FONT.h2, spaceAfter: 4 });
+  const ranked = report.findings.every((f) => f.priority);
   drawParagraph(
     cursor,
-    'Sorted by regulatory deadline — earliest first. Each finding traces to at least one primary source document.',
+    ranked
+      ? 'Sorted by priority — most urgent first. Each finding traces to at least one primary source document.'
+      : 'Sorted by regulatory deadline — earliest first. Each finding traces to at least one primary source document.',
     { size: FONT.small, color: COLORS.muted, spaceAfter: 12 },
   );
 
   const sorted = [...report.findings].sort((a, b) => {
+    if (ranked) return (a.priority?.rank ?? 0) - (b.priority?.rank ?? 0);
     const da = a.deadline ?? '9999';
     const db = b.deadline ?? '9999';
     if (da !== db) return da.localeCompare(db);
@@ -441,6 +515,9 @@ function drawFindingCard(cursor: Cursor, f: Finding): void {
 
   const pillY = cursor.y;
   let pillX = innerX;
+  if (f.priority) {
+    pillX += drawPill(cursor, `#${f.priority.rank} ${BAND_LABELS[f.priority.band]}`, bandColor(f.priority.band), COLORS.white, pillX, pillY) + 6;
+  }
   pillX += drawPill(cursor, severityLabel(f.severity), severityColor(f.severity), COLORS.white, pillX, pillY) + 6;
   pillX +=
     drawPill(
@@ -486,6 +563,7 @@ function drawFindingCard(cursor: Cursor, f: Finding): void {
     `${REG_STATUS_LABELS[f.regulatoryStatus]}${f.deadline ? ` • ${f.deadline}` : ''}`,
   );
   drawKeyValue(cursor, innerX, innerWidth, 'Effort', capitalize(f.effort));
+  if (f.priority) drawKeyValue(cursor, innerX, innerWidth, 'Priority', priorityLine(f));
 
   cursor.x = innerX;
   drawParagraph(cursor, f.rationale, {
@@ -555,6 +633,7 @@ function measureFindingHeight(cursor: Cursor, f: Finding, cardWidth: number): nu
   h += wrapText(f.title, cursor.fonts.bold, FONT.h3, innerWidth).length * FONT.h3 * 1.3;
   h += wrapText(`${f.asset.name} — ${f.asset.identifier}`, cursor.fonts.regular, FONT.small, innerWidth).length * FONT.small * 1.5;
   const kvValues = [f.currentCrypto, f.recommendedReplacement, `${REG_STATUS_LABELS[f.regulatoryStatus]}`, capitalize(f.effort)];
+  if (f.priority) kvValues.push(priorityLine(f));
   for (const v of kvValues) {
     const lines = wrapText(v, cursor.fonts.regular, FONT.small, innerWidth - labelWidth);
     h += Math.max(lines.length, 1) * FONT.small * 1.35 + 2;
@@ -633,9 +712,18 @@ export function drawMethodology(cursor: Cursor, report: Report): void {
   drawHeading(cursor, 'Severity derivation', { size: FONT.h3, spaceAfter: 4 });
   drawParagraph(
     cursor,
-    'Severity is fixed by the rule case that matched, as written in the open rule catalog; it is not computed from the org\'s data. The same asset always gets the same severity. The scanner does not know how sensitive the data behind an asset is or how exposed it is, so treat severity as a starting priority and adjust it with that context.',
+    'Severity is fixed by the rule case that matched, as written in the open rule catalog; it is not computed from the org\'s data. The same asset always gets the same severity. Priority (below) adds the org\'s data context.',
     { color: COLORS.inkSoft, spaceAfter: 10 },
   );
+
+  drawHeading(cursor, 'Priority', { size: FONT.h3, spaceAfter: 4 });
+  drawParagraph(
+    cursor,
+    'An adversary can record encrypted traffic today and decrypt it once a quantum computer breaks the key exchange that protected it (harvest now, decrypt later). Data is therefore already at risk when the years it must stay secret, plus the years the migration takes, add up to more than the years left until such a computer exists. Each finding is scored that way: its shelf life comes from the most sensitive data the asset touches (field classification, compliance categories and Shield-encrypted fields read from the org, or best-practice defaults for standard objects); its migration time comes from the finding\'s effort. A positive margin is Act now, a margin within three years is Plan, the rest is Monitor. Signatures and digests cannot be harvested, so only migration time counts for them. Anything weak or non-compliant today is Act now regardless. Field classification is read from metadata only, never from record data, and only for fields visible to the scanning user.',
+    { color: COLORS.inkSoft, spaceAfter: 6 },
+  );
+  const assumptions = assumptionsSentence(report);
+  if (assumptions) drawParagraph(cursor, assumptions, { color: COLORS.inkSoft, spaceAfter: 10 });
 
   drawHeading(cursor, 'Source document versions', { size: FONT.h3, spaceAfter: 4 });
   for (const sv of report.sourceVersions) {

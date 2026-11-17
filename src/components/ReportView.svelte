@@ -3,7 +3,22 @@
   import { loadSession, type Session } from '@lib/auth';
   import { getReport } from '@lib/persistence/db';
   import { renderReportPdf, buildCbomJson, buildVexJson, buildFindingsCsv } from '@lib/pdf';
-  import type { Category, CategoryCoverage, CoverageStatus, Finding, Report, Severity } from '@lib/pdf';
+  import type { Category, CategoryCoverage, CoverageStatus, Finding, PriorityBand, Report, Severity } from '@lib/pdf';
+  import {
+    applyRiskSettings,
+    loadRiskSettings,
+    saveRiskSettings,
+    clearRiskSettings,
+    sanitizeSettings,
+    assetKey,
+    DEFAULT_ASSUMPTIONS,
+    QUANTUM_YEAR_PRESETS,
+    TIER_LABELS,
+    TIER_ORDER,
+    TIER_DESCRIPTIONS,
+    type RiskSettings,
+    type StoredTier,
+  } from '@lib/priority';
   import AppChrome from './AppChrome.svelte';
   import FindingDrawer from './FindingDrawer.svelte';
   import { SAMPLE_BANNER_TEXT, SAMPLE_SCAN_ID, SAMPLE_SESSION, buildSampleReport } from '@lib/demo/sample';
@@ -32,7 +47,46 @@
   let report = $state<Report | null>(null);
   let loaded = $state(false);
   let selectedId = $state<string | null>(null);
-  let sort = $state<'deadline' | 'severity'>('deadline');
+  let sort = $state<'priority' | 'deadline' | 'severity'>('priority');
+  let riskSettings = $state<RiskSettings>(sanitizeSettings(null));
+  let bandFilter = $state<Record<PriorityBand, boolean>>({ 'act-now': true, plan: true, monitor: true });
+
+  const BAND_LABELS: Record<PriorityBand, string> = { 'act-now': 'Act now', plan: 'Plan', monitor: 'Monitor' };
+  const BAND_CLASS: Record<PriorityBand, string> = { 'act-now': 'crit', plan: 'med', monitor: 'low' };
+
+  /** The report re-prioritised under this reader's assumptions; drives the view and every export. */
+  const view = $derived(report ? applyRiskSettings(report, riskSettings.assumptions, riskSettings.overrides) : null);
+
+  function persistRisk() {
+    if (report) saveRiskSettings(report.org.orgId, $state.snapshot(riskSettings) as RiskSettings);
+  }
+
+  function setQuantumYear(year: number) {
+    riskSettings.assumptions.quantumYear = year;
+    persistRisk();
+  }
+
+  function setTier(key: string, tier: StoredTier | '') {
+    if (tier) riskSettings.overrides[key] = tier;
+    else delete riskSettings.overrides[key];
+    persistRisk();
+  }
+
+  function resetRisk() {
+    if (report) clearRiskSettings(report.org.orgId);
+    riskSettings = sanitizeSettings(null);
+  }
+
+  const assumptionsChanged = $derived(
+    JSON.stringify(riskSettings.assumptions) !== JSON.stringify(DEFAULT_ASSUMPTIONS) ||
+      Object.keys(riskSettings.overrides).length > 0,
+  );
+
+  function marginText(f: Finding): string {
+    if (f.migrationPosture === 'replace-now' || f.regulatoryStatus === 'already-non-compliant') return 'weak today';
+    const m = f.priority?.marginYears ?? 0;
+    return m > 0 ? `exposed ${m} yrs` : `${Math.abs(m)} yrs slack`;
+  }
   let query = $state('');
   let hndlOnly = $state(false);
   let sevFilter = $state<Record<Severity, boolean>>({ critical: true, high: true, medium: true, low: true });
@@ -93,6 +147,7 @@
       loadedReport = (await getReport(scanId))?.report ?? null;
     }
     if (loadedReport) {
+      riskSettings = loadRiskSettings(loadedReport.org.orgId);
       report = loadedReport;
       const cats = new Set(loadedReport.findings.map((f) => f.category));
       const init: Record<string, boolean> = {};
@@ -147,13 +202,14 @@
     if (!report) return [];
     // Reports persisted before the coverage contract may lack the field.
     const coverage: CategoryCoverage[] | undefined = report.coverage;
-    return (coverage ?? []).filter((c) => c.status !== 'scanned');
+    return (coverage ?? []).filter((c) => c.status !== 'scanned' && c.id !== 'data-profile');
   });
 
   const filteredFindings = $derived.by<Finding[]>(() => {
-    if (!report) return [];
-    return report.findings
+    if (!view) return [];
+    return view.findings
       .filter((f) => {
+        if (f.priority && !bandFilter[f.priority.band]) return false;
         if (!sevFilter[f.severity]) return false;
         if (!postureFilter[f.migrationPosture]) return false;
         if (hndlOnly && !f.hndlExposure) return false;
@@ -171,6 +227,7 @@
         return true;
       })
       .sort((a, b) => {
+        if (sort === 'priority') return (a.priority?.rank ?? 0) - (b.priority?.rank ?? 0);
         if (sort === 'deadline') {
           const da = a.deadline ?? '9999';
           const db = b.deadline ?? '9999';
@@ -182,9 +239,13 @@
   });
 
   const selected = $derived.by<Finding | null>(() => {
-    if (!report || !selectedId) return null;
-    return report.findings.find((f) => f.id === selectedId) ?? null;
+    if (!view || !selectedId) return null;
+    return view.findings.find((f) => f.id === selectedId) ?? null;
   });
+
+  function bandCount(b: PriorityBand): number {
+    return view?.summary.priorityCounts?.[b] ?? 0;
+  }
 
   function sevCount(s: Severity): number {
     if (!report) return 0;
@@ -207,33 +268,33 @@
   const filePrefix = demo ? 'SAMPLE-' : '';
 
   async function downloadPdf() {
-    if (!report) return;
-    const bytes = await renderReportPdf(report);
+    if (!view) return;
+    const bytes = await renderReportPdf(view);
     const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-    triggerDownload(blob, `quantum-shield-${filePrefix}${safeName(report.org.orgName)}.pdf`);
+    triggerDownload(blob, `quantum-shield-${filePrefix}${safeName(view.org.orgName)}.pdf`);
   }
 
   function downloadCbom() {
-    if (!report) return;
-    const json = buildCbomJson(report);
+    if (!view) return;
+    const json = buildCbomJson(view);
     triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}cbom.json`);
   }
 
   function downloadVex() {
-    if (!report) return;
-    const json = buildVexJson(report);
+    if (!view) return;
+    const json = buildVexJson(view);
     triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}vex.json`);
   }
 
   function downloadRawJson() {
-    if (!report) return;
-    const json = JSON.stringify(report, null, 2);
-    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}${safeName(report.org.orgName)}.report.json`);
+    if (!view) return;
+    const json = JSON.stringify(view, null, 2);
+    triggerDownload(new Blob([json], { type: 'application/json' }), `quantum-shield-${filePrefix}${safeName(view.org.orgName)}.report.json`);
   }
 
   function downloadCsv() {
-    if (!report) return;
-    const csv = buildFindingsCsv(report);
+    if (!view) return;
+    const csv = buildFindingsCsv(view);
     triggerDownload(new Blob([csv], { type: 'text/csv' }), `quantum-shield-${filePrefix}findings.csv`);
   }
 
@@ -263,6 +324,7 @@
       advisory: true,
     };
     hndlOnly = false;
+    bandFilter = { 'act-now': true, plan: true, monitor: true };
     query = '';
     const init: Record<string, boolean> = {};
     for (const key of Object.keys(categoryFilter)) init[key] = true;
@@ -291,6 +353,17 @@
       {:else}
         <div class="findings-layout">
           <aside class="qs-card findings-filters">
+            <div class="filter-group">
+              <h5>Priority</h5>
+              {#each (['act-now', 'plan', 'monitor'] as const) as b}
+                <label>
+                  <input type="checkbox" bind:checked={bandFilter[b]} />
+                  <span class={`pill ${BAND_CLASS[b]}`}>{BAND_LABELS[b]}</span>
+                  <span class="ct">{bandCount(b)}</span>
+                </label>
+              {/each}
+            </div>
+
             <div class="filter-group">
               <h5>
                 Severity
@@ -366,24 +439,24 @@
 
             <div class="finding-summary">
               <div>
-                <div class="n crit-n">{sevCount('critical')}</div>
-                <div class="lbl">Critical</div>
-                <div class="sub">Already non-compliant</div>
+                <div class="n crit-n" data-testid="band-act-now">{bandCount('act-now')}</div>
+                <div class="lbl">Act now</div>
+                <div class="sub">Exposed before the quantum date, or weak today</div>
               </div>
               <div>
-                <div class="n high-n">{sevCount('high')}</div>
-                <div class="lbl">High</div>
-                <div class="sub">Deadline &lt; 4 years</div>
+                <div class="n med-n">{bandCount('plan')}</div>
+                <div class="lbl">Plan</div>
+                <div class="sub">Less than 3 years of slack</div>
               </div>
               <div>
-                <div class="n med-n">{sevCount('medium')}</div>
-                <div class="lbl">Medium</div>
-                <div class="sub">Advisory / 2030 window</div>
+                <div class="n">{bandCount('monitor')}</div>
+                <div class="lbl">Monitor</div>
+                <div class="sub">Comfortable margin</div>
               </div>
               <div>
                 <div class="n hndl-n">{hndlCount}</div>
                 <div class="lbl">HNDL flagged</div>
-                <div class="sub">Long-retention data</div>
+                <div class="sub">Harvest now, decrypt later</div>
               </div>
               <div>
                 <div class="n">{filteredFindings.length}</div>
@@ -391,6 +464,71 @@
                 <div class="sub" data-testid="filtered-count">of {report.findings.length} total</div>
               </div>
             </div>
+
+            <details class="qs-card risk-panel" data-testid="risk-panel">
+              <summary>
+                <span class="risk-title">How findings are prioritised</span>
+                <span class="risk-sum">
+                  Quantum date {riskSettings.assumptions.quantumYear}
+                  · {report.dataProfile ? `most sensitive data: ${TIER_LABELS[report.dataProfile.orgTier].toLowerCase()}` : 'no data-sensitivity scan in this report'}
+                  {#if assumptionsChanged}· <strong>your assumptions</strong>{/if}
+                </span>
+              </summary>
+              <div class="risk-body">
+                <p class="risk-lede">
+                  A finding is urgent when <em>how long the data must stay secret</em> plus <em>how long the fix takes</em>
+                  runs past <em>the year a quantum computer could break it</em>. Traffic recorded today can be decrypted
+                  then. Signatures cannot be harvested, so for them only the fix time counts. Anything weak today is
+                  <em>Act now</em> regardless. <a href="/docs/prioritization">Method</a>
+                </p>
+                <div class="risk-grid">
+                  <fieldset>
+                    <legend>Year a quantum computer could break today's encryption</legend>
+                    <div class="segment">
+                      {#each QUANTUM_YEAR_PRESETS as p}
+                        <button type="button" class:active={riskSettings.assumptions.quantumYear === p.year} aria-pressed={riskSettings.assumptions.quantumYear === p.year} onclick={() => setQuantumYear(p.year)}>{p.year} · {p.label}</button>
+                      {/each}
+                    </div>
+                    <label class="inline">Other year
+                      <input type="number" min="2024" max="2100" value={riskSettings.assumptions.quantumYear}
+                        onchange={(e) => { const v = Number((e.currentTarget as HTMLInputElement).value); if (v >= 2024 && v <= 2100) setQuantumYear(Math.round(v)); }}
+                        data-testid="quantum-year" />
+                    </label>
+                  </fieldset>
+                  <fieldset>
+                    <legend>Years data must stay secret</legend>
+                    {#each [...TIER_ORDER].reverse() as t}
+                      <label class="inline" title={TIER_DESCRIPTIONS[t]}>{TIER_LABELS[t]}
+                        <input type="number" min="0" max="100" step="1" bind:value={riskSettings.assumptions.shelfLifeYears[t]} onchange={persistRisk} />
+                      </label>
+                    {/each}
+                  </fieldset>
+                  <fieldset>
+                    <legend>Years a fix takes, by effort</legend>
+                    {#each (['low', 'medium', 'high'] as const) as e}
+                      <label class="inline">{e.charAt(0).toUpperCase() + e.slice(1)} effort
+                        <input type="number" min="0" max="30" step="0.5" bind:value={riskSettings.assumptions.migrationYears[e]} onchange={persistRisk} />
+                      </label>
+                    {/each}
+                  </fieldset>
+                </div>
+                {#if report.dataProfile}
+                  <div class="risk-data">
+                    <h5>Sensitive data found in this org ({report.dataProfile.entries.length})</h5>
+                    <ul>
+                      {#each report.dataProfile.entries.slice(0, 12) as e}
+                        <li><span class="mono">{e.object}{e.field ? `.${e.field}` : ''}</span> · {TIER_LABELS[e.tier]} · <span class="muted">{e.detail}</span></li>
+                      {/each}
+                      {#if report.dataProfile.entries.length > 12}<li class="muted">…and {report.dataProfile.entries.length - 12} more (in the PDF and raw JSON)</li>{/if}
+                    </ul>
+                    {#if report.dataProfile.note}<p class="muted">{report.dataProfile.note}</p>{/if}
+                  </div>
+                {/if}
+                <p class="muted">Saved in this browser only. Integrations are assumed to carry the org's most sensitive data; open a finding to say what it really carries.
+                  {#if assumptionsChanged}<button type="button" class="qs-btn qs-btn-ghost qs-btn-sm" onclick={resetRisk}>Reset to defaults</button>{/if}
+                </p>
+              </div>
+            </details>
 
             <div class="toolbar" id="export" style="scroll-margin-top:110px;">
               <input
@@ -400,7 +538,8 @@
                 bind:value={query}
               />
               <div class="segment">
-                <button type="button" class:active={sort === 'deadline'} aria-pressed={sort === 'deadline'} onclick={() => (sort = 'deadline')}>Sort · Deadline</button>
+                <button type="button" class:active={sort === 'priority'} aria-pressed={sort === 'priority'} onclick={() => (sort = 'priority')}>Sort · Priority</button>
+                <button type="button" class:active={sort === 'deadline'} aria-pressed={sort === 'deadline'} onclick={() => (sort = 'deadline')}>Deadline</button>
                 <button type="button" class:active={sort === 'severity'} aria-pressed={sort === 'severity'} onclick={() => (sort = 'severity')}>Severity</button>
               </div>
               <div class="spacer"></div>
@@ -442,6 +581,7 @@
                 <caption class="sr-only">Findings — activate a finding's title to open its detail</caption>
                 <thead>
                   <tr>
+                    <th scope="col" style="width:118px;">Priority</th>
                     <th scope="col">Finding</th>
                     <th scope="col" style="width:120px;">Category</th>
                     <th scope="col" style="width:100px;">Severity</th>
@@ -457,6 +597,12 @@
                       onclick={(e) => onRowClick(e, f.id)}
                       style="cursor:pointer;"
                     >
+                      <td class="priority-cell">
+                        {#if f.priority}
+                          <span class={`pill ${BAND_CLASS[f.priority.band]}`}>#{f.priority.rank} {BAND_LABELS[f.priority.band]}</span>
+                          <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:3px;">{marginText(f)}</div>
+                        {/if}
+                      </td>
                       <td class="finding-cell">
                         <button
                           type="button"
@@ -489,7 +635,12 @@
           </div>
         </div>
 
-        <FindingDrawer finding={selected} onClose={() => (selectedId = null)} bind:height={drawerHeight} sampleLabel={demo ? SAMPLE_BANNER_TEXT : undefined} />
+        <FindingDrawer
+          finding={selected}
+          onClose={() => (selectedId = null)}
+          quantumYear={riskSettings.assumptions.quantumYear}
+          tierOverride={selected ? riskSettings.overrides[assetKey(selected.asset)] : undefined}
+          onTierChange={(tier) => selected && setTier(assetKey(selected.asset), tier)} bind:height={drawerHeight} sampleLabel={demo ? SAMPLE_BANNER_TEXT : undefined} />
 
         {#if selected}
           <div style={`height:${drawerHeight + 20}px;`}></div>
@@ -498,3 +649,117 @@
     </main>
   </div>
 {/if}
+
+<style>
+  .risk-panel {
+    margin: 0 0 12px;
+    padding: 0;
+  }
+  .risk-panel summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .risk-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .risk-sum {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .risk-body {
+    padding: 0 14px 12px;
+    border-top: 1px solid var(--line);
+  }
+  .risk-lede {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 10px 0;
+  }
+  .risk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .risk-grid fieldset {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm, 6px);
+    padding: 8px 10px 10px;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .risk-grid legend {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+    padding: 0 4px;
+  }
+  .risk-grid .segment {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 12px;
+    background: var(--surface-container-high);
+    justify-self: start;
+  }
+  .risk-grid .segment button {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    border: none;
+    background: transparent;
+    color: var(--ink-3);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .risk-grid .segment button.active {
+    background: var(--surface-container-lowest);
+    color: var(--primary);
+    font-weight: 600;
+    box-shadow: var(--shadow-card);
+  }
+  label.inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  label.inline input {
+    width: 72px;
+    font: inherit;
+    padding: 2px 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .risk-data h5 {
+    margin: 12px 0 4px;
+    font-size: 11.5px;
+  }
+  .risk-data ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .muted {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .priority-cell {
+    white-space: nowrap;
+  }
+</style>

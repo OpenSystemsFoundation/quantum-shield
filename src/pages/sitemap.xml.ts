@@ -4,7 +4,7 @@ import { getCollection } from 'astro:content';
 // Public, indexable pages only. The app (/app, /connect, /callback) is
 // excluded here and disallowed in robots.txt.
 // Trailing slashes match the canonical URLs of Astro's directory-style output.
-const STATIC_PATHS = ['/', '/install/', '/security/', '/privacy/', '/terms/', '/docs/rules/', '/docs/regulations/'];
+const STATIC_PATHS = ['/', '/install/', '/security/', '/privacy/', '/terms/', '/docs/rules/', '/docs/regulations/', '/docs/prioritization/'];
 
 const slug = (id: string) => id.replace(/\.(md|mdx)$/, '');
 

@@ -12,7 +12,7 @@
   },
   "scripts": {
     "sync:regulations": "node scripts/sync-regulations.mjs",
-    "capture:scan-fixtures": "node scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
+    "capture:scan-fixtures": "tsx scripts/capture-scan-fixtures.mjs --target-org quantum-shield",
     "design:lint": "node scripts/lint-design-md.mjs DESIGN.md",
     "predev": "npm run sync:regulations",
     "dev": "astro dev --host localhost --port 4321",

@@ -11,8 +11,13 @@ import type {
 import { evaluate, ruleCatalogFor, scopeCitationsToRegions } from '../rules/engine.js';
 import { tlsProbeRules } from '../rules/tls-rules.js';
 import { keyRotationRules } from '../rules/key-rotation-rules.js';
+import { calloutRules } from '../rules/callout-rules.js';
 import { GENERATED_OVERLAYS, GENERATED_SOURCE_VERSIONS } from '../rules/regulations.generated.js';
 import { classifyCryptoAsset } from '../pdf/crypto-classification.js';
+import type { DataProfile } from '../pdf/types.js';
+import { buildDataProfile } from '../priority/profile.js';
+import { DEFAULT_ASSUMPTIONS } from '../priority/defaults.js';
+import { prioritize, priorityCounts } from '../priority/score.js';
 import { QSHIELD_NAME, QSHIELD_VERSION } from '../version.js';
 import {
   AuthError,
@@ -262,7 +267,53 @@ async function runEndpointProbes(
   });
 }
 
+const DATA_PROFILE_LABEL = 'Data sensitivity (for prioritisation)';
+
+/**
+ * Reads field classification, Shield-encrypted fields and the standard
+ * objects present, to estimate how long the org's data must stay secret.
+ * Failures never abort the scan: prioritisation falls back to assuming
+ * personal data, and coverage records what could not be read.
+ */
+async function runDataProfile(
+  client: ScanClient,
+  emit: ScanEventListener,
+  coverage: CategoryCoverage[],
+): Promise<DataProfile | undefined> {
+  // Reported as log lines, not scanner-progress: it is not a crypto
+  // category and must not overwrite a category row in the scan view.
+  emit({ type: 'log', level: 'info', message: `reading ${DATA_PROFILE_LABEL.toLowerCase()}…` });
+  try {
+    const { profile, failures } = await buildDataProfile(client);
+    const status: CategoryCoverage['status'] =
+      failures.length === 0 ? 'scanned' : profile.entries.length > 0 ? 'partial' : 'failed';
+    coverage.push({
+      id: 'data-profile',
+      label: DATA_PROFILE_LABEL,
+      status,
+      assetCount: profile.entries.length,
+      findingCount: 0,
+      ...(failures.length > 0
+        ? { detail: `${failures.length} metadata quer${failures.length === 1 ? 'y' : 'ies'} failed; priorities use best-practice defaults where data was missing. ${failures[0]}` }
+        : {}),
+    });
+    emit({
+      type: 'log',
+      level: status === 'scanned' ? 'info' : 'warn',
+      message: `${DATA_PROFILE_LABEL} · ${profile.entries.length} sensitive objects/fields · org data tier: ${profile.orgTier}`,
+    });
+    return profile;
+  } catch (err) {
+    if (err instanceof CorsBlockedError || err instanceof AuthError || err instanceof NetworkError) throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    coverage.push({ id: 'data-profile', label: DATA_PROFILE_LABEL, status: 'failed', assetCount: 0, findingCount: 0, detail: message });
+    emit({ type: 'log', level: 'warn', message: `data sensitivity pass failed: ${message}` });
+    return undefined;
+  }
+}
+
 function findingCountFor(entry: CategoryCoverage, findings: Finding[]): number {
+  if (entry.id === 'data-profile') return 0;
   if (entry.id === 'tls-probe') {
     return findings.filter((f) => f.asset.kind === 'tls-endpoint').length;
   }
@@ -278,7 +329,7 @@ function postureSentence(
   categoryCounts: Record<Category, number>,
   coverage: CategoryCoverage[],
 ): string {
-  const unverified = coverage.filter((c) => c.status === 'failed' || c.status === 'partial');
+  const unverified = coverage.filter((c) => c.id !== 'data-profile' && (c.status === 'failed' || c.status === 'partial'));
   const coverageCaveat =
     unverified.length > 0
       ? ` Note: ${unverified.length} scan categor${unverified.length === 1 ? 'y' : 'ies'} could not be fully scanned — zero findings there does not mean clean; see scan coverage.`
@@ -453,10 +504,14 @@ export async function runScan(
   const coverage: CategoryCoverage[] = [];
 
   try {
-    if (options.mock) {
-      await scanWithClient(new SnapshotSfClient(LIVE_ORG_SCAN_SNAPSHOT), emit, assets, coverage);
-    } else {
-      await scanWithClient(new SfClient(options.session), emit, assets, coverage);
+    const client: ScanClient = options.mock
+      ? new SnapshotSfClient(LIVE_ORG_SCAN_SNAPSHOT)
+      : new SfClient(options.session);
+    await scanWithClient(client, emit, assets, coverage);
+
+    let dataProfile: DataProfile | undefined;
+    if (!options.skipDataProfile) {
+      dataProfile = await runDataProfile(client, emit, coverage);
     }
 
     if (options.probeTls && probe) {
@@ -481,6 +536,7 @@ export async function runScan(
       ...ruleCatalogFor(options.overlays, regions),
       ...tlsProbeRules(),
       ...keyRotationRules(),
+      ...calloutRules(),
     ];
     const ctx = { scanId: options.scanId, now: new Date() };
     const findings: Finding[] = [];
@@ -507,6 +563,16 @@ export async function runScan(
     for (const entry of coverage) {
       entry.findingCount = findingCountFor(entry, findings);
     }
+
+    const riskAssumptions = options.riskAssumptions ?? DEFAULT_ASSUMPTIONS;
+    const priorities = prioritize({
+      findings,
+      dataProfile,
+      scanDate: startedAt,
+      assumptions: riskAssumptions,
+    });
+    for (const f of findings) f.priority = priorities.get(f.id);
+    findings.sort((a, b) => (a.priority?.rank ?? 0) - (b.priority?.rank ?? 0));
 
     const hndlCount = findings.filter((f) => f.hndlExposure).length;
     // Earliest deadline that is still ahead. Dates already in the past
@@ -554,7 +620,10 @@ export async function runScan(
         earliestDeadline: deadlines[0],
         hndlFindings: hndlCount,
         postureSentence: postureSentence(orgName, findings, categoryCounts, coverage),
+        priorityCounts: priorityCounts(priorities.values()),
       },
+      ...(dataProfile ? { dataProfile } : {}),
+      riskAssumptions,
       cbom: assets
         .map((a) => cbomComponentFor(a))
         .filter((c): c is CbomComponent => c !== null)
