@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Project
+
+- **Open-source repository essentials**: `SECURITY.md` with a private
+  disclosure process, `CONTRIBUTING.md`, a Code of Conduct (Contributor
+  Covenant 2.1), issue forms and a pull request template.
+- **Supply chain**: CI produces a CycloneDX SBOM; CodeQL and OpenSSF Scorecard
+  run on `main`; Dependabot updates npm packages and GitHub Actions (pinned by
+  commit SHA); tagged releases publish the built site, source and SBOM with
+  signed build-provenance attestations.
+- Internal review notes and local tool settings removed from the repository;
+  `ARCHITECTURE.md`, `AGENTS.md` and the `/security` page updated for the
+  current app (Cloudflare Workers hosting, My Domain sign-in, OAuth CORS
+  setting, accurate `connect-src`).
+
 ### Fixed — browser sign-in (verified end to end against a live scratch org)
 
 - **Sign-in could never complete in the browser.** Two blockers found on the

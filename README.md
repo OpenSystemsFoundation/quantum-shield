@@ -1,6 +1,8 @@
 # QuantumShield
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![CI](https://github.com/OpenSystemsFoundation/quantum-shield/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenSystemsFoundation/quantum-shield/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/OpenSystemsFoundation/quantum-shield/badge)](https://scorecard.dev/viewer/?uri=github.com/OpenSystemsFoundation/quantum-shield)
 
 Free, open-source post-quantum readiness scanner for Salesforce orgs, from the [Open Systems Foundation](https://opensf.foundation). No accounts, no paid tiers: everything here is free for everyone under the Apache 2.0 licence. Try the browser app at [quantumshield.opensf.foundation](https://quantumshield.opensf.foundation).
 
