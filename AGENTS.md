@@ -53,7 +53,12 @@ builder, and OpenVEX/report output code under `src/lib/`.
 - `public/fonts/` holds the self-hosted woff2 fonts and `fonts.css`; pages load
   fonts only from there (no font CDNs — see `DESIGN.md`).
 - `public/_headers` is the Cloudflare Pages security-header config (CSP etc.).
-  The `/security` page describes that policy verbatim — change them together.
+  `script-src` has no `'unsafe-inline'`: the `csp-inline-hashes` integration
+  (last in `astro.config.mjs`, logic in `scripts/csp-inline-hashes.mjs`) hashes
+  every inline `<script>` in the built HTML and writes the `'sha256-…'` sources
+  into `dist/_headers`. Never add inline event handlers (`onclick="…"`); the
+  build fails on them. The `/security` page describes the policy — change them
+  together.
 - `src/lib/version.ts` is the single source of truth for the tool version; CI
   fails if it disagrees with `package.json`'s `version`.
 - `cli/` is excluded from `tsconfig.json`; typecheck it with
@@ -154,8 +159,9 @@ Summary of what landed (see also `CHANGELOG.md` 0.1.0):
 - [x] Production domain is `https://quantumshield.opensf.foundation`, deployed
   as a static-assets Cloudflare Worker (`wrangler.jsonc`). PDF metadata points
   at the GitHub repository, not the domain.
-- [ ] Keyboard accessibility for the findings table and drawer; mobile layout
-  for landing/app/report pages.
+- [x] Keyboard accessibility for the findings table and drawer; mobile layout
+  for landing/app/report pages (no horizontal scroll at 390px; findings stack
+  as cards; the finding detail is a full-screen dialog on phones).
 - [ ] Decide whether the beta ever publishes to npm; until then the repo stays
   `"private": true` and installs from source (documented in README).
 - [ ] Rotate the committed scratch-org ECA consumer key under `salesforce/`

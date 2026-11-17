@@ -3,6 +3,17 @@ import Shell from '../layouts/Shell.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { QSHIELD_VERSION } from '../lib/version';
+import { buildSampleReport } from '../lib/demo/sample';
+
+// The hero card shows the same sample report that /demo opens, computed at
+// build time from the bundled fixtures, so its numbers cannot drift from it.
+const sample = await buildSampleReport();
+const sev = sample.summary.bySeverity;
+const sampleCategories = sample.coverage
+  .filter((c) => c.id !== 'tls-probe' && c.findingCount > 0)
+  .sort((a, b) => b.findingCount - a.findingCount)
+  .slice(0, 4);
+const categoriesWithFindings = sample.coverage.filter((c) => c.id !== 'tls-probe' && c.findingCount > 0).length;
 
 const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
 ---
@@ -24,6 +35,7 @@ const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
           <div class="cta-row">
             <a class="qs-btn qs-btn-primary qs-btn-lg" href="/install#cli">CLI quickstart</a>
             <a class="qs-btn qs-btn-lg" href="/connect">Browser setup</a>
+            <a class="qs-btn qs-btn-lg" href="/demo" data-testid="view-sample-report">View a sample report</a>
             <a class="qs-btn qs-btn-ghost qs-btn-lg" href={repo} rel="noopener">View source</a>
           </div>
           <div class="fineprint">
@@ -50,54 +62,53 @@ const repo = 'https://github.com/OpenSystemsFoundation/quantum-shield';
           </div>
         </div>
 
-        <div class="hero-preview" aria-label="Sample report summary">
+        <a class="hero-preview" href="/demo" aria-label="Sample report summary (demo data) — open the sample report" style="display:block;color:inherit;text-decoration:none;">
           <div class="bar">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <span class="t">sample report · nl-acme.my.salesforce.com</span>
+            <span class="t">sample report · demo data, not a real org</span>
           </div>
           <div style="padding: 22px 24px">
             <div class="eyebrow">Sample executive summary</div>
             <div class="display" style="font-size:22px;font-weight:600;letter-spacing:-0.01em;margin-top:6px;margin-bottom:16px;">
-              47 findings across 9 categories
+              {sample.summary.totalFindings} findings across {categoriesWithFindings} {categoriesWithFindings === 1 ? 'category' : 'categories'}
             </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:18px;">
               <div class="stat">
-                <div class="n" style="color:var(--crit);">4</div>
+                <div class="n" style="color:var(--crit);">{sev.critical}</div>
                 <div class="tiny-caps" style="margin-top:6px">Critical</div>
               </div>
               <div class="stat">
-                <div class="n" style="color:var(--high);">9</div>
+                <div class="n" style="color:var(--high);">{sev.high}</div>
                 <div class="tiny-caps" style="margin-top:6px">High</div>
               </div>
               <div class="stat">
-                <div class="n" style="color:var(--warn);">18</div>
+                <div class="n" style="color:var(--warn);">{sev.medium}</div>
                 <div class="tiny-caps" style="margin-top:6px">Medium</div>
               </div>
               <div class="stat">
-                <div class="n" style="color:var(--adv);">16</div>
-                <div class="tiny-caps" style="margin-top:6px">Advisory</div>
+                <div class="n" style="color:var(--adv);">{sev.low}</div>
+                <div class="tiny-caps" style="margin-top:6px">Low</div>
               </div>
             </div>
-            <div class="tiny-caps">Earliest deadline</div>
-            <div class="mono" style="font-size:12px;margin-top:4px;">
-              2023-12-31 · SHA-1 disallowed · 3 findings already past due
+            {sample.summary.earliestDeadline && (
+              <>
+                <div class="tiny-caps">Earliest deadline</div>
+                <div class="mono" style="font-size:12px;margin-top:4px;">
+                  {sample.summary.earliestDeadline}
+                </div>
+              </>
+            )}
+            <div class="tiny-caps" style="margin-top:16px;">Findings by category</div>
+            <div style="margin-top:4px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;font-size:12px;">
+              {sampleCategories.map((c) => (
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2);">
+                  <span style="color:var(--muted)">{c.label}</span><span class="mono">{c.findingCount}</span>
+                </div>
+              ))}
             </div>
-            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;">
-              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
-                <span style="color:var(--muted)">Certificates</span><span class="mono">14</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
-                <span style="color:var(--muted)">Connected Apps</span><span class="mono">22</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
-                <span style="color:var(--muted)">Named Credentials</span><span class="mono">31</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line-2);">
-                <span style="color:var(--muted)">Apex classes</span><span class="mono">612</span>
-              </div>
-            </div>
+            <div style="margin-top:14px;font-size:12.5px;font-weight:600;color:var(--primary);">Open the sample report →</div>
           </div>
-        </div>
+        </a>
       </div>
     </section>
 
