@@ -51,6 +51,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **No Cloudflare build variables needed.** Public build values
+  (`PUBLIC_SF_API_VERSION`, `PUBLIC_APP_ORIGIN`) live in a committed
+  `.env.production`.
 - **Build Node version pinned in the repo.** `.node-version` (22.23.4) drives
   both Cloudflare Workers Builds and GitHub CI, so production and preview
   builds cannot drift. A `NODE_VERSION` build variable would override it, so

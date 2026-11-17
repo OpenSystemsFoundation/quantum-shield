@@ -149,10 +149,9 @@ Cloudflare builds from GitHub (Workers Builds) with:
 |---|---|
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
-| Build variable `PUBLIC_APP_ORIGIN` | `https://quantumshield.opensf.foundation` |
-| Build variable `PUBLIC_SF_API_VERSION` | `66.0` |
+| Build variables | none |
 
-The Node version comes from `.node-version` in the repository (Astro 7.4 needs ≥ 22.23.4). Do **not** set a `NODE_VERSION` build variable: it overrides the file. Leave `PUBLIC_SF_CLIENT_ID` and `PUBLIC_DEV_MOCK` unset in production: each user brings their own Consumer Key, and the mock login is disabled in production builds regardless. Security headers (CSP, HSTS, caching) ship in `public/_headers`. Unknown paths serve `src/pages/404.astro`.
+Everything the build needs is in the repository: the Node version in `.node-version` (Astro 7.4 needs ≥ 22.23.4) and the public build values (`PUBLIC_SF_API_VERSION`, `PUBLIC_APP_ORIGIN`) in `.env.production`. Do **not** set these as Cloudflare build variables: a dashboard variable overrides the file, which is how preview and production builds drift apart. `PUBLIC_SF_CLIENT_ID` stays empty (each user brings their own Consumer Key) and the mock login is disabled in production builds regardless. Security headers (CSP, HSTS, caching) ship in `public/_headers`. Unknown paths serve `src/pages/404.astro`.
 
 ---
 
