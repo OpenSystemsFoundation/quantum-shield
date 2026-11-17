@@ -34,6 +34,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **Astro 7 upgrade** (astro 7.4, @astrojs/svelte 9, @astrojs/mdx 8, vitest
+  latest). Clears the critical and high advisories in the shipped site's
+  dependencies: `npm audit --omit=dev` now reports one low (esbuild dev
+  server on Windows). The remaining dev-only advisory is zod under
+  `@google/design.md`, which has no fix yet.
+
 - **CSP no longer allows inline scripts wholesale.** `script-src 'unsafe-inline'`
   is gone from `public/_headers`. A final build step (`csp-inline-hashes` in
   `astro.config.mjs`) hashes every inline `<script>` in the built pages and
