@@ -55,7 +55,6 @@
   "overrides": {
     "@json-render/core": {
       "zod": "^4.6.6"
-    },
-    "esbuild": "^0.28.1"
+    }
   }
 }

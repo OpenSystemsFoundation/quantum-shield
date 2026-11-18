@@ -9,8 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security — supply-chain hygiene (OpenSSF Scorecard)
 
 - **Dependency advisories cleared**: refreshed the `salesforce/` dev-tooling
-  lockfile (38 known advisories down to 2) and added npm `overrides` for
-  `esbuild` and a transitive `zod`. The few advisories with no fix yet are
+  lockfile (38 known advisories down to 2) and added an npm `override`
+  for a transitive `zod`. The few advisories with no fix yet are
   documented, with an expiry date, in `osv-scanner.toml`.
 - **Fuzz tests**: fast-check property tests for the Apex comment stripper,
   the Apex crypto-call scanner and the findings CSV (round trip and

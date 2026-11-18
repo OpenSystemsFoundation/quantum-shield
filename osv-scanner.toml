@@ -11,3 +11,8 @@ reason = "picomatch ReDoS: no patched release exists (all versions <= 4.0.7 affe
 id = "GHSA-mrhx-c7xc-m3w5"
 ignoreUntil = 2027-02-18
 reason = "zod 3.x memory exhaustion: no 3.x fix. Dev-only, pulled in by @google/design.md, which validates this repo's own DESIGN.md in the design:lint script. Not shipped in the CLI or site."
+
+[[IgnoredVulns]]
+id = "GHSA-g7r4-m6w7-qqqr"
+ignoreUntil = 2027-02-18
+reason = "esbuild dev-server file read on Windows only. esbuild is build-time tooling here (vite, tsx); the dev server is never exposed and the deploy builds on Linux. tsx pins esbuild ~0.27, so forcing 0.28 would run it outside its supported range."
