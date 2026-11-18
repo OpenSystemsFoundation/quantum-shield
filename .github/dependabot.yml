@@ -1,24 +1,35 @@
-# Weekly dependency updates. Minor and patch updates are grouped into one PR
-# per ecosystem to keep the noise (and CI minutes) low; majors arrive alone.
+# Monthly dependency updates, batched to keep PR noise (and CI runs) low:
+# at most two version-update PRs per ecosystem per month, one for minor and
+# patch updates and one for majors. Security updates are separate: Dependabot
+# still opens those as soon as an advisory lands (repo setting
+# "Dependabot security updates"), and they are not delayed by this schedule.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+      npm-major:
+        update-types: [major]
+    ignore:
+      # Types follow the Node major we run (.node-version is 22).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (native compiler) does not build this repo yet; upgrade on purpose.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: deps
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
+    open-pull-requests-limit: 1
     groups:
       github-actions:
         patterns: ["*"]
@@ -26,14 +37,18 @@ updates:
       prefix: ci
 
   # Dev tooling for the scratch-org seed project (jest, eslint, prettier).
+  # Nothing here ships, so one combined PR a month is plenty.
   - package-ecosystem: npm
     directory: /salesforce
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 1
     groups:
-      salesforce-minor-and-patch:
-        update-types: [minor, patch]
+      salesforce-all:
+        patterns: ["*"]
+    ignore:
+      # The Salesforce LWC eslint configs and plugins require eslint ^9.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: deps
