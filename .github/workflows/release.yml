@@ -66,15 +66,30 @@ jobs:
           (cd release && sha256sum * > SHA256SUMS)
 
       - name: Attest build provenance
+        id: provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: release/*
 
       - name: Attest SBOM
+        id: sbom-attestation
         uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
         with:
           subject-path: release/quantum-shield-${{ github.ref_name }}-site.tar.gz
           sbom-path: release/quantum-shield-${{ github.ref_name }}.cdx.json
+
+      # Also ship the signed Sigstore bundles as release assets, so the
+      # signatures travel with the downloads (and OpenSSF Scorecard's
+      # Signed-Releases check can see them). Verify offline with
+      # `gh attestation verify <file> --bundle <bundle> --repo <owner/repo>`.
+      - name: Add attestation bundles to the release assets
+        env:
+          TAG: ${{ github.ref_name }}
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+          SBOM_BUNDLE: ${{ steps.sbom-attestation.outputs.bundle-path }}
+        run: |
+          cp "$PROVENANCE_BUNDLE" "release/quantum-shield-${TAG}.provenance.sigstore.json"
+          cp "$SBOM_BUNDLE" "release/quantum-shield-${TAG}.sbom.sigstore.json"
 
       - name: Publish GitHub Release
         env:

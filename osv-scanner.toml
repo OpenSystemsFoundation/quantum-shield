@@ -1,0 +1,13 @@
+# Known advisories with no usable fix yet, reviewed and accepted. Each entry
+# expires so it is looked at again; remove it as soon as a fix ships.
+# Read by osv-scanner and by OpenSSF Scorecard's Vulnerabilities check.
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-02-18
+reason = "picomatch ReDoS: no patched release exists (all versions <= 4.0.7 affected). Only reached at build/test time via astro, vite, vitest and tinyglobby, matching glob patterns written in this repo, never user input."
+
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+ignoreUntil = 2027-02-18
+reason = "zod 3.x memory exhaustion: no 3.x fix. Dev-only, pulled in by @google/design.md, which validates this repo's own DESIGN.md in the design:lint script. Not shipped in the CLI or site."

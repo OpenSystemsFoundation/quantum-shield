@@ -1,0 +1,12 @@
+# Known advisories in the scratch-org seed project's dev tooling with no
+# usable fix yet. Each entry expires so it is looked at again.
+
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-02-18
+reason = "picomatch ReDoS: no patched release exists. Dev tooling only (jest, eslint, lint-staged) matching globs written in this repo."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-02-18
+reason = "minimatch 9.x: fixed only in 11.x, a breaking change for @lwc/eslint-plugin-lwc, which pins ^9. Dev-only lint of LWC files written in this repo."

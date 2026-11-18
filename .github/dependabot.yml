@@ -24,3 +24,16 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: ci
+
+  # Dev tooling for the scratch-org seed project (jest, eslint, prettier).
+  - package-ecosystem: npm
+    directory: /salesforce
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      salesforce-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: deps
