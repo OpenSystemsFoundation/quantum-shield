@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security — supply-chain hygiene (OpenSSF Scorecard)
+
+- **Dependency advisories cleared**: refreshed the `salesforce/` dev-tooling
+  lockfile (38 known advisories down to 2) and added an npm `override`
+  for a transitive `zod`. The few advisories with no fix yet are
+  documented, with an expiry date, in `osv-scanner.toml`.
+- **Fuzz tests**: fast-check property tests for the Apex comment stripper,
+  the Apex crypto-call scanner and the findings CSV (round trip and
+  formula-injection guard), run as part of `npm test`.
+- **Signed release assets**: the release workflow now attaches the Sigstore
+  provenance and SBOM attestation bundles to each GitHub Release.
+- Dependabot now also watches `salesforce/`.
+
 ### Added — AI agent support
 
 - **Agent skill** at `.agents/skills/quantumshield/SKILL.md` (linked from

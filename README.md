@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/favicon.svg" alt="QuantumShield logo" width="96" height="96">
+</p>
+
 # QuantumShield
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -204,7 +208,7 @@ npm run check                   # astro check (TypeScript + Svelte + Astro diagn
 npx tsc --noEmit -p tsconfig.cli.json          # typecheck the CLI entry points
 ```
 
-CI (GitHub Actions) runs typechecks, unit tests, the production build, a generated-tables freshness check, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`. It also produces a CycloneDX SBOM of the runtime dependencies (kept as a workflow artifact). CodeQL and the OpenSSF Scorecard run on `main`, and Dependabot proposes dependency and Actions updates weekly. CI deliberately runs only cheap checks that need no Salesforce org, browser, or secrets; run the Playwright e2e suite locally with `npm run test:e2e`.
+CI (GitHub Actions) runs typechecks, unit tests, the production build, a generated-tables freshness check, and a package.json ↔ `src/lib/version.ts` version-consistency check on every push and PR to `main`. It also produces a CycloneDX SBOM of the runtime dependencies (kept as a workflow artifact). Unit tests include fast-check property-based fuzz tests (`*.fuzz.test.ts`) for the parsers that read org data. CodeQL and the OpenSSF Scorecard run on `main`, and Dependabot proposes dependency and Actions updates weekly. CI deliberately runs only cheap checks that need no Salesforce org, browser, or secrets; run the Playwright e2e suite locally with `npm run test:e2e`.
 
 Tests for the scan fixtures + a "poisoned" scratch-org bootstrap live under `salesforce/` — run `npm run capture:scan-fixtures` after standing the scratch org up to refresh the snapshot the browser uses for demo mode.
 
